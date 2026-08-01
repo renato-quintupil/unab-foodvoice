@@ -1,0 +1,17 @@
+{
+  "name": "@foodvoice/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos y contratos de dominio compartidos de FoodVoice",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
