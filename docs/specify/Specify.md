@@ -1,6 +1,6 @@
-# Specify - Sepec Driven Development (SDD)
+# **Specify - Sepec Driven Development (SDD)**
 
-## **GitHub Spec-Kit**
+## GitHub Spec-Kit
 
 [url -> github/spec-kit](https://github.com/github/spec-kit)
 
@@ -30,6 +30,8 @@
 
 - `specify` permite validar en cli que esta instalado, con el comando `specify --help` muestra la ayuda en la cli sobre los comandos de la librería.
 
+---
+
 ### Iniciar un proyecto
 
 - Iniciar con codex
@@ -38,4 +40,32 @@
   specify init proyecto1 --integration codex
   ```
 
-  - Seguridad: considerar agregar .agents/ al .gitignore
+  - Revisar las skill
+
+  ```bash
+  $speck
+  ```
+
+- Inciar con claude
+
+  ```bash
+  specify init proyecto2 --integration claude
+  ```
+
+  - Revisar las skill
+
+  ```bash
+  /speck
+  ```
+
+- **Seguridad:** considerar agregar `.agents/` al `.gitignore`
+
+---
+
+### Constitución del proyecto
+
+- Iniciar constitución con speckit con agente claude
+
+```
+/speckit-constitution
+```
