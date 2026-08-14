@@ -1,5 +1,5 @@
 .agents/
-docs/
+
 
 # Variables de entorno y secretos
 .env
