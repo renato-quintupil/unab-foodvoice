@@ -2,14 +2,12 @@ import { Module } from '@nestjs/common';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 
-/**
- * Monolito con módulos internos (plan § Estructura). `dashboard` se incorpora
- * en la Fase D.
- */
+/** Monolito con módulos internos (plan § Estructura). */
 @Module({
   imports: [
     CommonModule,
@@ -18,6 +16,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     AuditModule,
     UsersModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

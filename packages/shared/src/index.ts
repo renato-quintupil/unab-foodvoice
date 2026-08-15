@@ -56,6 +56,8 @@ export {
 
 export { normalizarBusqueda, escaparLike } from './search/normalizar';
 
+export { transicionesValidas, esTransicionValida } from './order-state/machine';
+
 export type {
   UserDto,
   SessionUser,
