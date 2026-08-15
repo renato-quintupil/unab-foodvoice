@@ -3,9 +3,17 @@
 Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
-**Estado del código**: el repositorio aún es solo especificación. `apps/`,
-`services/` y `package/` están vacíos. La primera implementación es E1 y arranca
-por la Fase A del plan (`specs/001-acceso-y-usuarios/plan.md`).
+**Estado del código**: E1 · Acceso y usuarios está **construida y verificada**
+en las cuatro fases del plan (`specs/001-acceso-y-usuarios/plan.md`). Los tres
+espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
+poblados, y las dos capas automáticas pasan en verde: unitarios con sus umbrales
+de cobertura, e integración con 19 baterías y 180 pruebas contra PostgreSQL real.
+
+Quedan **dos verificaciones que exigen una persona** y no código, ambas trazadas
+en `specs/001-acceso-y-usuarios/verificacion.md`: la guía funcional completa con
+las esperas reales de 15 y 30 minutos (T126) y el recorrido en cuatro navegadores
+desde 360 píxeles (T123). Mientras T126 no se ejecute, SC-001, SC-007, SC-036 y
+SC-038 no están verificados. La siguiente épica del orden sugerido es E4.
 
 ## Stack y decisiones vigentes
 
@@ -19,8 +27,7 @@ por la Fase A del plan (`specs/001-acceso-y-usuarios/plan.md`).
   módulos internos (`auth`, `users`, `dashboard`, `audit`, `health`).
 - **`packages/shared`** — fuente única de contratos: enums, esquemas Zod,
   mensajes en español y máquina de estados del pedido. No puede depender de
-  `apps/web` ni de `services/api`. (Nota: la carpeta `package/` del repo se
-  renombra a `packages/`.)
+  `apps/web` ni de `services/api`.
 - **PostgreSQL 16** con `prisma migrate`. **Sesión con estado** en base de datos
   e identificador opaco (UUID v4) en cookie `httpOnly`; nada de JWT. El rol se
   congela en la sesión: un cambio de rol rige desde el próximo inicio de sesión.

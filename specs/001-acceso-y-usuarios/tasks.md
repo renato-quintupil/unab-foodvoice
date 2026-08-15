@@ -339,3 +339,12 @@ y T126 exige que una persona no técnica recorra la guía funcional con las
 esperas reales de 15 y 30 minutos. De T126 dependen además los cuatro criterios
 que solo se comprueban a mano —SC-001, SC-007, SC-036 y SC-038—, de modo que
 mientras no se ejecute, esos cuatro **no están verificados**.
+
+---
+
+## Phase 7: Convergence
+
+- [X] T129 Actualizar la sección «Estado del código» de `CLAUDE.md`, que aún declara el repositorio como solo especificación y `apps/`, `services/` y `package/` vacíos, para que describa la épica E1 entregada y verificada per `plan: fases de entrega` (contradicts)
+- [X] T130 Retirar la carpeta obsoleta `package/` de la raíz, cuyo renombrado a `packages/` el plan declara ya aplicado, per `plan: ajustes al enunciado original` (unrequested)
+- [X] T131 Inventariar `apps/web/src/app/entrada/page.tsx` en el recorrido inverso de carpetas, o justificar su ausencia, per `plan: estructura del proyecto` (unrequested)
+- [X] T132 Hacer que `pnpm test:integration` levante por sí solo la base efímera y fije su `DATABASE_URL`, o corregir la afirmación de que ya lo hace: hoy el script es solo `jest`, y ejecutado tal cual las 19 baterías fallan en `$connect()` con 180 fallos indistinguibles de una regresión, per `quickstart: comprobaciones automáticas` (contradicts)

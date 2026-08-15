@@ -23,16 +23,28 @@ import { PrismaClient } from '@prisma/client';
 /** Tablas en el orden en que se truncan. `CASCADE` resuelve las dependencias. */
 const TABLAS = ['admin_audit_log', 'session', 'login_attempt_control', '"user"'] as const;
 
+/**
+ * La base de la batería la fija **este archivo**, no el entorno heredado (T132).
+ *
+ * Antes se leía `DATABASE_URL` del entorno y se abortaba si faltaba. El mensaje
+ * era claro, pero dejaba dos problemas. El menor: `pnpm test:integration` no
+ * funcionaba sin exportar antes una variable, pese a que `quickstart` lo
+ * presentaba como una de cinco órdenes autosuficientes. El mayor, y la razón de
+ * fondo del cambio: si alguien tenía `DATABASE_URL` apuntando a su base de
+ * desarrollo —lo normal al trabajar en local—, la batería la habría aceptado y
+ * el `TRUNCATE` de cada caso le habría **borrado sus datos**.
+ *
+ * Fijarla aquí hace ambas cosas imposibles: la batería solo puede correr contra
+ * la base efímera que `pretest:integration` levanta. `DATABASE_URL_TEST` permite
+ * apuntar a otra —un puerto distinto, un servidor de integración continua—, pero
+ * exige nombrarla a propósito.
+ */
+const URL_BASE_EFIMERA = 'postgresql://foodvoice:test@localhost:5433/foodvoice_test';
+process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? URL_BASE_EFIMERA;
+
 export const prisma = new PrismaClient();
 
 beforeAll(async () => {
-  if (!process.env.DATABASE_URL) {
-    throw new Error(
-      'DATABASE_URL no está definida. Los tests de integración necesitan la PostgreSQL ' +
-        'efímera de docker-compose.test.yml. Ver quickstart § Comprobaciones automáticas.',
-    );
-  }
-
   execSync('npx prisma migrate deploy', {
     cwd: `${__dirname}/..`,
     stdio: 'inherit',

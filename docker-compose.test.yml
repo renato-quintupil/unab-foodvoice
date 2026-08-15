@@ -4,10 +4,17 @@
 # de datos de desarrollo. `tmpfs` la deja íntegramente en memoria: la batería
 # corre más rápido y no queda rastro en disco al terminar.
 #
-#   docker compose -f docker-compose.test.yml up -d
-#   DATABASE_URL=postgresql://foodvoice:test@localhost:5433/foodvoice_test \
-#     pnpm --filter @foodvoice/api test:integration
-#   docker compose -f docker-compose.test.yml down
+# **No hace falta levantarla a mano**: el script `pretest:integration` de
+# `services/api` la arranca y espera a su healthcheck, y `test/setup.ts` fija la
+# `DATABASE_URL` que apunta aquí (T132). Basta con:
+#
+#   pnpm test:integration
+#
+# Corre bajo el nombre de proyecto `foodvoice-test`, separado del de la
+# aplicación, para que ni sus contenedores figuren como huérfanos aquí ni una
+# orden dada aquí pueda alcanzarlos. Para retirarla al terminar:
+#
+#   docker compose -p foodvoice-test -f docker-compose.test.yml down
 
 services:
   postgres-test:

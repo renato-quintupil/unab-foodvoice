@@ -99,7 +99,11 @@ pnpm typecheck
 pnpm build
 ```
 
-Los tests de integración levantan su propia base de datos con `docker-compose.test.yml`, en un puerto distinto, y no tocan los datos de desarrollo (D-009).
+Las cinco órdenes son autosuficientes: no exigen exportar ninguna variable ni levantar nada a mano. Lo único que `pnpm test:integration` necesita es **Docker en marcha**.
+
+Su base de datos la levanta el script `pretest:integration`, que arranca `docker-compose.test.yml` bajo el nombre de proyecto `foodvoice-test` y espera a su healthcheck; `test/setup.ts` **fija** la `DATABASE_URL` que apunta a ella. Esa base vive en otro puerto, en memoria y sin volumen, de modo que la batería no toca los datos de desarrollo (D-009, T132).
+
+Que la URL la fije el código y no se herede del entorno es deliberado, y no solo por comodidad: la batería trunca todas las tablas entre casos, así que una `DATABASE_URL` heredada apuntando a la base de desarrollo habría borrado los datos de quien la ejecutara. Para apuntar a otra base —un servidor de integración continua, por ejemplo— existe `DATABASE_URL_TEST`, que obliga a nombrarla a propósito. Al terminar, `docker compose -p foodvoice-test -f docker-compose.test.yml down` la retira; dejarla en pie solo cuesta memoria y ahorra el arranque siguiente.
 
 **Se considera aprobado** cuando las cinco órdenes terminan sin error y se cumplen los umbrales de cobertura:
 
