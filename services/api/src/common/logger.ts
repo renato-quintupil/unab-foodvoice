@@ -1,10 +1,12 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Injectable,
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import type { HttpArgumentsHost } from '@nestjs/common/interfaces';
 import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
@@ -87,14 +89,33 @@ export class LoggingInterceptor implements NestInterceptor {
     const peticion = http.getRequest<Request>();
     const inicio = Date.now();
 
-    const registrar = () => {
-      const respuesta = http.getResponse<Response>();
+    const registrar = (error?: unknown) => {
       const duracion = Date.now() - inicio;
       this.logger.log(
-        `${peticion.method} ${peticion.originalUrl} ${respuesta.statusCode} ${duracion}ms`,
+        `${peticion.method} ${peticion.originalUrl} ${estadoDe(http, error)} ${duracion}ms`,
       );
     };
 
-    return next.handle().pipe(tap({ next: registrar, error: registrar }));
+    return next.handle().pipe(
+      tap({
+        next: () => registrar(),
+        error: (error: unknown) => registrar(error),
+      }),
+    );
   }
+}
+
+/**
+ * Código de estado que corresponde a la petición.
+ *
+ * Cuando el manejador lanza, el filtro de excepciones **todavía no ha fijado el
+ * estado en la respuesta**, así que leerla devolvería el 200 por defecto y toda
+ * petición fallida aparecería en el registro como exitosa — justo lo contrario
+ * de lo que se necesita al diagnosticar. Por eso el estado se toma de la propia
+ * excepción cuando la hay.
+ */
+function estadoDe(http: HttpArgumentsHost, error?: unknown): number {
+  if (error instanceof HttpException) return error.getStatus();
+  if (error) return 500;
+  return http.getResponse<Response>().statusCode;
 }

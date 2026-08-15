@@ -144,4 +144,34 @@ describe('LoggingInterceptor (D-019)', () => {
     expect(escrito[0]).toContain('500');
     jest.restoreAllMocks();
   });
+
+  it('toma el estado de la EXCEPCIÓN, no de la respuesta aún sin fijar', async () => {
+    // Cuando el manejador lanza, el filtro todavía no ha escrito el estado, así
+    // que leer la respuesta daría 200 y toda petición fallida aparecería en el
+    // registro como exitosa. Se comprobó contra el sistema real: los cuatro
+    // inicios de sesión fallidos figuraban como `200`.
+    const { LoggingInterceptor } = await import('./logger');
+    const { throwError } = await import('rxjs');
+    const { Logger } = await import('@nestjs/common');
+    const { credencialesInvalidas } = await import('../common/errors');
+
+    const escrito: string[] = [];
+    jest.spyOn(Logger.prototype, 'log').mockImplementation((mensaje: unknown) => {
+      escrito.push(String(mensaje));
+    });
+
+    const interceptor = new LoggingInterceptor();
+    await new Promise<void>((resolve) => {
+      interceptor
+        // La respuesta sigue diciendo 200: es exactamente el caso real.
+        .intercept(contexto(200) as never, {
+          handle: () => throwError(() => credencialesInvalidas()),
+        } as never)
+        .subscribe({ error: () => resolve() });
+    });
+
+    expect(escrito[0]).toContain('401');
+    expect(escrito[0]).not.toContain('200');
+    jest.restoreAllMocks();
+  });
 });
