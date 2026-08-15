@@ -8,8 +8,9 @@ import { SessionService } from './session.service';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, HashingService, LoginAttemptService, SessionService],
-  // `SessionService` y `HashingService` los consumen `users` (revocación y
-  // rehash) y los guards; se exportan para no duplicar sus instancias.
-  exports: [SessionService, HashingService],
+  // Los consumen `users` —revocación de sesiones, rehash y borrado del bloqueo
+  // en el restablecimiento— y los guards. Se exportan para no duplicar sus
+  // instancias: dos `HashingService` significarían dos señuelos distintos.
+  exports: [SessionService, HashingService, LoginAttemptService],
 })
 export class AuthModule {}
