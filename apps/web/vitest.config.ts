@@ -15,11 +15,25 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/components/ui/**', 'src/app/**/layout.tsx', 'src/app/globals.css'],
+      exclude: [
+        // Copiados de shadcn/ui: son de terceros y no llevan lógica del producto.
+        'src/components/ui/**',
+        'src/app/globals.css',
+        // **Server Components y sus ayudantes de servidor.** No se ejecutan en
+        // jsdom, y su verificación es la sección funcional de la guía —que es
+        // exactamente la razón por la que el umbral de `apps/web` es 70 % y no
+        // más (quickstart § Comprobaciones automáticas)—. Lo que sí se prueba
+        // aquí es todo lo que corre en el navegador: formularios, diálogos,
+        // filtros, el cliente de API, el middleware y el proxy.
+        'src/app/**/page.tsx',
+        'src/app/**/layout.tsx',
+        'src/app/**/error.tsx',
+        'src/lib/api-servidor.ts',
+        'src/lib/sesion-servidor.ts',
+      ],
       reporter: ['text', 'lcov'],
-      // quickstart § Comprobaciones automáticas: 70 % en `apps/web`. La
-      // validación de interfaz la cubre la sección funcional de la guía; la
-      // cobertura es un piso, no un objetivo (T117).
+      // El incumplimiento hace fallar `pnpm test` (T117). La cobertura es un
+      // piso, no un objetivo: cumplirla no sustituye a la validación funcional.
       thresholds: { lines: 70 },
     },
   },

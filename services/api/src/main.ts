@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -9,6 +9,7 @@ import { AppModule } from './app.module';
 import { validarEntorno } from './config/env.validation';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DateInterceptor } from './common/interceptors/date.interceptor';
+import { LoggingInterceptor } from './common/logger';
 
 /**
  * Límite de tamaño del cuerpo: **10 KB** para todos los endpoints (D-018).
@@ -41,10 +42,12 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new DateInterceptor());
-  // La validación de forma la hacen los esquemas Zod de `packages/shared`
-  // (D-005); `ValidationPipe` solo transforma los tipos primitivos de las rutas.
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+  app.useGlobalInterceptors(new LoggingInterceptor(), new DateInterceptor());
+  // **No se monta ningún pipe global de validación.** Los esquemas Zod de
+  // `packages/shared` son la única puerta de entrada de datos (D-005), y se
+  // aplican por endpoint con `ZodValidationPipe`. El `ValidationPipe` de Nest
+  // exige `class-validator`, que esta decisión abandona a propósito: tenerlo
+  // montado significaría dos validadores con dos catálogos de mensajes.
 
   await app.listen(entorno.PORT_API);
   logger.log(`API escuchando en el puerto ${entorno.PORT_API} · entorno ${entorno.NODE_ENV}`);

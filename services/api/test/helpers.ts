@@ -5,7 +5,7 @@
  * un doble: lo que estos tests verifican son garantías del motor y del
  * transporte, que un doble no puede demostrar (D-009).
  */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Role, UserStatus } from '@prisma/client';
 import { normalizarBusqueda } from '@foodvoice/shared';
@@ -65,7 +65,6 @@ export async function crearEntorno(): Promise<Entorno> {
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new DateInterceptor());
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   await app.init();
 
   return { app, reloj, http: () => request(app.getHttpServer()) };

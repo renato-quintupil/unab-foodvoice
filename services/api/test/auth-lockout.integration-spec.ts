@@ -80,8 +80,13 @@ describe('Cinco fallos bloquean (FR-033)', () => {
     const respuesta = await intentar(CORREO);
 
     expect(respuesta.headers['retry-after']).toBeUndefined();
+    // El cuerpo lleva el `code` y el `message` fijo, y nada más: ningún campo
+    // con el tiempo que falta.
     expect(Object.keys(respuesta.body.error).sort()).toEqual(['code', 'message']);
-    expect(JSON.stringify(respuesta.body)).not.toMatch(/\d+\s*(segundo|minuto|ms)/i);
+    // El mensaje habla de 15 minutos porque ese es el plazo del bloqueo
+    // **completo** (FR-033), no el que queda. Que sea la constante exacta es lo
+    // que garantiza que dos intentos vean el mismo texto (SC-018).
+    expect(respuesta.body.error.message).toBe(MSG_CUENTA_BLOQUEADA);
   });
 });
 

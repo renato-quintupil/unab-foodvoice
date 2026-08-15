@@ -141,14 +141,23 @@ describe('Interpretación de los días en el huso de referencia (ux CHK026)', ()
     expect(hasta!.getTime()).toBeGreaterThan(desde!.getTime());
     expect(hasta!.getTime() - desde!.getTime()).toBe(24 * 60 * 60 * 1000 - 1);
 
-    const enHuso = new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    expect(enHuso.format(desde!)).toBe('15/08/2026');
-    expect(enHuso.format(hasta!)).toBe('15/08/2026');
+    // Ambos extremos caen dentro del **mismo día del calendario** en el huso de
+    // referencia. Se comparan las partes y no la cadena formateada porque el
+    // formato corto de `es-CL` usa guiones y no barras: aquí se verifica a qué
+    // día pertenece el instante, no cómo se escribe.
+    const diaEnHuso = (instante: Date) => {
+      const partes = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(instante);
+      const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value;
+      return `${valor('year')}-${valor('month')}-${valor('day')}`;
+    };
+
+    expect(diaEnHuso(desde!)).toBe('2026-08-15');
+    expect(diaEnHuso(hasta!)).toBe('2026-08-15');
   });
 
   it('sin extremos, el intervalo es abierto por ambos lados', async () => {

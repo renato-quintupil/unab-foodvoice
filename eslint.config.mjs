@@ -51,5 +51,13 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Los archivos de configuración de Jest son CommonJS y se ejecutan en Node.
+    files: ['**/*.config.js', '**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { module: 'writable', require: 'readonly', __dirname: 'readonly' },
+    },
+  },
   prettier,
 );

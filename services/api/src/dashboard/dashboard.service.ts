@@ -130,7 +130,15 @@ export function intervaloDeConsulta(
  */
 function instanteEnHuso(fecha: string, hora: string): Date {
   const comoUtc = new Date(`${fecha}T${hora}Z`);
-  const desplazamiento = desplazamientoDelHuso(comoUtc);
+  // El desplazamiento se calcula sobre el **mediodía** del mismo día, no sobre
+  // el instante buscado, por dos razones. La primera es exactitud: el formato
+  // de partes no expresa milisegundos, así que calcularlo sobre las 23:59:59.999
+  // introducía un error de 999 ms y el intervalo de un día no medía un día
+  // exacto. La segunda es que el mediodía pertenece inequívocamente a esa fecha
+  // en cualquier huso, lo que evita la ambigüedad de los bordes en los días de
+  // cambio de horario. Ambos extremos comparten así el mismo desplazamiento.
+  const referencia = new Date(`${fecha}T12:00:00.000Z`);
+  const desplazamiento = desplazamientoDelHuso(referencia);
   return new Date(comoUtc.getTime() - desplazamiento);
 }
 
