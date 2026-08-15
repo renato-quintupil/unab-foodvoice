@@ -43,7 +43,7 @@ El stack propuesto por el usuario (Next.js + React + TypeScript + TailwindCSS + 
 
 **Tipo de proyecto**: aplicación web en monorepo — frontend, backend y paquete de dominio compartido.
 
-**Objetivos de rendimiento**: inicio de sesión y carga del panel por debajo de 5 segundos en condiciones normales de red (SC-001, SC-007). Con el volumen de v1 (un solo local) no hay presión de rendimiento; la consulta de sesión por petición es despreciable.
+**Objetivos de rendimiento**: inicio de sesión y carga del panel por debajo de 5 segundos, cronometrados a mano sobre el entorno de contenedores del proyecto y el padrón de prueba (SC-001, SC-007, supuesto 22). Con el volumen de v1 (un solo local) no hay presión de rendimiento; la consulta de sesión por petición es despreciable. **No se instrumenta la aplicación ni se montan pruebas de carga**: sería alcance no pedido para un umbral que se comprueba observando la pantalla (Principio I, Principio III). La contrapartida asumida es que estos dos criterios quedan fuera de la cobertura automática.
 
 **Restricciones**:
 
@@ -150,7 +150,9 @@ specs/001-acceso-y-usuarios/
 │       │   │   ├── repartidor/
 │       │   │   ├── admin/
 │       │   │   │   ├── page.tsx          #     panel · HU-10
-│       │   │   │   └── usuarios/         #     padrón · HU-09
+│       │   │   │   ├── usuarios/         #     padrón · HU-09
+│       │   │   │   ├── pedidos/          #     reporte de pedidos · HU-10 (vacío en E1)
+│       │   │   │   └── _components/      #     inventario de vistas (SC-015)
 │       │   │   └── api/                  #   Route Handlers · proxy BFF (D-006)
 │       │   ├── components/
 │       │   │   └── ui/                   #   shadcn/ui
@@ -166,7 +168,9 @@ specs/001-acceso-y-usuarios/
 │       │   ├── users/                    #   HU-09 · CRUD, roles, estado
 │       │   ├── dashboard/                #   HU-10 · métricas y reportes
 │       │   ├── audit/                    #   FR-034 · bitácora solo-agregar
-│       │   ├── common/                   #   guards, pipes, filtros de error
+│       │   ├── health/                   #   healthcheck de contenedores (D-013)
+│       │   ├── config/                   #   validación de variables de entorno
+│       │   ├── common/                   #   guards, pipes, filtros, reloj (D-009), logger
 │       │   └── prisma/
 │       ├── prisma/
 │       │   ├── schema.prisma

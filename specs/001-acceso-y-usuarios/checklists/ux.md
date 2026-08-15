@@ -53,7 +53,7 @@
 - [ ] CHK030 ¿Están especificados requisitos de accesibilidad —navegación por teclado, etiquetado de campos, contraste, compatibilidad con lector de pantalla— para las pantallas de esta épica? [Vacío]
 - [ ] CHK031 ¿Se definen requisitos de comportamiento en distintos tamaños de pantalla, dado el supuesto de acceso desde navegador? [Vacío, Spec §Supuestos]
 - [ ] CHK032 ¿Se especifican los navegadores o versiones mínimas contempladas en v1? [Vacío, Dependencia]
-- [ ] CHK033 ¿Son los umbrales de 5 segundos (SC-001, SC-007) medibles con una definición explícita de "condiciones normales de red"? [Medibilidad, Spec §SC-001, §SC-007]
+- [x] CHK033 ¿Son los umbrales de 5 segundos (SC-001, SC-007) medibles con una definición explícita de "condiciones normales de red"? [Medibilidad, Spec §SC-001, §SC-007] — **Resuelto 2026-08-15**: se eliminó la expresión y se sustituyó por una definición operativa —cronómetro, entorno de contenedores del proyecto, padrón de prueba, desde el envío del formulario hasta que la vista es visible—. Se descartó instrumentar o montar pruebas de carga (supuesto 22). Consecuencia declarada: estos dos criterios no tienen cobertura automática y dependen de la validación manual.
 - [ ] CHK034 ¿Es SC-015 —"el 100 % de las vistas del panel carecen de acciones que modifiquen datos"— verificable con un inventario explícito de las vistas del panel? [Medibilidad, Spec §SC-015, §FR-021]
 - [ ] CHK035 ¿Cubre SC-010 la verificación por una persona no técnica de todos los mensajes en español exigidos, incluidos los de bloqueo temporal y sin resultados? [Cobertura, Spec §SC-010, §FR-033, §FR-022]
 
