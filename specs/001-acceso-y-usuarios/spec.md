@@ -1,6 +1,6 @@
 # Especificación de Funcionalidad: E1 · Acceso y usuarios
 
-**Rama de funcionalidad**: `main` (sin rama dedicada; el directorio de la spec es `specs/001-acceso-y-usuarios`)
+**Rama de funcionalidad**: `001-acceso-y-usuarios` (el directorio de la spec es `specs/001-acceso-y-usuarios`)
 
 **Creada**: 2026-08-14
 
@@ -350,7 +350,9 @@ Cada escenario de aceptación lleva un identificador estable `HU<nn>-E<nn>` en s
 | HU10-E05 · El panel no permite modificar datos | FR-021, RN-004 | SC-015 | C4 |
 | HU10-E06 · Panel sin datos disponibles | FR-022 | SC-020 | C5 |
 
-Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningún escenario Gherkin: cubren las dos excepciones acotadas de SC-010 —el resguardo de credenciales (FR-007, FR-016, FR-028, SC-027) y la bitácora sin vista (FR-034)—, que por definición no son observables desde la interfaz y se comprueban en la revisión de la implementación.
+Los pasos de validación **D1–D14** de `quickstart.md` no corresponden a ningún escenario Gherkin, y no todos por el mismo motivo. **D1–D6 y D9–D12** cubren las dos excepciones acotadas de SC-010 —el resguardo de credenciales (FR-007, FR-016, FR-028, SC-027) y la bitácora sin vista (FR-034)—, que por definición no son observables desde la interfaz. **D7, D8, D13 y D14** no son excepciones al Principio IV sino comprobaciones de que el diseño interno no contradice un requisito que sí es observable: la ausencia de sondeos que mantengan viva una sesión (FR-005), el procedimiento de recuperación fuera de la aplicación (FR-036), el bloqueo vencido que nadie limpia (FR-033) y la conservación de las filas de `session`. Los catorce se ejecutan en la revisión de la implementación.
+
+Los pasos **E1–E3** tampoco corresponden a un escenario: recorren los mensajes visibles (SC-036), la accesibilidad (FR-039, SC-038) y la presentación en distintos anchos (FR-040), que son condiciones transversales a todas las pantallas y no comportamientos de un escenario concreto.
 
 ## Requisitos *(obligatorio)*
 

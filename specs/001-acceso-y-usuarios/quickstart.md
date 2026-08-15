@@ -242,7 +242,7 @@ Transversal a las tres historias, y también para una persona no técnica.
 
 ### D · Verificación técnica (excepciones a SC-010)
 
-Estos dos aspectos no son observables desde la interfaz. Se comprueban en la revisión de la implementación, tal como declaran los supuestos 12 y 13 de la spec.
+Catorce comprobaciones que no se hacen mirando la aplicación. **Diez de ellas son las dos excepciones acotadas a SC-010** que declara el supuesto 13 de la spec —el resguardo de credenciales (D1, D2, D9, D10) y la bitácora sin vista (D3–D6, D11, D12)—, y por eso no las ejecuta el perfil no técnico. **Las cuatro restantes no son excepciones al Principio IV**: D7, D8, D13 y D14 comprueban que el diseño interno no contradice un requisito cuyo efecto sí se observa en la sección A —que ningún sondeo mantenga viva una sesión, que la recuperación quede fuera de la aplicación, que un bloqueo vencido no estorbe y que las filas de `session` no se purguen—. La distinción importa: llamar «excepción» a las cuatro últimas ampliaría la excepción de SC-010 sin que ningún supuesto lo autorice.
 
 | # | Qué comprobar | Requisito |
 |---|---|---|
