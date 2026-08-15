@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    // DOM aporta `TextEncoder`, que PasswordSchema usa para medir bytes UTF-8.
+    // Se elige DOM y no @types/node porque este paquete debe poder ejecutarse
+    // en el navegador y en Node por igual (`shared.md` § Frontera del paquete).
+    "lib": ["ES2023", "DOM"],
+    "types": [],
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

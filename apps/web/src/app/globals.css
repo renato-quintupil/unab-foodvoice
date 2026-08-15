@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-fondo: #ffffff;
+  --color-texto: #18181b;
+  --color-tenue: #52525b;
+  --color-borde: #d4d4d8;
+  --color-primario: #b91c1c;
+  --color-primario-texto: #ffffff;
+  --color-error: #b91c1c;
+  --color-exito: #15803d;
+}
+
+/* FR-039: el foco debe ser visible en todo momento. Se declara aquí y no por
+   componente para que ningún control pueda quedarse sin él por descuido. */
+:focus-visible {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}

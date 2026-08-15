@@ -1,0 +1,27 @@
+# PostgreSQL efímera para los tests de integración (D-009).
+#
+# En **otro puerto** y sin volumen persistente, para no interferir con la base
+# de datos de desarrollo. `tmpfs` la deja íntegramente en memoria: la batería
+# corre más rápido y no queda rastro en disco al terminar.
+#
+#   docker compose -f docker-compose.test.yml up -d
+#   DATABASE_URL=postgresql://foodvoice:test@localhost:5433/foodvoice_test \
+#     pnpm --filter @foodvoice/api test:integration
+#   docker compose -f docker-compose.test.yml down
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: foodvoice
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: foodvoice_test
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U foodvoice -d foodvoice_test']
+      interval: 3s
+      timeout: 3s
+      retries: 20

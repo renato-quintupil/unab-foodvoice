@@ -1,0 +1,80 @@
+# Despliegue local de FoodVoice (D-006, D-013).
+#
+# **Solo `web` publica un puerto hacia el anfitrión.** `api` y `postgres` quedan
+# en la red interna: el navegador solo habla con Next.js, que reenvía por esa
+# red, de modo que la cookie sea same-origin y NestJS no quede expuesto.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: foodvoice
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: foodvoice
+    volumes:
+      # Los datos sobreviven a `docker compose down`; se pierden solo con
+      # `down -v`, que es explícito. Sin estrategia de respaldo en v1 (D-013):
+      # declarado fuera de alcance, no olvidado.
+      - foodvoice_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U foodvoice -d foodvoice']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    restart: on-failure
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:?define DATABASE_URL en .env}
+      PORT_API: ${PORT_API:-3001}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:?define ADMIN_SEED_EMAIL en .env}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:?define ADMIN_SEED_PASSWORD en .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://localhost:'+(process.env.PORT_API||3001)+'/api/v1/health')
+          .then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT_WEB:-3000}
+      # `web` no conoce ninguna otra forma de llegar a `api`: no hay `localhost`
+      # ni direcciones IP en el código (D-013).
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:3001}
+    ports:
+      - '${PORT_WEB:-3000}:${PORT_WEB:-3000}'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/')
+          .then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+volumes:
+  foodvoice_pgdata:
+    name: foodvoice_pgdata
