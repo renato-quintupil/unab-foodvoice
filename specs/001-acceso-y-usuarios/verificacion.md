@@ -70,6 +70,12 @@ del contenedor.
 | D13 | Un rol no administrador recibe 403 invocando la ruta directamente | ✅ `403 FORBIDDEN` con `MSG_SIN_PERMISO`, sin pasar por la interfaz |
 | D14 | El panel no expone verbos de escritura | ✅ `POST`, `PUT`, `PATCH` y `DELETE` responden 404: las rutas no existen |
 
+Comprobado además el **ciclo completo por la aplicación**, no por la API
+directa: inicio de sesión del administrador (200), panel de métricas (200, con
+los cuatro roles y los cinco estados presentes, incluidos los ceros), reporte de
+pedidos filtrado por rango (200, lista vacía por diseño), cierre de sesión (204)
+y **reutilización de la cookie cerrada, rechazada con 401** (SC-030).
+
 Comprobado además, aunque la sección no lo enumere: **desactivar a un usuario
 revoca su sesión en el acto** (FR-024) —su siguiente petición recibió `401`— y
 **solo `web` publica puerto**; `api` y `postgres` quedan en la red interna

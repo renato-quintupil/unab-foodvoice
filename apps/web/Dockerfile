@@ -26,6 +26,12 @@ RUN pnpm --filter @foodvoice/shared build \
 FROM node:22-alpine AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# El servidor standalone de Next.js se enlaza a `HOSTNAME`, y Docker fija esa
+# variable al identificador del contenedor: sin esto queda escuchando en una
+# sola interfaz, de modo que la publicación del puerto funciona pero el
+# `healthcheck` —que llama desde dentro, a localhost— recibe ECONNREFUSED y el
+# contenedor figura como no sano para siempre.
+ENV HOSTNAME=0.0.0.0
 WORKDIR /repo
 
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
