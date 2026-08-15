@@ -24,10 +24,10 @@
 - [ ] CHK010 ¿Están definidos los elementos mínimos exigidos de la página de inicio de cada rol de forma que su ausencia sea detectable? [Completitud, Spec §FR-031]
 - [ ] CHK011 ¿Se especifica qué ocurre con los datos que el usuario había ingresado en un formulario cuando la acción se rechaza por sesión expirada? [Vacío, Spec §FR-030]
 - [ ] CHK012 ¿Están definidos los requisitos de navegación o menú disponible para cada rol dentro de la aplicación? [Vacío, Spec §FR-002, §FR-031]
-- [ ] CHK013 ¿Se especifica el orden por defecto del listado de usuarios paginado? [Vacío, Spec §FR-015]
+- [x] CHK013 ¿Se especifica el orden por defecto del listado de usuarios paginado? [Vacío, Spec §FR-015] — **Resuelto 2026-08-15**: del alta más reciente a la más antigua, incorporado a FR-015 (D-016). Se descartó el orden alfabético porque resolvería un problema que la búsqueda de FR-015 ya resuelve mejor. Nuevo SC-023 y paso B22.
 - [ ] CHK014 ¿Están definidos los requisitos de indicación de progreso o estado de carga para las operaciones sujetas al umbral de 5 segundos? [Vacío, Spec §SC-001, §SC-007]
 - [ ] CHK015 ¿Se especifica si los formularios de alta y edición de usuario comparten los mismos campos, validaciones y mensajes, o difieren? [Consistencia, Spec §FR-009, §FR-010]
-- [ ] CHK016 ¿Están definidos los requisitos de formato y validación del teléfono, y las longitudes máximas de nombre completo y correo? [Vacío, Spec §FR-009, §FR-014]
+- [x] CHK016 ¿Están definidos los requisitos de formato y validación del teléfono, y las longitudes máximas de nombre completo y correo? [Vacío, Spec §FR-009, §FR-014] — **Resuelto 2026-08-15**: tabla de longitudes en `data-model.md` §user, idéntica a los esquemas Zod (nombre 2–120, correo ≤254, teléfono 6–20). El teléfono se valida solo por longitud, sin formato ni prefijo obligatorio: imponer un patrón chileno excluiría números legítimos y añadiría una regla que ningún requisito pide (Principio I).
 
 ## Consistencia entre requisitos
 
@@ -42,7 +42,7 @@
 
 - [x] CHK023 ¿Están definidos los requisitos del estado vacío del listado de usuarios cuando un filtro combinado no arroja resultados? [Cobertura, Vacío, Spec §FR-015, §FR-022] — **Resuelto 2026-08-15**: FR-015 y escenario "Filtrado de usuarios sin resultados".
 - [ ] CHK024 ¿Se especifica el comportamiento de la interfaz cuando una acción falla por una causa no prevista (error del sistema), y no solo por validación? [Flujo de excepción, Vacío]
-- [ ] CHK025 ¿Están definidos los requisitos de la última página del listado paginado cuando el filtro cambia y reduce el total de resultados? [Caso límite, Vacío, Spec §FR-015]
+- [x] CHK025 ¿Están definidos los requisitos de la última página del listado paginado cuando el filtro cambia y reduce el total de resultados? [Caso límite, Vacío, Spec §FR-015] — **Resuelto 2026-08-15**: la API devuelve 200 con `items: []` y los valores reales de `total` y `totalPages`; la interfaz muestra el mensaje de "sin resultados" y ofrece volver a la primera página. No es un error de validación. Verificado en B26.
 - [ ] CHK026 ¿Se especifica el formato de fecha y hora visible y la zona horaria de referencia para los filtros de rango de fechas del panel? [Ambigüedad, Spec §FR-020]
 - [ ] CHK027 ¿Se define si el rango de fechas del reporte es inclusivo en sus extremos y qué ocurre si la fecha inicial es posterior a la final? [Ambigüedad, Caso límite, Spec §FR-020]
 - [ ] CHK028 ¿Están definidos los requisitos de presentación del panel cuando las métricas de pedidos aún no existen, por depender de E4/E2? [Cobertura, Vacío, Spec §Entrega por fases, §FR-019]
