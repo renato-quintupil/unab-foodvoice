@@ -32,3 +32,8 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+# Cobertura y caches de herramientas
+coverage/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
