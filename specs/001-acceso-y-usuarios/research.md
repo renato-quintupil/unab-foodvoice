@@ -342,6 +342,36 @@ El desempate por `id` no es adorno. `created_at DESC` a secas deja de ser un ord
 
 ---
 
+## D-017 · Comportamiento del proxy BFF ante un fallo del servicio NestJS
+
+**Decisión**: el proxy de Next.js espera como mucho 10 segundos; si el servicio no responde, la conexión falla o la respuesta no es HTTP válida, devuelve `502 UPSTREAM_UNAVAILABLE` con `MSG_ERROR_INESPERADO`, **sin reintentar** y sin fabricar contenido.
+
+**Justificación**: D-006 puso a Next.js en el camino de toda petición, lo que introduce un modo de fallo que no existiría con llamadas directas: el salto intermedio puede fallar por su cuenta. Sin una regla declarada, ese fallo se manifestaría como un error sin mensaje o, peor, como una respuesta vacía indistinguible de «no hay datos».
+
+**Por qué no reintenta**: el proxy no sabe si NestJS llegó a aplicar la petición antes de dejar de responder. Reintentar un `POST /admin/users` podría crear dos usuarios; reintentar una desactivación es inocuo, pero distinguir unos verbos de otros sería una regla de negocio dentro de una pieza cuya definición es no tener ninguna. La decisión de reintentar queda en la persona, que sí sabe qué pidió.
+
+**Por qué nunca fabrica contenido**: una lista vacía significa «no hay datos» en toda la API. Si el proxy devolviera `200` con `items: []` al no poder consultar, el administrador vería un padrón vacío como si fuera real —el peor resultado posible, porque no hay nada en pantalla que delate el fallo—.
+
+**Por qué 10 segundos**: por encima del objetivo de 5 segundos de SC-001, para no cortar una petición legítima lenta, y muy por debajo del tiempo que una persona tolera ante una pantalla quieta. Sin plazo, una petición colgada dejaría el navegador esperando indefinidamente y sin mensaje.
+
+**Alternativa descartada**: propagar el error crudo del salto de red. Habría expuesto nombres de servicio y puertos internos en una pantalla de usuario, contra el Principio II y contra el propósito de D-006 de no publicar la topología interna.
+
+---
+
+## D-018 · Límites de la superficie HTTP: tamaño, versionado y concurrencia
+
+**Decisión**: tres límites declarados de una vez, porque los tres responden a la misma pregunta —qué NO hace esta API— y separarlos los volvería fáciles de olvidar.
+
+**1. Tamaño del cuerpo: 10 KB en todos los endpoints.** Ninguno recibe archivos ni texto largo; el campo más extenso es un nombre de 120 caracteres. El límite queda dos órdenes de magnitud por encima de cualquier petición legítima y aun así impide que una petición desmedida consuma memoria antes de ser validada. Al excederse, `413 PAYLOAD_TOO_LARGE` **sin analizar el cuerpo**. Se descartó dejar el valor por defecto del framework: es un número que nadie eligió y que puede cambiar con una actualización.
+
+**2. Versionado: `/api/v1` sin política de convivencia.** Un cambio incompatible —quitar un campo de una respuesta, añadir uno obligatorio a una petición, cambiar el tipo o el significado de un campo, retirar un endpoint o un valor de enum— exigiría publicar `/api/v2`. En v1 la situación no puede darse: el único cliente es `apps/web`, que vive en el mismo repositorio, se compila del mismo commit y se despliega en el mismo `docker compose` (ver `shared.md` § Compatibilidad). El prefijo se declara desde ahora porque añadirlo más tarde sería, él mismo, un cambio incompatible.
+
+**3. Sin control de concurrencia optimista.** No hay `ETag`, ni número de versión, ni comprobación de que el dato leído siga vigente. Dos administradores editando al mismo usuario producen un «gana el último en guardar», sin aviso al primero. Se descartó el control de versión porque añadiría un campo al contrato, un código de error más y una pantalla de resolución de conflictos, para un caso que con un padrón de un solo local y unos pocos administradores es improbable (Principio I, Principio III). **La consecuencia asumida —una edición puede pisar a otra— se declara en la spec como caso límite**, para que no se descubra como un defecto.
+
+Lo que sí queda cubierto por el motor y no por una comprobación previa es la **unicidad del correo** (FR-017): dos altas simultáneas del mismo correo se resuelven con la restricción única, y la violación se traduce al mismo `409 EMAIL_ALREADY_EXISTS` que devolvería el caso normal. Traducirla es obligatorio: sin esa traducción, una condición de carrera llegaría al administrador como un `500`.
+
+---
+
 ## Resumen de versiones
 
 | Componente | Versión objetivo |

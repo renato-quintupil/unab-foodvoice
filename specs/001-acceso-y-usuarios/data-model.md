@@ -110,6 +110,8 @@ Vínculo temporal entre un usuario autenticado y su uso de la aplicación (spec 
 
 **Índices**: PK sobre `id`; índice sobre `user_id` para la revocación masiva.
 
+**Sin restricción de unicidad sobre `user_id`**: un mismo usuario puede tener varias filas vivas a la vez, es decir varias sesiones simultáneas en distintos navegadores o dispositivos (spec § Entidad Sesión). Cada una lleva su propio `last_activity_at` y expira por separado. De ahí que la revocación de FR-024 sea un `UPDATE` sobre **todas** las filas vivas del usuario y no sobre una sola, y que el cierre explícito de FR-006 afecte únicamente a la fila cuyo `id` viaja en la cookie.
+
 **Una sesión es válida si y solo si** se cumplen las tres condiciones:
 
 1. `revoked_at IS NULL` — no fue cerrada explícitamente (FR-006) ni revocada por desactivación (FR-024)
@@ -204,6 +206,9 @@ La única entrada que no procede de un endpoint es la que deja el modo de recupe
 - **Nunca contiene contraseñas**, ni en claro ni con hash, ni valores anteriores de campos sensibles (FR-034).
 - La entrada se escribe **dentro de la misma transacción** que la acción que registra. Si la acción se revierte, la entrada tampoco queda: es lo que exige el escenario "Confirmación antes de una acción de impacto" cuando el administrador cancela (FR-035).
 - **Sin vista de consulta en v1** (spec § Fuera de Alcance). Se verifica en la revisión de la implementación, excepción acotada declarada en SC-010.
+- **Los usuarios se registran por referencia, nunca por copia**: las dos columnas de usuario son claves foráneas y no hay ninguna columna con nombre, correo, teléfono ni valores anteriores o posteriores del campo modificado (FR-034, Principio X). La consecuencia asumida es que la bitácora dice que hubo una edición, pero no qué cambió.
+- **Retención indefinida**: v1 no purga ni archiva esta tabla, y no fija plazo. Con unas pocas acciones administrativas al día, una política de purga sería alcance sin requisito (Principio I, Principio III). Las entradas sobreviven a la desactivación tanto del actor como del afectado, porque no hay borrado físico de usuarios (RN-002).
+- **No registra eventos de autenticación**: los inicios de sesión, los fallos, los bloqueos, los cierres y las expiraciones **no** dejan entrada aquí (spec § FR-034, supuesto 27). El enum `AdminAction` tiene exactamente seis valores y ninguno los cubre, lo que hace la exclusión estructural y no una omisión del código.
 
 ---
 

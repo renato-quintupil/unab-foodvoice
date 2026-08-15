@@ -132,10 +132,15 @@ Iniciar sesión con `ADMIN_SEED_EMAIL` y su contraseña, y crear tres usuarios d
 | A4 | Repetir A3 con un correo **inexistente** y comparar ambas pantallas | El mensaje es idéntico palabra por palabra | FR-008, SC-018 |
 | A5 | Esperar 15 minutos tras A3 y reintentar | Entra con normalidad, sin intervención del administrador | FR-033, SC-017 |
 | A6 | Como repartidor, escribir `/admin` en la barra de direcciones | Acceso impedido con mensaje en español | FR-003, SC-003 |
-| A7 | Navegar entre pantallas durante varios minutos | No se vuelve a pedir autenticación | FR-004 |
-| A8 | Pulsar "Cerrar sesión" y luego el botón "atrás" del navegador | La sesión terminó; pide autenticarse de nuevo | FR-006 |
+| A7 | Navegar entre pantallas durante varios minutos | No se vuelve a pedir autenticación | FR-004, SC-031 |
+| A8 | Pulsar "Cerrar sesión" y luego el botón "atrás" del navegador | La sesión terminó; pide autenticarse de nuevo | FR-006, SC-030 |
 | A9 | Dejar la sesión inactiva 30 minutos, **con la pestaña abierta y sin tocarla**, e intentar una acción | Pide volver a iniciar sesión. Que la aplicación haya estado abierta todo ese rato no mantiene viva la sesión | FR-005, SC-013, SC-024 |
-| A10 | Con la sesión expirada, enviar un formulario a medio completar | La acción se rechaza **por completo**; ningún cambio queda aplicado | FR-030 |
+| A10 | Con la sesión expirada, enviar un formulario a medio completar | La acción se rechaza **por completo**; ningún cambio queda aplicado, comprobable releyendo el dato | FR-030, SC-035 |
+| A11 | Desactivar al cliente de prueba y hacerle iniciar sesión con su contraseña **correcta**. Comparar la pantalla con la de A2 | Mensaje idéntico al de una contraseña incorrecta: nada indica que la cuenta exista ni que esté desactivada | FR-008, FR-012, SC-028 |
+| A12 | Iniciar sesión con el mismo usuario en dos navegadores distintos y usar ambos | Las dos sesiones funcionan a la vez. Cerrar sesión en uno **no** cierra el otro | § Entidad Sesión |
+| A13 | Desactivar al usuario de A12 desde el panel de administración, con sus dos sesiones abiertas | **Ambas** quedan rechazadas en su siguiente acción, no solo la última | FR-024, SC-029 |
+| A14 | Mirar la pantalla de inicio de sesión sin escribir nada | Indica en español que el administrador restablece las contraseñas. **No** hay enlace de "olvidé mi contraseña" que prometa un correo o un formulario | FR-026 |
+| A15 | Iniciar sesión escribiendo el correo en MAYÚSCULAS y con un espacio al final | Entra con normalidad: el correo no distingue mayúsculas ni espacios de los extremos | FR-001 |
 
 **Sobre las esperas de A5 y A9**. Son 15 y 30 minutos reales, y esa espera es exactamente lo que el requisito afirma: conviene hacerla al menos una vez, dejando los dos pasos corriendo en paralelo mientras se avanza con la sección B. La espera de A9 debe hacerse **sin tocar la pestaña**: es la única forma de comprobar SC-024, es decir que la aplicación no se mantiene viva sola.
 
@@ -164,17 +169,19 @@ Con dos navegadores: uno como administrador, otro como el usuario afectado.
 | B3 | Crear un usuario con una contraseña de 7 caracteres | Mensaje en español indicando el mínimo; no se crea | FR-032, SC-016 |
 | B4 | Crear un usuario con el correo de otro ya existente | Se rechaza con mensaje claro | FR-017, SC-011 |
 | B5 | Desactivar un usuario y luego intentar crear otro con su mismo correo | También se rechaza: el correo queda reservado | RN-005, SC-011 |
-| B6 | Editar los datos de contacto de un usuario | Se reflejan de inmediato; conserva rol y estado | FR-010 |
+| B6 | Editar los datos de contacto de un usuario | Se reflejan de inmediato; conserva rol y estado | FR-010, SC-032 |
+| B6b | Cambiarle el correo a un usuario **con sesión abierta** | Su sesión continúa sin interrupción. Al cerrarla y volver a entrar, debe usar el correo nuevo; el anterior ya no sirve | FR-010 |
 | B7 | Cambiar el rol de un usuario **con sesión abierta** | Su sesión termina: la siguiente acción le pide autenticarse. Al volver a entrar, rige el nuevo rol — nunca se aplica en caliente sobre la sesión abierta | FR-011, FR-024, RN-001, SC-025 |
 | B7b | Tras B7, comprobar que durante la sesión anterior no conservó privilegios | No hay ventana en que mantenga el rol previo | RN-003, SC-026 |
-| B8 | Desactivar a un usuario **con sesión abierta** en el otro navegador | Su siguiente acción es rechazada y no puede volver a autenticarse | FR-012, FR-024, SC-006 |
-| B9 | Reactivarlo | Vuelve a entrar con sus credenciales previas | FR-013 |
+| B8 | Desactivar a un usuario **con sesión abierta** en el otro navegador | Su siguiente acción es rechazada y no puede volver a autenticarse. Tu propia sesión de administrador sigue viva | FR-012, FR-024, SC-006, SC-029 |
+| B8b | Volver a desactivar a ese mismo usuario, ya desactivado | Se acepta sin error y sin cambio alguno; no se registra ninguna acción nueva en la bitácora | FR-034, `contracts/api.md` §PUT status |
+| B9 | Reactivarlo | Vuelve a entrar con sus credenciales previas, sin que haya que restablecérselas | FR-013, SC-033 |
 | B10 | Restablecer su contraseña y probar la anterior | La anterior es rechazada; la nueva funciona. Si tenía sesión abierta, esta termina | FR-026, FR-024, SC-012, SC-025 |
 | B10b | Asignar una contraseña de más de 72 caracteres | Mensaje en español indicando el máximo; no se aplica ni se recorta | FR-032, SC-016 |
 | B11 | Bloquear una cuenta con 5 fallos y restablecerle la contraseña | El bloqueo se levanta de inmediato | FR-026, FR-033 |
-| B12 | Filtrar por rol "negocio" y estado "activo" | Solo esos usuarios, de a 20 por página, con el total indicado | FR-015 |
+| B12 | Filtrar por rol "negocio" y estado "activo" | Solo esos usuarios, de a 20 por página, con el total indicado | FR-015, SC-034 |
 | B13 | Buscar "perez", luego "MARÍA", luego "maria.perez" | Las tres búsquedas encuentran a María Pérez | FR-015, SC-021 |
-| B14 | Combinar la búsqueda con ambos filtros | Solo los usuarios que cumplen los tres criterios | FR-015 |
+| B14 | Combinar la búsqueda con ambos filtros | Solo los usuarios que cumplen los tres criterios | FR-015, SC-034 |
 | B15 | Aplicar filtros sin resultados | Mensaje explicativo en español, no una pantalla vacía | FR-015, SC-020 |
 | B16 | Iniciar una desactivación y **cancelar** la confirmación | El usuario sigue activo; no se aplicó ningún cambio | FR-035, SC-019 |
 | B17 | Verificar que cambio de rol, desactivación, reactivación y restablecimiento **piden confirmación** | Los cuatro la piden, indicando a quién afectan | FR-035, SC-019 |
@@ -197,6 +204,8 @@ Con dos navegadores: uno como administrador, otro como el usuario afectado.
 | C3 | Intentar entrar al panel con otro rol | Impedido con mensaje en español | FR-018, SC-008 |
 | C4 | Recorrer todas las vistas del panel | Ninguna ofrece acciones que modifiquen pedidos ni usuarios | FR-021, RN-004, SC-015 |
 | C5 | Filtrar el reporte de pedidos por estado y por rango de fechas | Mensaje en español de "sin datos", no un error ni una pantalla vacía | FR-022, SC-020 |
+| C5b | Filtrar el reporte con la **misma fecha** en inicio y fin | Se acepta y consulta ese día completo: mensaje de "sin datos", no un error de rango vacío | FR-020 |
+| C5c | Escribir una fecha mal formada (`15-08-2026`) o un rango invertido | Mensaje en español indicando el problema; no un error técnico | FR-020, FR-022 |
 | C6 | Revisar los estados ofrecidos en el filtro | Son exactamente los cinco de la máquina de estados, sin estados propios | FR-023 |
 | C7 | Buscar una opción de exportar a PDF, Excel o CSV | No existe | FR-029 |
 
@@ -216,6 +225,10 @@ Estos dos aspectos no son observables desde la interfaz. Se comprueban en la rev
 | D6 | El código no expone ninguna operación de actualización ni de borrado sobre `admin_audit_log` | FR-034 |
 | D7 | `apps/web` no contiene ningún `setInterval`, sondeo ni refresco en segundo plano contra la API | FR-005, SC-024 |
 | D8 | El modo de recuperación de la semilla dejó una entrada con actor y afectado iguales, y no es alcanzable desde ningún endpoint | FR-036 |
+| D9 | La respuesta del alta de un usuario no contiene la contraseña ni su hash, y la salida de diagnóstico del contenedor tampoco la contiene tras un inicio de sesión | FR-007, SC-027 |
+| D10 | Dos usuarios creados con la **misma** contraseña tienen hashes distintos en `password_hash` — la sal se aplica por usuario | FR-007, SC-027 |
+| D11 | `admin_audit_log` no contiene el nombre, el correo ni el teléfono del usuario afectado: solo referencias a su identificador | FR-034, Principio X |
+| D12 | No existe ninguna entrada de bitácora para los inicios de sesión, los fallos ni los bloqueos: el registro cubre solo las seis acciones administrativas | FR-034, supuesto 27 |
 
 **Quién ejecuta la sección D y cuándo**: la persona que revisa la implementación, en la revisión de código previa a dar la épica por terminada, con acceso al repositorio y a la base de datos de desarrollo (`docker compose exec postgres psql -U foodvoice -d foodvoice`). No forma parte de la validación funcional y no la ejecuta el perfil no técnico: es precisamente la excepción acotada que declara SC-010.
 

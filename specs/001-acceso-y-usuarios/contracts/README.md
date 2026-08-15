@@ -9,7 +9,7 @@ Los contratos de esta épica se dividen en dos superficies:
 
 ## Principios que rigen ambos
 
-1. **Una sola definición por regla.** Toda validación de forma se declara en `packages/shared` con Zod y se aplica en los dos lados (D-005). Si una regla aparece dos veces, es un defecto.
+1. **Una sola definición por regla.** Toda validación de forma se declara en `packages/shared` con Zod y se aplica en los dos lados (D-005). Si una regla aparece dos veces, es un defecto. Lo mismo vale para los textos: los mensajes fijos viven **solo** en `shared.md`, y `api.md` los referencia por el nombre de la constante sin reproducir su contenido.
 2. **Todo texto visible al usuario va en español** (Principio II). Los identificadores técnicos —rutas, campos JSON, códigos de error— van en inglés.
 3. **Los mensajes de error no filtran información.** En particular, el fallo de autenticación y el bloqueo temporal usan textos fijos e idénticos, exista o no la cuenta (FR-008, SC-018).
 4. **El backend es la autoridad.** Las comprobaciones del frontend existen para la experiencia de usuario; ninguna decisión de seguridad depende de ellas (D-007).
@@ -22,4 +22,4 @@ navegador ──► Next.js Route Handler ──► NestJS ──► PostgreSQL
             httpOnly)                     de Docker)
 ```
 
-El navegador nunca contacta a NestJS directamente (D-006). Las rutas de `apps/web/src/app/api/**` reenvían con el mismo verbo, cuerpo y cookie, y devuelven la respuesta sin transformarla.
+El navegador nunca contacta a NestJS directamente (D-006). Las rutas de `apps/web/src/app/api/**` reenvían con el mismo verbo, cuerpo y cookie, y devuelven la respuesta sin transformarla. Qué cabeceras cruzan y cuáles no está enumerado en `api.md` § Contrato del proxy, igual que su comportamiento cuando NestJS no responde (D-017); «transparente» no es una intención sino una lista cerrada.
