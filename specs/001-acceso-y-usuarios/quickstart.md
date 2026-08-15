@@ -116,11 +116,18 @@ Los umbrales se declaran en la configuración de cada paquete y su incumplimient
 
 ## Validación funcional
 
-Cada escenario corresponde a los Gherkin de la spec. Todos se verifican **desde la aplicación**, sin leer código ni logs.
+Cada escenario corresponde a los Gherkin de la spec. Las secciones **A, B y C se verifican desde la aplicación, sin leer código ni logs**, y las ejecuta una persona no técnica —o alguien que actúe como tal, sin consultar el código—. La sección **D es la excepción**: es técnica por definición, la ejecuta quien revisa la implementación y no forma parte de lo que se pide a una persona no técnica (SC-010).
+
+**Cuándo se ejecuta**: al cerrar cada fase, la sección que le corresponde —A al cerrar la Fase B, B al cerrar la C, C al cerrar la D—; y **A, B y C completas antes de dar la épica por terminada**, porque una fase posterior puede haber roto algo de una anterior.
 
 ### Preparación
 
-Iniciar sesión con `ADMIN_SEED_EMAIL` y su contraseña, y crear tres usuarios de prueba desde **Usuarios → Nuevo usuario**: uno con rol cliente, uno con rol negocio y uno con rol repartidor.
+1. Iniciar sesión con `ADMIN_SEED_EMAIL` y su contraseña.
+2. Crear tres usuarios de prueba desde **Usuarios → Nuevo usuario**: uno con rol cliente, uno con rol negocio y uno con rol repartidor. **Anotar en un papel el correo y la contraseña de cada uno**: harán falta más adelante y el sistema no vuelve a mostrar las contraseñas.
+
+**Sobre los pasos que piden dos sesiones a la vez** (A12, A13, B7, B8, B10). No hace falta un segundo computador ni conocimientos técnicos: basta abrir una **ventana de incógnito** —en Chrome y Edge, `Ctrl`+`Mayús`+`N`; en Firefox, `Ctrl`+`Mayús`+`P`— y usarla como si fuera el navegador de otra persona. La ventana normal queda con la sesión de administrador y la de incógnito con la del usuario de prueba, sin que una interfiera con la otra. Al cerrar la ventana de incógnito se pierde esa sesión, así que conviene dejarla abierta durante toda la sección.
+
+Cuando un paso dice «en el otro navegador», se refiere siempre a esa ventana de incógnito.
 
 ### A · Autenticación y sesión (HU-08)
 
@@ -141,6 +148,10 @@ Iniciar sesión con `ADMIN_SEED_EMAIL` y su contraseña, y crear tres usuarios d
 | A13 | Desactivar al usuario de A12 desde el panel de administración, con sus dos sesiones abiertas | **Ambas** quedan rechazadas en su siguiente acción, no solo la última | FR-024, SC-029 |
 | A14 | Mirar la pantalla de inicio de sesión sin escribir nada | Indica en español que el administrador restablece las contraseñas. **No** hay enlace de "olvidé mi contraseña" que prometa un correo o un formulario | FR-026 |
 | A15 | Iniciar sesión escribiendo el correo en MAYÚSCULAS y con un espacio al final | Entra con normalidad: el correo no distingue mayúsculas ni espacios de los extremos | FR-001 |
+| A16 | Comparar la pantalla tras **cerrar sesión** con la de A9, tras **expirar** | Ambas llevan al inicio de sesión, pero solo la expiración muestra un aviso explicativo; el cierre voluntario no muestra ningún error | FR-005, FR-006 |
+| A17 | Como repartidor, escribir `/admin` (repetir A6) y observar dónde queda | Página propia de acceso denegado, con un enlace a su página de inicio. **No** se le cierra la sesión ni se le muestra el panel con un aviso encima | FR-003 |
+| A18 | Revisar la página de inicio de cada rol no administrador | Contiene exactamente cuatro cosas: nombre, etiqueta del rol, «Cerrar sesión» y **ninguna otra acción** | FR-031 |
+| A19 | Recorrer el inicio de sesión y la página de rol **solo con el teclado** | Se llega a todos los controles, el foco es visible en todo momento y cada campo tiene su etiqueta | FR-039, SC-038 |
 
 **Sobre las esperas de A5 y A9**. Son 15 y 30 minutos reales, y esa espera es exactamente lo que el requisito afirma: conviene hacerla al menos una vez, dejando los dos pasos corriendo en paralelo mientras se avanza con la sección B. La espera de A9 debe hacerse **sin tocar la pestaña**: es la única forma de comprobar SC-024, es decir que la aplicación no se mantiene viva sola.
 
@@ -194,6 +205,11 @@ Con dos navegadores: uno como administrador, otro como el usuario afectado.
 | B24 | Buscar `Nunez` y luego `Nuñez` sobre un usuario apellidado «Nuñez» | Ambas búsquedas lo encuentran | FR-015, SC-021 |
 | B25 | Buscar un texto que contenga `%` | Devuelve solo quienes tengan ese carácter, no el padrón completo | FR-015 |
 | B26 | Aplicar un filtro estrecho y pedir una página que ya no existe | Muestra el mensaje de "sin resultados" y permite volver a la primera página; no un error | FR-015, SC-020 |
+| B27 | Tras cada acción de B1 a B11, mirar la pantalla | Cada una muestra una confirmación de éxito en español que nombra al usuario afectado; ninguna termina en silencio | FR-037, SC-037 |
+| B28 | Hacer **doble clic** rápido sobre «Crear usuario» y sobre «Desactivar» | Un solo efecto: un usuario, una entrada de bitácora. El control queda inutilizable mientras la acción está en curso | FR-038, SC-039 |
+| B29 | Abrir los cuatro diálogos de confirmación y leerlos | Los tres primeros indican que la acción se puede deshacer; el de restablecer contraseña advierte de que **no** es reversible | FR-035, Principio IX |
+| B30 | Recorrer el listado y los formularios buscando los términos técnicos de la spec | En pantalla solo aparecen «Desactivar», «Reactivar», «Activo», «Desactivado» y las etiquetas de rol en singular. Nunca «baja lógica», «CLIENTE» en mayúsculas ni «eliminar» | § Vocabulario visible |
+| B31 | Reducir la ventana del navegador a 360 px de ancho y recorrer el listado | Ningún contenido queda inalcanzable: la tabla se desplaza o se reorganiza, pero no se recorta | FR-040 |
 
 ### C · Panel y reportes (HU-10)
 
@@ -205,11 +221,24 @@ Con dos navegadores: uno como administrador, otro como el usuario afectado.
 | C4 | Recorrer todas las vistas del panel | Ninguna ofrece acciones que modifiquen pedidos ni usuarios | FR-021, RN-004, SC-015 |
 | C5 | Filtrar el reporte de pedidos por estado y por rango de fechas | Mensaje en español de "sin datos", no un error ni una pantalla vacía | FR-022, SC-020 |
 | C5b | Filtrar el reporte con la **misma fecha** en inicio y fin | Se acepta y consulta ese día completo: mensaje de "sin datos", no un error de rango vacío | FR-020 |
-| C5c | Escribir una fecha mal formada (`15-08-2026`) o un rango invertido | Mensaje en español indicando el problema; no un error técnico | FR-020, FR-022 |
+| C5c | Escribir una fecha mal formada o un rango invertido | Mensaje en español indicando el problema; no un error técnico | FR-020, FR-022 |
+| C5d | Observar cómo se escriben y se muestran las fechas del filtro | En `DD/MM/AAAA`; el formato interno no aparece en ninguna parte de la pantalla | § Fechas y horas visibles |
+| C2b | Revisar el panel con un rol sin ningún usuario activo | Ese rol aparece con un **cero explícito**, no desaparece de la lista | FR-019, SC-034 |
+| C4b | Comprobar que desde el panel se llega a la gestión de usuarios | El enlace existe y funciona; navegar no es modificar, así que no incumple la regla de solo lectura | FR-021, FR-031 |
 | C6 | Revisar los estados ofrecidos en el filtro | Son exactamente los cinco de la máquina de estados, sin estados propios | FR-023 |
 | C7 | Buscar una opción de exportar a PDF, Excel o CSV | No existe | FR-029 |
 
 **Sobre C5**: en E1 el reporte de pedidos está vacío por diseño. La entidad Pedido pertenece a E4/E2 (D-012, y nota de entrega por fases de la spec). Lo que se valida aquí es que la superficie existe, respeta la máquina de estados compartida y se comporta correctamente sin datos.
+
+### E · Mensajes, accesibilidad y presentación
+
+Transversal a las tres historias, y también para una persona no técnica.
+
+| # | Qué hacer | Qué debe ocurrir | Requisito |
+|---|---|---|---|
+| E1 | Recorrer los doce mensajes fijos provocándolos uno a uno —credenciales inválidas, cuenta bloqueada, sin permiso, sesión expirada, sin resultados de usuarios y de pedidos, correo duplicado, autoprotección, error inesperado, contraseña olvidada, rango de fechas inválido y sin datos— y leerlos en voz alta | Los doce cumplen las cuatro condiciones: en español correcto, sin ningún término técnico, dicen qué pasó **y qué puedes hacer**, y puedes repetirlos con tus palabras sin preguntar qué significan | SC-036, FR-003, FR-014, FR-022 |
+| E2 | Recorrer la aplicación entera **sin tocar el ratón**, incluidos los diálogos de confirmación y el cierre de sesión | Se llega a todos los controles, el foco es visible en todo momento y al cerrar un diálogo el foco vuelve a un lugar razonable | SC-038, FR-039 |
+| E3 | Repetir A1, B1 y C1 con la ventana reducida a 360 px y en un segundo navegador de la lista soportada | El comportamiento es el mismo; ningún contenido queda inalcanzable | FR-040 |
 
 ### D · Verificación técnica (excepciones a SC-010)
 
@@ -222,17 +251,52 @@ Estos dos aspectos no son observables desde la interfaz. Se comprueban en la rev
 | D3 | Cada acción administrativa de B1–B11 dejó una fila en `admin_audit_log` con administrador, usuario afectado, acción y fecha | FR-034 |
 | D4 | La cancelación de B16 **no** dejó ninguna fila en `admin_audit_log` | FR-034, FR-035 |
 | D5 | `admin_audit_log` no contiene contraseñas en ninguna de sus columnas | FR-034 |
-| D6 | El código no expone ninguna operación de actualización ni de borrado sobre `admin_audit_log` | FR-034 |
+| D6 | Un `UPDATE` y un `DELETE` ejecutados **directamente** contra `admin_audit_log` fallan con la excepción del disparador `admin_audit_log_inmutable`: la inmutabilidad la impone el motor, no solo la ausencia de código que la vulnere | FR-034 |
 | D7 | `apps/web` no contiene ningún `setInterval`, sondeo ni refresco en segundo plano contra la API | FR-005, SC-024 |
 | D8 | El modo de recuperación de la semilla dejó una entrada con actor y afectado iguales, y no es alcanzable desde ningún endpoint | FR-036 |
 | D9 | La respuesta del alta de un usuario no contiene la contraseña ni su hash, y la salida de diagnóstico del contenedor tampoco la contiene tras un inicio de sesión | FR-007, SC-027 |
 | D10 | Dos usuarios creados con la **misma** contraseña tienen hashes distintos en `password_hash` — la sal se aplica por usuario | FR-007, SC-027 |
 | D11 | `admin_audit_log` no contiene el nombre, el correo ni el teléfono del usuario afectado: solo referencias a su identificador | FR-034, Principio X |
 | D12 | No existe ninguna entrada de bitácora para los inicios de sesión, los fallos ni los bloqueos: el registro cubre solo las seis acciones administrativas | FR-034, supuesto 27 |
+| D13 | Tras cinco fallos y su vencimiento, la fila de `login_attempt_control` conserva un `locked_until` en el pasado sin que nada lo limpie, y eso no impide ningún inicio de sesión | FR-033, data CHK024 |
+| D14 | La tabla `session` conserva las filas revocadas y expiradas: v1 no purga, y es una decisión de alcance declarada, no un olvido | data CHK005 |
 
 **Quién ejecuta la sección D y cuándo**: la persona que revisa la implementación, en la revisión de código previa a dar la épica por terminada, con acceso al repositorio y a la base de datos de desarrollo (`docker compose exec postgres psql -U foodvoice -d foodvoice`). No forma parte de la validación funcional y no la ejecuta el perfil no técnico: es precisamente la excepción acotada que declara SC-010.
 
-**Qué hacer si un paso falla**: cualquier paso de A, B, C o D que no se comporte como se describe invalida la épica; no hay pasos opcionales ni "aceptables con reservas". Se anota el paso, lo observado y lo esperado, se corrige y se **repite la sección completa** a la que pertenece —no solo el paso corregido—, porque un arreglo puede alterar el comportamiento de los pasos vecinos.
+**Qué hacer si un paso falla**: cualquier paso de A, B, C, D o E que no se comporte como se describe invalida la épica; no hay pasos opcionales ni "aceptables con reservas". Se anota el paso, lo observado y lo esperado, se corrige y se **repite la sección completa** a la que pertenece —no solo el paso corregido—, porque un arreglo puede alterar el comportamiento de los pasos vecinos.
+
+---
+
+## Cobertura de los criterios de éxito
+
+Los **39 criterios de la spec**, cada uno con el paso que lo comprueba. La tabla existe para responder una sola pregunta: si algún criterio se quedó sin forma de verificarse.
+
+| Criterio | Paso | Criterio | Paso |
+|---|---|---|---|
+| SC-001 | A1 | SC-021 | B13, B24 |
+| SC-002 | A2 | SC-022 | B23 |
+| SC-003 | A6, A17 | SC-023 | B22 |
+| SC-004 | B1 | SC-024 | A9 |
+| SC-005 | B2 | SC-025 | B7, B10 |
+| SC-006 | B8 | SC-026 | B7b |
+| SC-007 | C1 | SC-027 | D1, D2, D9, D10 |
+| SC-008 | C3 | SC-028 | A2, A4, A11 |
+| SC-009 | C5, C5b | SC-029 | A13, B8 |
+| SC-010 | *toda la guía* | SC-030 | A8, A16 |
+| SC-011 | B4, B5 | SC-031 | A7 |
+| SC-012 | B10 | SC-032 | B6 |
+| SC-013 | A9 | SC-033 | B9 |
+| SC-014 | B18 | SC-034 | B12, B14, C2b |
+| SC-015 | C4 | SC-035 | A10 |
+| SC-016 | B3, B10b | SC-036 | E1 |
+| SC-017 | A3, A5 | SC-037 | B27 |
+| SC-018 | A4 | SC-038 | A19, E2 |
+| SC-019 | B16, B17 | SC-039 | B28 |
+| SC-020 | B15, B26, C5 | | |
+
+**Ningún criterio queda sin paso.** SC-010 es el único sin uno concreto, y es correcto: no es un criterio sobre una función sino sobre la guía entera —que todo esto pueda hacerlo una persona no técnica—, y se cumple o se incumple al ejecutarla.
+
+**Cuatro criterios se verifican únicamente aquí, sin ninguna cobertura automática**: SC-001 y SC-007 (los umbrales de 5 segundos, supuesto 22), SC-036 (los mensajes) y SC-038 (el teclado y el foco). Si esta guía no se ejecuta, esos cuatro no los comprueba nadie.
 
 ---
 
@@ -240,7 +304,8 @@ Estos dos aspectos no son observables desde la interfaz. Se comprueban en la rev
 
 E1 se considera terminada cuando:
 
-1. Las cinco órdenes de comprobación automática terminan sin error.
-2. Todos los pasos de A, B y C se comportan como se describe.
-3. Los seis puntos de D se verifican en la revisión de la implementación.
-4. Los únicos criterios de éxito pendientes son los que dependen de pedidos reales (parte de FR-019, más FR-020 y FR-023), declarados como entrega por fases en la spec y verificables al completarse E4/E2.
+1. Las cinco órdenes de comprobación automática terminan sin error, ejecutadas **en un entorno limpio o con la caché deshabilitada**.
+2. Todos los pasos de A, B, C y E se comportan como se describe.
+3. Los catorce puntos de D se verifican en la revisión de la implementación.
+4. Los treinta y nueve criterios de éxito tienen su paso ejecutado, según la tabla de cobertura.
+5. Los únicos criterios pendientes son los que dependen de pedidos reales (parte de FR-019, más FR-020 y FR-023), declarados como entrega por fases en la spec y verificables al completarse E4/E2.

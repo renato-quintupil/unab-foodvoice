@@ -354,14 +354,73 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
 
 ## Requisitos *(obligatorio)*
 
+### Convenciones de interfaz y mensajería
+
+Reglas transversales a las tres historias. Se declaran una vez aquí en lugar de repetirse —o, peor, de darse por supuestas— en cada requisito que menciona un mensaje o una pantalla.
+
+#### Qué significa «mensaje claro y sin detalles técnicos»
+
+FR-003, FR-014, FR-015 y FR-022 exigen mensajes «claros y sin detalles técnicos». Como criterio es inservible: nadie puede decir si un mensaje es «claro» sin discutirlo. Un mensaje cumple esta especificación si y solo si satisface **las cuatro condiciones**, que sí se comprueban leyéndolo:
+
+1. **Está en español**, con su ortografía y sus acentos correctos.
+2. **No contiene ningún término técnico**: ni códigos de error, ni nombres de campo del sistema, ni direcciones, ni nombres de tecnologías, ni fragmentos de mensajes del motor de base de datos, ni trazas.
+3. **Dice qué ocurrió y qué puede hacer la persona**. «Error en el formulario» incumple la segunda mitad; «Debes ingresar un correo electrónico válido» la cumple.
+4. **Una persona no técnica puede repetirlo con sus palabras** tras leerlo una vez, sin preguntar qué significa.
+
+La condición 4 es la que hace el criterio verificable sin discusión, y es la que se aplica en la validación funcional (SC-010). Las tres clases de mensaje —error de validación, denegación por rol y ausencia de resultados— están sujetas a las mismas cuatro condiciones: no hay una regla distinta por tipo.
+
+#### Dónde se presenta cada mensaje
+
+| Situación | Presentación | Dónde queda la persona |
+|---|---|---|
+| Un campo del formulario es inválido | Junto al campo que falla, con el campo señalado | En el formulario, con lo que escribió intacto |
+| La acción se rechaza por una regla que exige consultar datos —correo duplicado, autoprotección— | Aviso sobre la vista actual, no junto a un campo | En el formulario, con lo que escribió intacto |
+| La acción se rechaza por un fallo del sistema | Aviso sobre la vista actual | En el formulario, con lo que escribió intacto |
+| El rol no permite la acción (FR-003) | Página propia | En esa página, con un enlace a la página de inicio de su rol |
+| La sesión expiró o fue revocada (FR-005, FR-024, FR-030) | Aviso en la pantalla de inicio de sesión | En `/login` |
+| Un filtro o una búsqueda no produce resultados (FR-015, FR-022) | En el lugar donde irían los resultados | En la misma vista, con los criterios que aplicó |
+
+Un error de validación **nunca** se presenta como página completa, y una denegación por rol **nunca** como aviso sobre la vista que el usuario no debía ver: mostrarle esa vista con un aviso encima ya le habría revelado su contenido.
+
+#### Vocabulario visible
+
+Un mismo concepto se nombra siempre igual en toda la interfaz. Los términos técnicos de esta especificación **no aparecen nunca en pantalla**.
+
+| Concepto | En pantalla se dice | Nunca se dice |
+|---|---|---|
+| Retirar el acceso a un usuario | **Desactivar** | «dar de baja», «baja lógica», «eliminar», «borrar» |
+| Devolver el acceso | **Reactivar** | «restaurar», «habilitar», «dar de alta» |
+| Estado del usuario | **Activo** / **Desactivado** | «habilitado», «inactivo», «suspendido» |
+| Asignar una contraseña nueva a otro usuario | **Restablecer contraseña** | «resetear», «cambiar la clave» |
+| Crear un usuario | **Nuevo usuario** | «registrar», «dar de alta» |
+
+Las etiquetas visibles de los cuatro roles son **Cliente**, **Negocio**, **Repartidor** y **Administrador**, en singular y con inicial mayúscula. Son las que ve el usuario en su página de inicio (FR-031) y las que ofrecen los filtros y formularios del administrador; los identificadores internos en mayúsculas nunca se muestran.
+
+#### Fechas y horas visibles
+
+Las fechas se muestran y se escriben en **`DD/MM/AAAA`** y las horas en formato de 24 horas, que es como se leen en español. El formato interno con que viajan los datos es otro y no aparece nunca en pantalla.
+
+El **huso horario de referencia del producto es `America/Santiago`**, y toda fecha visible se presenta en él. Esto tiene una consecuencia que hay que declarar porque no es evidente: cuando el administrador filtra el reporte de pedidos por «15/08/2026», el sistema consulta **ese día del calendario chileno**, no un intervalo de 24 horas en otro huso. La alternativa —interpretar los días en UTC— se descartó al escribir esta convención: para un producto de un solo local en Chile, un pedido hecho a las 22:00 aparecería en el reporte del día siguiente, y el administrador vería como «del día 16» algo que ocurrió el 15 a la vista de todos. El huso se declara en un único lugar del código compartido, de modo que la interfaz y el servidor no puedan discrepar.
+
+Que v1 no tenga pedidos no hace la decisión menos necesaria: es la que E4/E2 heredarán cuando existan, y tomarla ahora cuesta una constante, mientras que corregirla después costaría revisar reportes ya emitidos.
+
+#### Navegación disponible por rol
+
+| Rol | Navegación en v1 |
+|---|---|
+| Cliente, Negocio, Repartidor | **Ninguna**: su página de inicio es la única vista que tienen, y solo ofrece «Cerrar sesión» (FR-031). Sus funciones llegan en E2/E3/E5, y con ellas su navegación |
+| Administrador | Dos destinos, **Panel** y **Usuarios**, visibles desde cualquier vista administrativa, más «Cerrar sesión» |
+
+Que los tres primeros roles no tengan menú no es una carencia que haya que disimular: es la consecuencia honesta de que sus funciones aún no existan. Inventarles opciones que no llevan a ninguna parte contradice el Principio III y el IV.
+
 ### Requisitos Funcionales — HU-08 · Autenticación y sesión
 
 - **FR-001**: El sistema DEBE permitir iniciar sesión mediante correo electrónico y contraseña, y no DEBE exigir ningún otro dato. El correo se compara **sin distinguir mayúsculas de minúsculas y sin espacios sobrantes al inicio o al final**: `Maria@Ejemplo.CL` y `maria@ejemplo.cl` son el mismo identificador de acceso, tanto al iniciar sesión como al comprobar la unicidad de FR-017. La contraseña, en cambio, se compara **carácter por carácter, distinguiendo mayúsculas**, y nunca se normaliza ni se recorta: cualquier transformación silenciosa cambiaría la credencial que la persona eligió.
 - **FR-002**: El sistema DEBE identificar el rol del usuario autenticado (cliente, negocio, repartidor, administrador) y usarlo para determinar qué funciones están disponibles.
-- **FR-003**: El sistema DEBE rechazar el acceso a funciones que no correspondan al rol del usuario autenticado, mostrando un mensaje en español (Principio II). El rechazo DEBE producirse **al procesar la acción, no solo al pintar la pantalla**: ocultar o deshabilitar una opción en la interfaz no cumple este requisito. La restricción alcanza por igual a los tres caminos por los que puede llegar una petición —la navegación desde la interfaz, la escritura directa de una dirección en el navegador y la llamada directa al punto de entrada de la aplicación sin pasar por la interfaz—, y el resultado DEBE ser el mismo en los tres casos.
+- **FR-003**: El sistema DEBE rechazar el acceso a funciones que no correspondan al rol del usuario autenticado, mostrando un mensaje en español (Principio II). El rechazo DEBE producirse **al procesar la acción, no solo al pintar la pantalla**: ocultar o deshabilitar una opción en la interfaz no cumple este requisito. La restricción alcanza por igual a los tres caminos por los que puede llegar una petición —la navegación desde la interfaz, la escritura directa de una dirección en el navegador y la llamada directa al punto de entrada de la aplicación sin pasar por la interfaz—, y el resultado DEBE ser el mismo en los tres casos. El rechazo se presenta como **una página propia** con el mensaje en español y un enlace a la página de inicio del rol de esa persona; NO DEBE mostrarse como un aviso superpuesto sobre la vista restringida, porque para entonces ya le habría revelado su contenido. La sesión **no** se cierra: intentar entrar donde no corresponde no es un problema de identidad, y expulsar a quien se equivocó de dirección sería un castigo desproporcionado.
 - **FR-004**: El sistema DEBE mantener la sesión activa mientras el usuario interactúa con la aplicación, sin requerir reautenticación en cada acción.
 - **FR-005**: El sistema DEBE expirar la sesión automáticamente tras 30 minutos de inactividad, con la misma duración para todos los roles. Cuenta como actividad **toda acción iniciada por el usuario** que llegue al sistema: navegar a una pantalla, aplicar un filtro, enviar un formulario o cerrar sesión. NO cuenta como actividad ninguna consulta que la aplicación realice por su cuenta sin intervención del usuario: el sistema NO DEBE mantener viva una sesión mediante consultas automáticas, periódicas o en segundo plano. La inactividad es el **único** plazo que termina una sesión por el paso del tiempo: **no existe una duración máxima absoluta**. Una persona que trabaje sin pausas de 30 minutos conserva su sesión indefinidamente, y eso es deliberado —un corte absoluto obligaría a reautenticarse en mitad de una tarea sin que ningún requisito lo pida (Principio I, Principio III)—. Las sesiones también terminan por cierre explícito (FR-006) y por las cuatro acciones administrativas de impacto (FR-024), que no dependen del tiempo.
-- **FR-006**: El sistema DEBE permitir cerrar sesión explícitamente en cualquier momento, terminando la sesión de inmediato.
+- **FR-006**: El sistema DEBE permitir cerrar sesión explícitamente en cualquier momento, terminando la sesión de inmediato. Tras cerrarla, la persona queda en la pantalla de inicio de sesión **sin ningún mensaje de error o de advertencia**: cerró sesión porque quiso, y decirle «tu sesión expiró» sería informarle de un problema que no ha ocurrido. Es la única diferencia visible con la expiración por inactividad (FR-005), que sí muestra un aviso explicativo, y esa diferencia es obligatoria: quien vuelve a una pestaña abandonada necesita entender por qué se le pide entrar de nuevo, y quien acaba de pulsar «Cerrar sesión» no.
 - **FR-007**: El sistema NO DEBE almacenar contraseñas en texto plano ni exponer credenciales o tokens en el código fuente (Principio V).
 - **FR-008**: Los mensajes de error de autenticación DEBEN ser genéricos respecto a si el correo o la contraseña es lo incorrecto, para no filtrar qué cuentas existen. Esta regla alcanza también al mensaje de bloqueo temporal (FR-033), que DEBE mostrarse de forma idéntica exista o no una cuenta con el correo ingresado. Para que el requisito sea comprobable y no quede como una intención, se enumera **qué no debe poder deducirse** de un intento fallido de inicio de sesión:
 
@@ -375,8 +434,12 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
 
   **Qué significa «de inmediato»**: que la sesión queda inválida en el mismo instante en que la acción administrativa se aplica, sin plazo de gracia ni umbral temporal alguno. No hay un proceso posterior que la cierre ni una ventana de propagación: cuando el administrador ve la acción aplicada, ya no existe ninguna sesión válida del usuario afectado. Lo que la persona afectada percibe es que **su siguiente acción**, sea cual sea y ocurra cuando ocurra, es rechazada. Formulado así el requisito es medible sin cronómetro: no se mide un retardo, se comprueba que no existe ninguna acción posterior que consiga pasar (SC-006, SC-025).
 - **FR-025**: El sistema NO DEBE ofrecer autorregistro; el único camino de alta de usuarios es a través del administrador (HU-09).
-- **FR-030**: El sistema DEBE rechazar íntegramente cualquier acción iniciada con una sesión expirada, sin aplicar cambios parciales, y solicitar reautenticación. La validez de la sesión se comprueba **una sola vez, antes de empezar a aplicar la acción**: o la acción se rechaza sin haber tocado ningún dato, o se completa entera. En consecuencia, una sesión que venza mientras la acción ya está en curso **no la interrumpe a medias**; el vencimiento afecta a la petición siguiente. Esto elimina por construcción el escenario de una acción administrativa aplicada a medias por expiración, en lugar de intentar detectarlo y deshacerlo.
+- **FR-030**: El sistema DEBE rechazar íntegramente cualquier acción iniciada con una sesión expirada, sin aplicar cambios parciales, y solicitar reautenticación. **Los datos que la persona había escrito se pierden**, y se declara en lugar de dejarlo a la sorpresa: la interfaz lleva a la pantalla de inicio de sesión y no conserva el formulario a medio completar. Se descartó guardar un borrador y restaurarlo tras reautenticarse —exigiría decidir dónde guardarlo, cuánto conservarlo y qué hacer si los datos ya no son válidos, para un caso que exige treinta minutos sin ninguna interacción con el sistema (Principio I, Principio III)—. El caso existe de verdad, aunque sea improbable: escribir en un formulario no llega al servidor, así que un formulario abierto media hora sin enviarse expira. Con los formularios de esta épica —cinco campos como mucho— la pérdida es de segundos de trabajo.
+
+  La validez de la sesión se comprueba **una sola vez, antes de empezar a aplicar la acción**: o la acción se rechaza sin haber tocado ningún dato, o se completa entera. En consecuencia, una sesión que venza mientras la acción ya está en curso **no la interrumpe a medias**; el vencimiento afecta a la petición siguiente. Esto elimina por construcción el escenario de una acción administrativa aplicada a medias por expiración, en lugar de intentar detectarlo y deshacerlo.
 - **FR-031**: Tras un inicio de sesión exitoso, el sistema DEBE llevar al usuario a una página de inicio propia de su rol. Para cliente, negocio y repartidor esa página en v1 es mínima: muestra el nombre del usuario, su rol y la acción "Cerrar sesión"; las funciones específicas de cada rol se incorporan en sus épicas (E2/E3/E5). Para el administrador, la página de inicio es el panel de administración (HU-10).
+
+  **Elementos mínimos exigibles**, de modo que su ausencia sea detectable y no una impresión: la página de inicio de cliente, negocio y repartidor DEBE contener (a) el nombre completo del usuario tal como está almacenado, (b) la etiqueta visible de su rol —Cliente, Negocio o Repartidor—, (c) la acción «Cerrar sesión», y (d) **ninguna otra acción**. Los cuatro puntos se comprueban mirando la pantalla, y el cuarto es tan exigible como los otros tres: una página de inicio que ofrezca funciones del rol antes de que su épica las especifique es alcance fantasma (Principio III).
 - **FR-033**: El sistema DEBE bloquear temporalmente el inicio de sesión tras 5 intentos fallidos consecutivos, durante 15 minutos, mostrando un mensaje en español. El contador de intentos se asocia al correo electrónico ingresado, exista o no una cuenta con ese correo, y el mensaje de bloqueo es idéntico en ambos casos (FR-008). Pasado ese lapso el bloqueo se levanta automáticamente, sin intervención del administrador, y el contador vuelve a cero. Un inicio de sesión exitoso también reinicia el contador. Un restablecimiento de contraseña por el administrador (FR-026) levanta el bloqueo de inmediato y reinicia el contador.
 
   **El conteo es por correo y solo por correo**: no se cuenta por origen de la petición, ni por dispositivo, ni por ninguna combinación de ambos. Cinco fallos sobre el mismo correo desde cinco dispositivos distintos bloquean ese correo; cinco fallos sobre cinco correos distintos desde el mismo dispositivo no bloquean nada. Es lo que corresponde a un requisito que protege *una cuenta* de que le adivinen la contraseña, y evita castigar a varias personas legítimas que compartan una salida a Internet.
@@ -387,6 +450,8 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
 
 - **FR-009**: El sistema DEBE permitir a un administrador crear un usuario con nombre completo, correo electrónico, teléfono, contraseña inicial y un rol (cliente, negocio, repartidor, administrador).
 - **FR-010**: El sistema DEBE permitir a un administrador editar los datos de contacto y el correo electrónico de un usuario existente. El cambio de correo **no** termina las sesiones abiertas de ese usuario y **no** figura entre las cuatro acciones de impacto de FR-024: la sesión identifica a la persona, no a su correo, y quien está dentro sigue siendo la misma persona con el mismo rol y la misma contraseña. El nuevo correo rige como identificador de acceso desde el momento en que se guarda, de modo que su próximo inicio de sesión DEBE hacerse con él; el anterior deja de servir y queda libre para otro usuario. El cambio queda registrado como una edición en la bitácora (FR-034) y no exige confirmación adicional (FR-035), por ser reversible con otra edición.
+
+  **Relación con el formulario de alta**: los campos que ambos comparten —nombre completo, correo y teléfono— se validan con **las mismas reglas y muestran los mismos mensajes** (FR-014), de modo que ninguna edición pueda dejar un usuario en un estado que su alta habría rechazado. Difieren solo en lo que cada uno abarca: el alta exige además contraseña inicial y rol, y la edición no incluye ninguno de los dos —ni tampoco el estado—, porque contraseña, rol y estado son acciones de impacto con su propio camino y su propia confirmación (FR-011, FR-012, FR-026, FR-035).
 - **FR-011**: El sistema DEBE permitir a un administrador cambiar el rol asignado a un usuario existente; el nuevo rol rige a partir del próximo inicio de sesión de ese usuario. El sistema NO DEBE aplicar el nuevo rol sobre una sesión ya abierta: esa sesión se invalida (FR-024) y el usuario vuelve a autenticarse, momento en el que rige el rol nuevo.
 - **FR-012**: El sistema DEBE permitir a un administrador desactivar un usuario, impidiendo que vuelva a iniciar sesión, sin eliminar su historial asociado. Cuando un usuario desactivado intenta entrar con sus credenciales correctas, el sistema DEBE rechazarlo con **el mismo mensaje genérico** que emplea para unas credenciales incorrectas (FR-008): indicarle que su cuenta está desactivada confirmaría a cualquiera que ese correo está registrado. El intento se cuenta además como fallido a efectos del bloqueo temporal (FR-033), por la misma razón.
 - **FR-013**: El sistema DEBE permitir a un administrador reactivar un usuario previamente desactivado, conservando sus credenciales previas.
@@ -420,12 +485,35 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
   **Los eventos de autenticación quedan fuera**. Este registro cubre **solo** las seis acciones administrativas de HU-09. Los inicios de sesión, los intentos fallidos, los bloqueos temporales, los cierres y las expiraciones de sesión **no** se registran en v1. Es una decisión deliberada y no un olvido: ninguna historia de esta épica plantea consultar ese historial, no hay vista donde mostrarlo y construir un registro que nadie lee sería alcance fantasma (Principio III). La consecuencia asumida se declara sin rodeos: **v1 no permite investigar a posteriori quién intentó entrar a una cuenta ni cuándo**; solo se sabe que un bloqueo ocurrió mientras está vigente. Si esa capacidad llega a hacer falta, será un requisito nuevo con su propia entidad y su propia vista, no una ampliación silenciosa de este registro.
 - **FR-035**: El sistema DEBE pedir al administrador una confirmación explícita antes de ejecutar una acción de impacto sobre otro usuario —cambio de rol (FR-011), desactivación (FR-012), reactivación (FR-013) y restablecimiento de contraseña (FR-026)—, mostrando en español a quién afecta y qué efecto tiene, y permitiendo cancelarla sin que se aplique ningún cambio (Principio IX). El alta (FR-009) y la edición de datos de contacto (FR-010) NO requieren confirmación adicional.
 
+  **El diálogo DEBE decir si la acción se puede deshacer**, porque el Principio IX exige tanto confirmar antes de actuar como poder deshacer, y de las cuatro acciones **una no es reversible**:
+
+  | Acción | ¿Reversible desde la interfaz? | Qué dice la confirmación |
+  |---|---|---|
+  | Desactivar (FR-012) | Sí, reactivando (FR-013) | Que el usuario podrá volver a entrar si se le reactiva |
+  | Reactivar (FR-013) | Sí, desactivando | Que el usuario recupera el acceso con sus credenciales previas |
+  | Cambiar de rol (FR-011) | Sí, asignando de nuevo el rol anterior | Qué rol tendrá y que su sesión terminará |
+  | Restablecer contraseña (FR-026) | **No** | Que la contraseña anterior dejará de servir de forma definitiva y que deberá entregarle la nueva |
+
+  Distinguirlas importa: presentar las cuatro con el mismo tono llevaría al administrador a tratar con la misma ligereza una desactivación —que se deshace en un clic— y un restablecimiento, que deja al usuario fuera hasta que alguien le comunique su contraseña nueva. Ninguna acción de esta épica es destructiva en el sentido de borrar datos: no existe el borrado (§ Fuera de Alcance).
+
+- **FR-037**: Tras aplicar cualquier acción administrativa —alta, edición, cambio de rol, desactivación, reactivación y restablecimiento de contraseña—, el sistema DEBE mostrar una **confirmación de éxito en español** que nombre al usuario afectado y la acción realizada. La confirmación aparece solo cuando el cambio quedó firme (FR-030); si la acción se rechaza, se muestra el mensaje de error correspondiente y nunca ambos. Sin este requisito, FR-035 dejaría al administrador confirmando acciones cuyo resultado no puede distinguir de un fallo silencioso: pedirle que confirme antes y no decirle nada después es la peor mitad del Principio IX.
+
+- **FR-038**: Toda acción que espere respuesta del sistema DEBE mostrar que está en curso e **impedir que se dispare dos veces**: el control que la inició queda inutilizable hasta que llega la respuesta. Cubre dos exigencias a la vez —que las operaciones sujetas al umbral de 5 segundos (SC-001, SC-007) no parezcan congeladas, y que un doble clic o un doble envío del formulario no produzca dos altas— y por eso es un solo requisito y no dos. El resguardo es de interfaz y no la única defensa: el sistema DEBE seguir comportándose correctamente si la petición llega dos veces, rechazando el correo duplicado (FR-017) y tratando como sin efecto la petición que no cambia nada (FR-012, FR-013).
+
+- **FR-039**: Las pantallas de esta épica DEBEN cumplir cuatro condiciones de accesibilidad, todas comprobables sin herramientas especializadas: (a) toda la aplicación se puede recorrer y operar **solo con el teclado**, incluidos los diálogos de confirmación de FR-035; (b) el elemento con el foco es **visible en todo momento**; (c) cada campo de formulario tiene una **etiqueta asociada** que un lector de pantalla anuncia, y su mensaje de error queda asociado a ese campo y no suelto en la página; (d) el texto tiene **contraste suficiente** frente a su fondo para leerse sin esfuerzo. Quedan **fuera del alcance de v1** una auditoría formal de conformidad y las pruebas con lectores de pantalla reales; se declara para que su ausencia no se confunda con un descuido, y porque las cuatro condiciones anteriores son las que sostienen el Principio IV cuando quien valida no usa un ratón.
+
+- **FR-040**: La aplicación DEBE ser usable en pantallas desde **360 píxeles de ancho** hasta las de escritorio, sin que ningún contenido quede inalcanzable: los listados con muchas columnas se desplazan o se reorganizan, pero no se recortan. Los navegadores contemplados en v1 son las **dos últimas versiones estables** de Chrome, Firefox, Edge y Safari. No se da soporte a navegadores sin actualizaciones vigentes, y esa exclusión se declara aquí para que no haya que descubrirla defecto a defecto.
+
 ### Requisitos Funcionales — HU-10 · Panel y reportes del administrador
 
 - **FR-018**: El sistema DEBE restringir el acceso al panel de administración exclusivamente al rol "administrador", apoyándose en el mecanismo de autenticación y rol de HU-08.
-- **FR-019**: El sistema DEBE mostrar en el panel métricas generales del estado operativo: cantidad de usuarios activos por rol y cantidad de pedidos por estado.
-- **FR-020**: El sistema DEBE permitir consultar un reporte/historial de pedidos filtrable por estado y por rango de fechas, de forma combinable.
-- **FR-021**: El sistema NO DEBE ofrecer, desde el panel, ninguna acción que modifique datos operativos (estados de pedido, usuarios); toda acción de modificación corresponde a HU-07 o HU-09.
+- **FR-019**: El sistema DEBE mostrar en el panel métricas generales del estado operativo: cantidad de usuarios activos por rol y cantidad de pedidos por estado. **Los cuatro roles y los cinco estados aparecen siempre**, incluso con valor cero: una cifra que desaparece cuando vale cero deja un hueco en el panel y obliga a quien lo lee a averiguar si el dato falta o es nulo.
+
+  **Mientras las métricas de pedidos no existan** —dependen de E4/E2—, el panel las presenta con el mismo mensaje de «sin datos» que FR-022 aplica a cualquier filtro sin resultados, y no con un espacio en blanco, un indicador de carga permanente ni un aviso sobre épicas futuras. El administrador ve que no hay pedidos, que es exactamente la verdad; el calendario del proyecto no es información suya.
+- **FR-020**: El sistema DEBE permitir consultar un reporte/historial de pedidos filtrable por estado y por rango de fechas, de forma combinable. El reporte DEBE presentarse **con la misma paginación que el listado de usuarios** —20 por página, con el total de resultados indicado (FR-015)—, para que las dos superficies paginadas del producto se lean y se recorran igual.
+
+  **Rango de fechas**: ambos extremos son **inclusivos**, de modo que elegir la misma fecha de inicio y de fin consulte ese día completo; con extremos exclusivos devolvería cero y parecería un defecto. Cada extremo es independiente: solo el inicio significa «desde esa fecha en adelante» y solo el fin, «hasta esa fecha». Si la fecha inicial es posterior a la final, el sistema DEBE rechazar la consulta con un mensaje en español que lo explique, en lugar de devolver un conjunto vacío que se confundiría con «no hay pedidos». Las fechas se interpretan siempre en **días del calendario del huso horario de referencia del producto** (§ Convenciones de interfaz), nunca en el huso del navegador de quien consulta: dos administradores en husos distintos deben ver exactamente el mismo reporte para el mismo rango.
+- **FR-021**: El sistema NO DEBE ofrecer, desde el panel, ninguna acción que modifique datos operativos (estados de pedido, usuarios); toda acción de modificación corresponde a HU-07 o HU-09. **Navegar no es modificar**: que el panel sea la página de inicio del administrador (FR-031) y ofrezca un enlace a la gestión de usuarios no incumple este requisito, porque el enlace no cambia ningún dato —lo cambian las acciones de HU-09, ya dentro de esa otra vista y con sus propias confirmaciones (FR-035)—. La distinción es necesaria: sin ella, cumplir FR-021 obligaría a dejar al administrador en una pantalla sin salida.
 - **FR-022**: El sistema DEBE mostrar un mensaje claro en español cuando un filtro no produce resultados, en lugar de una pantalla vacía sin explicación (Principio II).
 - **FR-023**: El sistema DEBE reflejar en el panel el estado de los pedidos de forma consistente con la máquina de estados definida en HU-03 (creado → en preparación → asignado a repartidor → entregado → cerrado), sin definir estados propios.
 - **FR-029**: El sistema NO DEBE incluir exportación de reportes a archivos externos ni actualización en tiempo real del panel en v1.
@@ -472,7 +560,7 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
 - **SC-012**: Tras el restablecimiento de contraseña por el administrador, el 100 % de los intentos con la contraseña anterior son rechazados.
 - **SC-013**: El 100 % de las sesiones sin actividad durante 30 minutos exigen reautenticación en la siguiente acción.
 - **SC-014**: El 100 % de los intentos de un administrador de desactivarse a sí mismo o de cambiar su propio rol son bloqueados.
-- **SC-015**: El 100 % de las vistas del panel de administración carecen de acciones que modifiquen datos operativos, verificable revisando las opciones disponibles en pantalla.
+- **SC-015**: El 100 % de las vistas del panel de administración carecen de acciones que modifiquen datos operativos. La verificación se hace **contra un inventario explícito de las vistas del panel**, no recorriendo la aplicación a ojo: sin una lista cerrada, «el 100 % de las vistas» no es comprobable, porque nadie puede afirmar que las ha visitado todas. Los enlaces de navegación hacia la gestión de usuarios no cuentan como acciones de modificación (FR-021).
 - **SC-016**: El 100 % de los intentos de asignar una contraseña fuera del rango de 8 a 72 caracteres —al crear un usuario o al restablecerla— son rechazados con un mensaje en español que indica cuál de los dos límites se incumplió. Ninguna contraseña aceptada se recorta.
 - **SC-017**: El 100 % de los intentos de inicio de sesión realizados dentro de los 15 minutos posteriores a 5 fallos consecutivos son rechazados, y el acceso vuelve a permitirse automáticamente una vez transcurrido ese lapso.
 - **SC-018**: El mensaje mostrado tras 5 intentos fallidos es idéntico, palabra por palabra, para un correo registrado y para uno no registrado, verificable comparando ambas pantallas.
@@ -493,6 +581,10 @@ Los pasos de validación **D1–D8** de `quickstart.md` no corresponden a ningú
 - **SC-033**: El 100 % de los usuarios reactivados vuelven a iniciar sesión con las credenciales que tenían antes de su desactivación, sin que el administrador tenga que restablecérselas.
 - **SC-034**: El 100 % de los listados filtrados por rol, por estado o por ambos devuelven únicamente usuarios que cumplen todos los criterios aplicados, paginados de a 20 e indicando el total.
 - **SC-035**: El 100 % de las acciones enviadas con una sesión ya expirada se rechazan sin aplicar ningún cambio, comprobable verificando que el dato que la acción pretendía modificar conserva su valor anterior.
+- **SC-036**: El 100 % de los mensajes visibles de esta épica cumplen las cuatro condiciones de «mensaje claro y sin detalles técnicos» (§ Convenciones de interfaz), verificable leyéndolos: una persona no técnica los repite con sus palabras sin preguntar qué significan. El inventario a recorrer son los mensajes fijos del sistema más los de validación de cada campo, e incluye expresamente el de bloqueo temporal (FR-033) y los dos de «sin resultados» (FR-015, FR-022).
+- **SC-037**: El 100 % de las acciones administrativas aplicadas muestran una confirmación de éxito que nombra al usuario afectado, y el 100 % de las rechazadas muestran un mensaje de error; ninguna acción termina sin que la pantalla diga qué ocurrió.
+- **SC-038**: El 100 % de las pantallas se recorren y operan solo con el teclado, con el foco visible en todo momento, incluidos los diálogos de confirmación; y el 100 % de los campos de formulario tienen etiqueta asociada.
+- **SC-039**: Un doble clic sobre cualquier acción administrativa produce un solo efecto, comprobable en el listado y en la bitácora: nunca dos usuarios creados ni dos entradas de registro por una sola intención.
 
 ## Supuestos
 
@@ -571,6 +663,10 @@ Supuestos adicionales de contexto:
 - Actualización en tiempo real del panel.
 - Soporte multi-local.
 - Datos biométricos o de voz como parte de la autenticación (Principio X); la voz en FoodVoice se usa solo para búsqueda de productos y carrito (E6), nunca para iniciar sesión.
+- Auditoría formal de conformidad de accesibilidad y pruebas con lectores de pantalla reales; v1 se limita a las cuatro condiciones comprobables de FR-039.
+- Soporte a navegadores sin actualizaciones vigentes: v1 contempla las dos últimas versiones estables de Chrome, Firefox, Edge y Safari (FR-040).
+- Conservación de los datos escritos en un formulario cuando la sesión expira antes de enviarlo: se pierden y hay que reescribirlos (FR-030).
+- Selección de idioma o de huso horario por parte del usuario: la interfaz está solo en español y las fechas se presentan en el huso de referencia del producto (§ Convenciones de interfaz).
 
 ## Dependencias
 

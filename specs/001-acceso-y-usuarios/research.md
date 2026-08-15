@@ -1,4 +1,4 @@
-# Investigación técnica: E1 · Acceso y usuarios
+﻿# Investigación técnica: E1 · Acceso y usuarios
 
 **Fecha**: 2026-08-15 | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
 
@@ -29,6 +29,10 @@ Este documento registra las decisiones técnicas que resuelven los puntos abiert
 - Cada petición autenticada realiza una consulta a `session`. Con el volumen previsto (v1, un solo local) es irrelevante; se indexa `session.id` (clave primaria) y `session.user_id`.
 - La renovación de `last_activity_at` se hace en el mismo `UPDATE ... RETURNING` que la validación, evitando una segunda ida a la base de datos.
 
+**Cuánto cuesta esa consulta, en órdenes de magnitud**. Es una escritura por clave primaria sobre una tabla que en v1 sumará miles de filas, con un `JOIN` a `user` por clave primaria. En PostgreSQL, dentro de la misma red de contenedores, eso está en el orden de **1 milisegundo**; el objetivo de SC-001 es de **5 segundos**. Son tres órdenes de magnitud de margen, de modo que el coste no compite con el presupuesto de tiempo de ninguna pantalla. La comparación importa porque es la objeción natural a la sesión con estado frente a un JWT sin estado —«una consulta por petición»— y conviene tenerla cuantificada aunque sea de forma aproximada: si algún día el volumen la volviera perceptible, lo haría mucho antes que cualquier otra parte del sistema, y se notaría primero en el listado paginado.
+
+**Costo asumido**: una ida a la base de datos por petición autenticada, y una tabla que crece de forma monótona porque las filas muertas no se purgan (`data-model.md` § Retención). Ambos se aceptan a cambio de la revocación inmediata que FR-024 exige y que ningún esquema sin estado puede dar.
+
 **Qué refresca `last_activity_at` (FR-005)**. La ventana deslizante solo tiene sentido si «actividad» significa *actividad de la persona*. La regla operativa es:
 
 | Origen de la petición | ¿Refresca? |
@@ -56,7 +60,18 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 
 **Estado respecto a la spec**: **incorporado. Aprobado el 2026-08-15**. Cuando se redactó esta decisión, ningún requisito fijaba un máximo —FR-032 solo establecía el mínimo de 8—, así que el límite quedó registrado aquí en espera de una enmienda, conforme al procedimiento del Principio III. **FR-032 declara ahora el rango de 8 a 72 caracteres**, y la spec recoge además el cambio en SC-016, en un caso límite y en el supuesto 21. Este límite no es una regla de negocio nueva sino la exposición honesta de una restricción del algoritmo elegido: la alternativa —aceptar la contraseña y truncarla en silencio— sería un comportamiento oculto que contradice el Principio IV.
 
-**Nota de seguridad**: la comparación de contraseñas se ejecuta **siempre**, incluso cuando el correo no corresponde a ningún usuario, contra un hash señuelo constante. Esto iguala el tiempo de respuesta entre "cuenta inexistente" y "contraseña incorrecta", cerrando el canal lateral de temporización que dejaría abierto FR-008.
+**Por qué coste 12, y qué cuesta**. El coste de bcrypt es exponencial: cada unidad duplica el trabajo. En hardware de escritorio actual, el coste 12 sitúa una comparación en el orden de **200 a 400 milisegundos**. Un inicio de sesión ejecuta exactamente una comparación, de modo que consume menos del 10 % del presupuesto de 5 segundos de **SC-001** y deja el resto para la red, la consulta y el pintado de la pantalla. Coste 10 sería cuatro veces más rápido y notablemente más débil frente a fuerza bruta; coste 14 cuadruplicaría el tiempo y empezaría a competir con el objetivo sin una ganancia proporcional a esta escala. El 12 no es un número tomado de una recomendación genérica: es el mayor valor que cabe holgadamente dentro de SC-001.
+
+**Costo asumido**: cada inicio de sesión —acertado o fallido— ocupa un hilo del proceso durante ese lapso. Con el volumen de v1 es irrelevante, y es además el precio deliberado del algoritmo: un hash rápido sería el defecto, no la optimización. La contrapartida se declara porque tiene un límite conocido: una ráfaga de intentos simultáneos consume tiempo de CPU proporcional, y v1 no tiene defensa frente a un ataque distribuido (spec, supuesto 25).
+
+**Nota de seguridad**: la comparación de contraseñas se ejecuta **siempre**, incluso cuando el correo no corresponde a ningún usuario, contra un hash señuelo. Esto iguala el tiempo de respuesta entre "cuenta inexistente" y "contraseña incorrecta", cerrando el canal lateral de temporización que dejaría abierto FR-008.
+
+**El señuelo se genera al arrancar, nunca se escribe como literal.** Es el detalle del que depende que la nota anterior sea cierta y no una intención: si el señuelo fuera una cadena fija copiada en el código y alguien cambiara el coste configurado —de 12 a 13, por ejemplo—, la comparación contra el señuelo seguiría costando lo que costaba un hash de coste 12 y **la diferencia de temporización volvería a abrirse en silencio**, precisamente para el caso que el señuelo existe para tapar. Dos resguardos lo impiden:
+
+1. El señuelo se calcula **al iniciar el proceso**, aplicando el mismo coste configurado que se usa para las contraseñas reales, sobre un valor arbitrario.
+2. Un test comprueba que el coste incrustado en el señuelo coincide con el coste configurado, de modo que un cambio de configuración sin regenerar el señuelo haga fallar la batería en lugar de degradar la seguridad sin aviso.
+
+Es un fallo silencioso por definición —no produce ningún error, solo una diferencia de milisegundos— y por eso la protección tiene que ser automática y no una nota recordatoria.
 
 ---
 
@@ -75,6 +90,8 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 - El vencimiento es pasivo: si `locked_until <= now()`, se ignora y se permite el intento. No hace falta ningún proceso programado de limpieza (Principio I).
 
 **Alternativas descartadas**: contador en memoria (se pierde al reiniciar el contenedor y no funciona con más de una instancia); limitación por dirección IP (no es lo que pide FR-033 y castiga a usuarios legítimos tras una NAT compartida).
+
+**Costo asumido**: una tabla cuyas filas **nadie limpia**. El vencimiento pasivo evita el proceso programado, pero deja acumularse una fila por cada correo que alguna vez falló un intento, incluidos los inexistentes que alguien pruebe. Con el volumen de v1 es despreciable; en un escenario de abuso sostenido sería la primera tabla en crecer sin control, y la contención sería la misma que la del resto de ese escenario: fuera del alcance de v1 (spec, supuesto 25). El segundo costo es funcional y ya está declarado en `data-model.md`: al estar la tabla ligada al correo y no al usuario, editar el correo de alguien puede hacerle heredar un bloqueo que no provocó.
 
 ---
 
@@ -98,7 +115,9 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 
 **Alternativa descartada**: `class-validator` en el backend (opción por defecto de NestJS) más un esquema separado en el frontend. Es lo convencional en NestJS, pero duplica cada regla de negocio en dos lugares, contra el objetivo explícito del usuario de compartir contratos de dominio.
 
-**Frontera de responsabilidad**: Zod valida **forma y formato** (campos presentes, longitud, correo bien formado, rol válido). Las reglas que necesitan consultar la base de datos —unicidad del correo (**FR-017**), autoprotección del administrador (**FR-027**)— viven en los servicios de NestJS, nunca en el esquema.
+**Frontera de responsabilidad**: Zod valida **forma y formato** (campos presentes, longitud, correo bien formado, rol válido). Las reglas que necesitan consultar la base de datos —unicidad del correo (**FR-017**), autoprotección del administrador (**FR-027**)— viven en los servicios de NestJS, nunca en el esquema. La frontera completa, regla por regla, está en `contracts/shared.md`.
+
+**Costo asumido**: se abandona el camino que NestJS trae cableado. `class-validator` y sus decoradores son lo que espera quien conoce el framework, y la mayoría de los ejemplos y respuestas de la comunidad los usan; con Zod hay que escribir un `ZodValidationPipe` propio (una veintena de líneas) y traducir sus errores al formato de respuesta del contrato. El segundo costo es de acoplamiento: `apps/web` y `services/api` quedan atados a la misma versión del paquete compartido y **no pueden desplegarse por separado** —lo que en v1 es una ventaja, porque hace imposible la divergencia (`contracts/shared.md` § Compatibilidad), pero es una restricción real y conviene no descubrirla el día que haga falta desplegar solo el frontend—.
 
 ---
 
@@ -126,6 +145,14 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 
 **Rol vigente**: el rol se lee de la fila `session`, congelado en el momento del inicio de sesión, no de la fila `user`. Esto implementa literalmente **FR-011** y el caso límite "cambio de rol con sesión activa": el nuevo rol rige recién en el próximo inicio de sesión.
 
+**Costo asumido: dos comprobaciones de rol en dos lugares distintos**, una en el `middleware.ts` de Next.js y otra en los guards de NestJS, que **pueden divergir**. El riesgo es real y conviene nombrarlo en lugar de confiar en que ambas se mantengan a la par: si el middleware fuera más permisivo que los guards, el usuario llegaría a una pantalla que falla al cargar; si fuera más restrictivo, se le negaría el acceso a algo que le corresponde.
+
+Tres cosas lo contienen, y ninguna es la disciplina de quien programa:
+
+1. **El middleware no reimplementa ninguna regla.** Solo comprueba si hay cookie y a qué segmento de ruta corresponde el rol de la sesión. No decide sobre acciones, ni sobre datos, ni sobre pertenencia: eso vive entero en los guards.
+2. **La correspondencia rol → segmento es una constante compartida**, no una tabla escrita dos veces. Ambos lados leen el mismo valor de `packages/shared`.
+3. **La divergencia nunca abre acceso.** El middleware no autoriza: solo evita mostrar una pantalla que iba a fallar. Aunque dejara pasar de más, el guard rechaza la petición, porque **la autorización real es siempre la del servidor**. El peor caso de una divergencia es una molestia visible, nunca un acceso indebido — que es exactamente la propiedad que hace aceptable tener la comprobación duplicada.
+
 ---
 
 ## D-008 · Monorepo: pnpm workspaces + Turborepo
@@ -135,6 +162,17 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 **Justificación**: pnpm instala con enlaces duros (rápido y eficiente en disco) y, sobre todo, es **estricto**: un paquete solo puede importar lo que declaró en su `package.json`, lo que impide que `apps/web` acabe dependiendo por accidente de algo de `services/api`. Turborepo garantiza que `packages/shared` se compile antes que sus consumidores.
 
 **Alternativa descartada**: npm workspaces sin orquestador. Es más simple, pero el hoisting permisivo de npm hace fácil crear dependencias implícitas entre paquetes, justo lo que la separación de carpetas busca evitar.
+
+**Alternativa descartada: pnpm sin ningún orquestador**, es decir sin Turborepo. Es la opción más simple de todas y merece una razón concreta para rechazarla, no un argumento de conveniencia. La razón es el **orden de compilación**: `apps/web` y `services/api` importan `packages/shared`, que es TypeScript y debe compilarse antes. Sin orquestador, un `pnpm -r build` puede lanzar los tres en paralelo y fallar de forma intermitente —a veces sí, a veces no, según qué termine primero—, que es la peor clase de fallo porque no es reproducible. Se resolvería con scripts encadenados a mano en cada `package.json`, y eso es exactamente el grafo de dependencias que Turborepo declara en un archivo y mantiene solo. El segundo beneficio, la caché, es comodidad y no habría bastado por sí solo para justificarlo.
+
+**Costo asumido**: una herramienta y un archivo de configuración más que aprender, en un monorepo de solo tres paquetes donde el beneficio es modesto. Se acepta porque el orden de compilación es una necesidad real y no una comodidad, y porque el coste no crece con el proyecto mientras que el problema sí.
+
+**Qué ocurre con la caché en un entorno limpio, y qué no depende de ella.** En una máquina o un contenedor recién creados no hay caché: todas las tareas se ejecutan de verdad y el resultado es el mismo, solo que más lento. La caché **nunca cambia el resultado de una verificación**, y para que esa afirmación siga siendo cierta hay dos reglas obligatorias:
+
+- **Los tests de integración no se cachean** (`cache: false` para `test:integration` en `turbo.json`). Dependen de una base de datos externa cuyo estado Turborepo no puede observar: sin esta regla, un cambio en la versión de PostgreSQL o en el `docker-compose.test.yml` podría dejar en verde una batería que en realidad no volvió a ejecutarse.
+- **La validación previa a dar una fase por terminada se ejecuta en un entorno limpio**, o con la caché deshabilitada. Un resultado en verde recuperado de la caché es una afirmación sobre una ejecución pasada, no sobre el código de ahora.
+
+Fuera de esos dos casos, la caché solo ahorra tiempo, y su fallo posible —devolver un resultado obsoleto— queda acotado a las tareas puras (`build`, `lint`, `typecheck`, unitarios) cuyas entradas Turborepo sí observa por completo.
 
 **Renombrado**: la carpeta `package/shared` (singular) pasa a `packages/shared`, convención estándar del ecosistema. La carpeta está vacía, así que el cambio no tiene costo.
 
@@ -155,7 +193,35 @@ El límite se expresa en caracteres y el truncamiento ocurre en bytes, de modo q
 
 **Alternativa descartada**: solo unitarios con dobles. Dejaría sin cobertura automática justo las reglas de seguridad más delicadas de la épica.
 
+**Qué cubre cada nivel, sin requisitos huérfanos**. Un nivel de prueba sin requisitos asignados sobra, y un requisito sin nivel asignado es el que se descubre sin cobertura al final. La asignación es exhaustiva:
+
+| Nivel | Requisitos que le corresponden |
+|---|---|
+| Unitario · `packages/shared` | FR-014, FR-032 (forma y límites), RN-001 (conjunto cerrado de roles), FR-015 y SC-021 (normalización y escape), FR-020 (formato de fechas), SC-018 (existencia de los mensajes fijos), FR-023 (transiciones) |
+| Unitario · backend | FR-002, FR-003, FR-005, FR-018 (guards), FR-008 y D-002 (hash y señuelo), FR-027 (autoprotección), FR-033 (transiciones del contador) |
+| Unitario · frontend | FR-014 y Principio II (mensajes en el formulario), FR-022 y FR-015 (estados vacíos), FR-035 (cancelación), FR-037 y FR-038 (confirmación de éxito y doble envío) |
+| Integración · API | **FR-017 y RN-005** (unicidad, incluida la carrera), **FR-024** (revocación transaccional), **FR-030** (rechazo íntegro), **FR-033** (atomicidad del contador), más FR-009 a FR-013, FR-015, FR-026, FR-034 y FR-036 sobre datos reales |
+| **Solo validación manual** | **SC-001 y SC-007** (umbrales de 5 segundos, supuesto 22), **FR-039 y FR-040** (accesibilidad y tamaños de pantalla), **FR-031** y § Vocabulario visible (lo que se ve en pantalla) |
+
+La última fila es la que importa declarar: **cuatro requisitos y dos criterios no tienen cobertura automática de ningún tipo**, y su verificación depende íntegramente de que alguien ejecute `quickstart.md`. No es un descuido —medir un contraste o un cronómetro con una prueba automática sería alcance muy superior al de la épica— pero sí una dependencia que conviene tener presente al planificar la validación.
+
+**Estado inicial y aislamiento de los tests de integración**. Cada caso arranca contra una base de datos **con el esquema migrado y sin ninguna fila**, salvo las que el propio caso cree. Ni siquiera el administrador semilla: los casos que lo necesitan lo crean, para que ninguno dependa de un estado previo que otro podría cambiar.
+
+- **El aislamiento se hace con `TRUNCATE ... RESTART IDENTITY CASCADE` entre casos**, no con `DELETE`: el disparador de inmutabilidad de `admin_audit_log` rechaza los borrados (`data-model.md`), y `TRUNCATE` no dispara disparadores de fila. Sin esta precisión, la primera prueba de integración fallaría con un error desconcertante.
+- **Los casos se ejecutan en serie sobre una única base**, no en paralelo. Con el volumen de esta épica el ahorro de paralelizar es pequeño y el coste —una base por proceso, o un esquema por proceso— es configuración que hay que mantener. Se declara para que la lentitud sea una elección y no una sorpresa.
+- **Ningún caso depende del orden de ejecución.** Es comprobable de una forma barata: ejecutar la batería en orden aleatorio debe dar el mismo resultado.
+
+**Los tests de integración son obligatorios para cerrar una fase**, no opcionales. La razón es directa: los cuatro requisitos que **solo** este nivel verifica —FR-017, FR-024, FR-030 y FR-033— pertenecen a las fases B y C, de modo que darlas por completadas sin ejecutarlos sería declarar cubierto justo lo que no se comprobó. Se ejecutan además con la caché de Turborepo deshabilitada (D-008).
+
+**Convivencia de dos ejecutores**. Jest y Vitest coexisten **sin configuración compartida**: cada paquete declara la suya, y desde la raíz `pnpm test` delega en Turborepo, que ejecuta el script `test` de los tres. No hay un archivo de configuración común ni utilidades compartidas entre ambos, y es deliberado: un intento de unificarlos crearía una capa de compatibilidad para ahorrar duplicación que en la práctica es mínima.
+
+*Por qué dos y no uno*: Jest viene cableado de fábrica con NestJS y entiende sus decoradores sin configuración adicional; Vitest es notablemente más rápido y es lo que el ecosistema de Next.js espera. Unificar en Vitest exigiría configurar la transformación de decoradores y metadatos para NestJS; unificar en Jest significaría renunciar a la velocidad justo en el paquete con más pruebas. **Costo asumido**: dos configuraciones que mantener y dos sintaxis de dobles que recordar —lo que en la práctica se nota al escribir un test en el paquete equivocado—.
+
 **No incluido**: pruebas E2E con navegador. Quedan fuera de esta épica para no inflar el alcance (Principio I); la verificación de los escenarios Gherkin la realiza una persona siguiendo `quickstart.md` (Principio IV).
+
+*Por qué su ausencia no choca con el Principio IV, sino que lo sirve*: unas pruebas E2E automatizarían el recorrido que el principio quiere que haga **una persona**. No lo sustituyen —una batería en verde no dice que los mensajes se entiendan, que el vocabulario sea coherente ni que la pantalla se lea— y añadirlas podría incluso desincentivar la validación humana, que es la que el principio exige. La contrapartida es real y se declara: **sin E2E, ninguna regresión de interfaz se detecta automáticamente**.
+
+*Quién valida y cuándo*: la validación funcional la ejecuta **una persona no técnica**, o alguien que actúe como tal sin consultar el código, siguiendo `quickstart.md`. La periodicidad es por fase, no continua: al cerrar cada fase se ejecuta la sección que le corresponde —A al cerrar la B, B al cerrar la C, C al cerrar la D— y **antes de dar la épica por terminada se ejecutan A, B y C completas**, porque una fase posterior puede haber roto algo de una anterior. La sección D la ejecuta quien revisa la implementación, no la persona no técnica (SC-010).
 
 **Requisitos que dependen del paso del tiempo (FR-005, FR-033)**. Dos reglas centrales de la épica se expresan en minutos: 30 de inactividad y 15 de bloqueo. Esperarlos de verdad haría que la batería de pruebas tardara casi una hora, así que ninguna prueba lo hace.
 
@@ -371,6 +437,102 @@ El desempate por `id` no es adorno. `created_at DESC` a secas deja de ser un ord
 Lo que sí queda cubierto por el motor y no por una comprobación previa es la **unicidad del correo** (FR-017): dos altas simultáneas del mismo correo se resuelven con la restricción única, y la violación se traduce al mismo `409 EMAIL_ALREADY_EXISTS` que devolvería el caso normal. Traducirla es obligatorio: sin esa traducción, una condición de carrera llegaría al administrador como un `500`.
 
 ---
+
+## D-019 · Operación: secretos, registro y caída de la base de datos
+
+Tres aspectos operativos que la spec no aborda por estar centrada en el comportamiento observable, y que conviene decidir aquí en lugar de improvisarlos.
+
+### Gestión de secretos más allá del `.env` local
+
+**Fuera del alcance de v1**: no se define un gestor de secretos concreto —ni Docker secrets, ni el gestor de un proveedor, ni una bóveda—, porque v1 no tiene entorno productivo: es un proyecto académico que se ejecuta en local (Principio III).
+
+Lo que **sí** rige, y es lo que hace que la decisión pueda posponerse sin coste, es un criterio independiente del mecanismo: **la aplicación lee sus secretos exclusivamente de variables de entorno**. No lee archivos de configuración propios, no consulta ningún servicio externo y no tiene ninguna ruta alternativa de lectura. Cualquier gestor que sepa inyectar variables de entorno —que son todos— funciona sin tocar una línea de código; lo único que cambiaría es quién las pone ahí.
+
+**Consecuencia declarada**: un archivo `.env` en disco, legible por cualquiera con acceso a la máquina, es aceptable en v1 y **no lo sería en un despliegue real**. Se dice explícitamente para que la ausencia de gestor se lea como una decisión de alcance y no como el mecanismo definitivo.
+
+### Requisitos de registro de la aplicación
+
+| Qué se registra | Nivel |
+|---|---|
+| Arranque del servicio, migraciones aplicadas y resultado de la semilla | Informativo |
+| Cada petición: verbo, ruta, código de estado y duración | Informativo |
+| Errores controlados que llegan al filtro de excepciones, con su `code` | Advertencia |
+| Errores no previstos, con su traza y un identificador que también viaja al cliente | Error |
+
+**Qué no aparece nunca, en ningún nivel**: contraseñas en claro, hashes, el valor de la cookie de sesión, la cadena de conexión a la base de datos, el cuerpo de las peticiones a `/auth/login` y `/admin/users/:id/password-reset`, y ningún dato personal del padrón más allá del identificador del usuario. La prohibición se implementa como una **lista de campos censurados en el registrador**, no como el cuidado de quien escribe cada llamada: es la única forma de que siga siendo cierta dentro de seis meses (FR-007, SC-027, T119).
+
+El identificador de correlación de la cuarta fila merece una nota: es lo que permite que el mensaje en español que ve el usuario —`MSG_ERROR_INESPERADO`, sin ningún detalle técnico (Principio II)— pueda relacionarse con la traza concreta al diagnosticar. Sin él, «no pudimos completar la operación» es un callejón sin salida también para quien tiene que arreglarlo.
+
+### Qué ocurre si PostgreSQL deja de estar disponible
+
+No es hipotético: el contenedor puede reiniciarse o quedarse sin disco. El comportamiento se declara para las cuatro capas, y la regla es que **el fallo se degrada de forma visible y en español, nunca en silencio**:
+
+| Capa | Comportamiento |
+|---|---|
+| `GET /api/v1/health` | Responde **503**, porque comprueba la conexión. El `healthcheck` de Docker marca el contenedor como no sano y `restart: on-failure` actúa (D-013) |
+| Cualquier endpoint autenticado | La consulta de sesión falla; el filtro global responde **500** con `MSG_ERROR_INESPERADO`, sin filtrar el error del motor |
+| El proxy de Next.js | Reenvía ese 500 tal cual. Si además `api` dejó de responder, aplica su propio 502 (D-017) |
+| La interfaz | Muestra `MSG_ERROR_INESPERADO` como aviso sobre la vista actual, **conservando lo que la persona escribió**, y sin llevarla a `/login` |
+
+Ese último punto es el que exige decidirlo por adelantado: la reacción natural ante una consulta de sesión que falla es tratarla como sesión inválida y expulsar al usuario. **Sería un error** —su sesión sigue siendo válida, lo que falló es la base de datos—, y le haría perder el formulario y volver a autenticarse por un problema ajeno. Un fallo de infraestructura no es un `401`, y no debe presentarse como tal.
+
+Cuando la base vuelve, las sesiones abiertas **siguen siendo válidas**: la cookie no caducó y las filas siguen ahí. La única pérdida posible es la de una acción que estuviera a medias, y esa no se aplica en absoluto por la garantía transaccional de FR-030.
+
+---
+
+## Costos asumidos, decisión por decisión
+
+Cada decisión declara sus consecuencias en su propia sección. Esta tabla las reúne para que la ausencia de un costo sea visible de un vistazo: una decisión sin coste declarado suele ser una decisión cuyo coste no se buscó.
+
+| Decisión | Costo asumido |
+|---|---|
+| D-001 · Sesión con estado | Una ida a la base de datos por petición autenticada (~1 ms); tabla `session` que crece y no se purga |
+| D-002 · bcrypt coste 12 | 200–400 ms de CPU por intento de inicio de sesión, acertado o fallido; máximo de 72 bytes en la contraseña |
+| D-003 · Contador por correo | Tabla que nadie limpia; un usuario puede heredar un bloqueo al cambiársele el correo |
+| D-004 · Prisma | El cliente generado ata `services/api` a un ORM; el esquema declarativo no expresa disparadores, que hay que escribir en SQL en la migración |
+| D-005 · Zod compartido | Se abandona `class-validator`, el camino de fábrica de NestJS; frontend y backend no pueden desplegarse por separado |
+| D-006 · BFF con Next.js | Un salto de red por petición y una capa de código que mantener; un modo de fallo nuevo (D-017) |
+| D-007 · Guards + middleware | La comprobación de rol vive en dos lugares que pueden divergir; acotado a que la divergencia nunca abre acceso |
+| D-008 · pnpm + Turborepo | Una herramienta y un archivo de configuración más para tres paquetes |
+| D-009 · Dos niveles de prueba | Un runner adicional, una PostgreSQL efímera y un ciclo de verificación más lento; ningún módulo puede llamar a `Date.now()` directamente |
+| D-010 · Semilla | El arranque falla si falta la variable, por diseño; la recuperación exige acceso al despliegue |
+| D-011 · Búsqueda normalizada | `ñ` y `n` son indistinguibles al buscar; cambiar la función exige repoblar una columna persistida |
+| D-012 · Estados sin entidad | Superficie que responde con datos vacíos hasta E4/E2, y hay que explicar que no es un defecto |
+| D-013 · Contenedores | Sin estrategia de respaldo en v1: perder el volumen obliga a recrear el padrón |
+| D-014 · Revocación en las cuatro acciones | El usuario afectado ve terminada su sesión también tras un cambio de rol o un restablecimiento |
+| D-015 · `text` con normalización | La unicidad insensible a mayúsculas depende de que la normalización se aplique sin excepción |
+| D-016 · Orden fijo del listado | No se puede ordenar por otra columna; un índice más que mantener |
+| D-017 · Fallo del proxy | Sin reintento: una petición interrumpida hay que repetirla a mano |
+| D-018 · Límites de la superficie HTTP | Sin control de concurrencia: una edición puede pisar a otra sin aviso |
+| D-019 · Operación | Un `.env` en disco es aceptable en v1 y no lo sería en producción; sin gestor de secretos definido |
+
+## Trazabilidad de las decisiones
+
+Cada decisión responde a un requisito, a un principio de la constitución o a una elección de herramienta dentro del stack que fijó la persona usuaria. **La tercera categoría es legítima y se declara como tal**: forzar cada elección técnica a un requisito funcional produciría justificaciones falsas, y lo honesto es distinguir qué decisiones estaban determinadas y cuáles se tomaron dentro de un margen.
+
+| Decisión | Origen |
+|---|---|
+| D-001 | **Requisito**: FR-024 (revocación inmediata), FR-005 (ventana deslizante), FR-007 |
+| D-002 | **Requisito**: FR-007, FR-016, FR-032; acotado por SC-001 |
+| D-003 | **Requisito**: FR-033, FR-008, SC-018 |
+| D-004 | **Herramienta**, dentro del stack acordado; su elección se apoya en FR-017 (restricción en el motor) y D-009 (migraciones reproducibles para las pruebas) |
+| D-005 | **Instrucción de la persona usuaria** (contratos de dominio compartidos), reforzada por el Principio II y SC-018 |
+| D-006 | **Principio V** y FR-007: cookie same-origin, sin token accesible desde el navegador |
+| D-007 | **Requisito**: FR-003, FR-011, FR-018 |
+| D-008 | **Instrucción de la persona usuaria** (monorepo); la elección de pnpm y Turborepo dentro de esa instrucción es de este plan |
+| D-009 | **Principio XI** y **Principio IV**; la capa de integración la exigen FR-017, FR-024, FR-030 y FR-033 |
+| D-010 | **Requisito**: FR-028, FR-036; **Principio V** |
+| D-011 | **Requisito**: FR-015, SC-021 |
+| D-012 | **Requisito**: FR-023; **Principio XII** y **Principio III** |
+| D-013 | **Instrucción de la persona usuaria** (Docker); los detalles de salud, orden de migración y usuario sin privilegios son de este plan |
+| D-014 | **Requisito**: FR-024 tras la enmienda del supuesto 20 |
+| D-015 | **Requisito**: FR-017, RN-005 |
+| D-016 | **Requisito**: FR-015, SC-023 |
+| D-017 | Consecuencia de D-006; **Principio II** para el mensaje |
+| D-018 | **Principio I** y **Principio III**: tres límites que declaran lo que la API no hace |
+| D-019 | **Principio V** (secretos fuera del repositorio), **Principio II** (el fallo se degrada en español) y FR-007 (nada sensible en el registro) |
+
+**Ninguna decisión responde únicamente a preferencia técnica.** Las cuatro que no se derivan de un requisito —D-004, D-005, D-008 y D-013— provienen de instrucciones explícitas sobre el stack; lo que este plan aportó en ellas es la elección concreta dentro del margen que esas instrucciones dejaban, y esa elección está argumentada en cada sección.
 
 ## Resumen de versiones
 

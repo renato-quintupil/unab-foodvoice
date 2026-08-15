@@ -157,7 +157,15 @@ export const OrdersQuerySchema = z
 
 Solo fecha, sin hora ni huso: el administrador filtra por días. La comparación `from <= to` funciona sobre las cadenas porque el formato `AAAA-MM-DD` ordena igual como texto que como fecha —una propiedad del formato ISO que evita convertir a `Date` solo para compararlas—.
 
-Los dos extremos son **inclusivos** y se interpretan en UTC; la conversión a un intervalo de instantes ocurre en el servicio, no aquí, porque exige conocer el huso de referencia y este paquete no toma esa decisión. `FechaSchema` valida el formato y la existencia del día, nada más: no comprueba que la fecha sea pasada ni acota la amplitud del rango (ver `api.md`).
+Los dos extremos son **inclusivos** y se interpretan como días del calendario en el huso de referencia del producto. La conversión a un intervalo de instantes ocurre **en el servicio**, no aquí: este paquete valida la forma de la fecha y nada más. `FechaSchema` no comprueba que la fecha sea pasada ni acota la amplitud del rango (ver `api.md`).
+
+El huso de referencia sí vive en este paquete, como constante:
+
+```ts
+export const HUSO_REFERENCIA = 'America/Santiago';
+```
+
+Está aquí, y no en el servicio, por la misma razón que `normalizarBusqueda`: la interfaz lo necesita para **mostrar** las fechas y el servidor para **interpretarlas**, y si cada lado tuviera el suyo, un reporte mostraría un día distinto del que consultó. Es una constante, no un ajuste por usuario: v1 no ofrece selección de huso (spec § Fuera de Alcance).
 
 ---
 
@@ -191,7 +199,39 @@ export const MSG_CORREO_YA_EXISTE        = 'Ya existe un usuario registrado con 
 export const MSG_AUTOPROTECCION          = 'No puedes desactivar tu propia cuenta ni cambiar tu propio rol.';
 export const MSG_ERROR_INESPERADO        = 'No pudimos completar la operación. Vuelve a intentarlo en unos momentos.';
 export const MSG_CONTRASENA_OLVIDADA     = 'Si olvidaste tu contraseña, solicita al administrador que te la restablezca.';
+export const MSG_RANGO_FECHAS_INVALIDO   = 'La fecha inicial no puede ser posterior a la final.';
+export const MSG_SIN_DATOS_PEDIDOS       = 'Todavía no hay pedidos registrados.';
 ```
+
+Además, las **etiquetas visibles** de los enums y los textos de éxito, que la interfaz no puede escribir por su cuenta sin arriesgarse a que dos pantallas nombren distinto lo mismo (spec § Vocabulario visible):
+
+```ts
+export const ETIQUETA_ROL: Record<Role, string> = {
+  CLIENTE: 'Cliente', NEGOCIO: 'Negocio',
+  REPARTIDOR: 'Repartidor', ADMINISTRADOR: 'Administrador',
+};
+
+export const ETIQUETA_ESTADO: Record<UserStatus, string> = {
+  ACTIVO: 'Activo', DESACTIVADO: 'Desactivado',
+};
+
+export const ETIQUETA_ESTADO_PEDIDO: Record<OrderStatus, string> = {
+  creado: 'Creado', en_preparacion: 'En preparación',
+  asignado_repartidor: 'Asignado a repartidor',
+  entregado: 'Entregado', cerrado: 'Cerrado',
+};
+
+export const MSG_EXITO: Record<AdminAction, (nombre: string) => string> = {
+  CREAR:                (n) => `Se creó el usuario ${n}.`,
+  EDITAR:               (n) => `Se guardaron los datos de ${n}.`,
+  CAMBIAR_ROL:          (n) => `Se cambió el rol de ${n}.`,
+  DESACTIVAR:           (n) => `Se desactivó a ${n}.`,
+  REACTIVAR:            (n) => `Se reactivó a ${n}.`,
+  RESTABLECER_PASSWORD: (n) => `Se restableció la contraseña de ${n}.`,
+};
+```
+
+`ETIQUETA_ROL` y `ETIQUETA_ESTADO` son la razón por la que los identificadores internos en mayúsculas **nunca** llegan a la pantalla: la interfaz no tiene ninguna otra forma de nombrar un rol, y no puede caer en mostrar `ADMINISTRADOR` por descuido. `MSG_EXITO` está indexado por `AdminAction`, de modo que las seis acciones registrables y los seis mensajes de éxito no puedan desalinearse: añadir una acción sin su mensaje deja de compilar (FR-037).
 
 `MSG_ERROR_INESPERADO` cubre el `500` de la API y el `502` del proxy. Es **el mismo texto para ambos** a propósito: para la persona que lo lee, «el servicio falló» y «el servicio no respondió» son la misma situación y admiten la misma reacción, y distinguirlos en pantalla solo revelaría la topología interna del despliegue (Principio II).
 
