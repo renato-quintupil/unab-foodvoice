@@ -72,6 +72,13 @@ Característica: Autenticación y sesión
     Y muestra un mensaje en español indicando que la cuenta está bloqueada temporalmente
     Y transcurridos esos 15 minutos puedo iniciar sesión con mi contraseña correcta
 
+  Escenario: El bloqueo temporal no revela si la cuenta existe
+    Dado que se intentó iniciar sesión 5 veces seguidas con un correo que no está registrado
+    Cuando se intenta una sexta vez con ese mismo correo
+    Entonces el sistema muestra el mismo mensaje de bloqueo temporal en español
+      que mostraría para una cuenta existente
+    Y no es posible distinguir, a partir del mensaje, si la cuenta existe o no
+
   Escenario: Acceso a función fuera del rol
     Dado que inicié sesión con rol "repartidor"
     Cuando intento acceder a una función exclusiva del rol "administrador"
@@ -120,11 +127,11 @@ Característica: Autenticación y sesión
 
 ### Historia de Usuario 2 - Gestión de usuarios y roles (HU-09) (Prioridad: P2)
 
-El administrador crea, edita, cambia de rol, desactiva y reactiva a las personas que usan la plataforma, y puede restablecer la contraseña de cualquiera de ellas. También puede listar y filtrar el padrón de usuarios por rol y por estado para encontrar rápidamente a quien busca.
+El administrador crea, edita, cambia de rol, desactiva y reactiva a las personas que usan la plataforma, y puede restablecer la contraseña de cualquiera de ellas. También puede listar el padrón de usuarios, filtrarlo por rol y por estado y buscar por nombre o correo para encontrar rápidamente a quien busca.
 
 **Por qué esta prioridad**: es lo que permite que existan usuarios reales más allá de la semilla inicial. Sin ella, la plataforma solo puede operar con el administrador precargado y no puede incorporar clientes, negocios ni repartidores.
 
-**Prueba independiente**: se puede verificar iniciando sesión como administrador y ejecutando el ciclo de vida completo de un usuario de prueba —crearlo, editarlo, cambiarle el rol, desactivarlo, reactivarlo, restablecerle la contraseña y filtrarlo en el listado— comprobando en cada paso que el usuario afectado puede o no puede iniciar sesión según corresponda. No requiere que HU-10 esté construida.
+**Prueba independiente**: se puede verificar iniciando sesión como administrador y ejecutando el ciclo de vida completo de un usuario de prueba —crearlo, editarlo, cambiarle el rol, desactivarlo, reactivarlo, restablecerle la contraseña y encontrarlo en el listado por búsqueda y por filtros— comprobando en cada paso que el usuario afectado puede o no puede iniciar sesión según corresponda. No requiere que HU-10 esté construida.
 
 **Escenarios de Aceptación**:
 
@@ -179,17 +186,41 @@ Característica: Gestión de usuarios y roles
     Entonces el sistema muestra un mensaje de error en español indicando el mínimo exigido
     Y no se crea el usuario
 
-  Escenario: Búsqueda y filtrado de usuarios
+  Escenario: Filtrado de usuarios por rol y estado
     Dado que existen usuarios con distintos roles y estados
     Cuando el administrador filtra el listado por rol "negocio" y estado "activo"
     Entonces el sistema muestra únicamente los usuarios que cumplen ambos criterios
     Y los presenta de a 20 por página, indicando el total de resultados del filtro
+
+  Escenario: Búsqueda de un usuario por nombre o por correo
+    Dado que existe un usuario llamado "María Pérez" con el correo "maria.perez@ejemplo.cl"
+    Cuando el administrador busca "perez" en el listado
+    Entonces el sistema muestra a ese usuario entre los resultados
+    Y lo encuentra igualmente buscando "MARÍA" o "maria.perez"
+
+  Escenario: Búsqueda combinada con filtros
+    Dado que existen usuarios con distintos roles y estados cuyo nombre contiene "pérez"
+    Cuando el administrador busca "pérez" y además filtra por rol "negocio" y estado "activo"
+    Entonces el sistema muestra únicamente los usuarios que cumplen la búsqueda y ambos filtros
+
+  Escenario: Búsqueda o filtrado sin resultados
+    Dado que ningún usuario cumple la combinación de búsqueda, rol y estado seleccionada
+    Cuando el administrador aplica esos criterios en el listado
+    Entonces el sistema muestra un mensaje claro en español indicando que no hay
+      usuarios para esos criterios, en lugar de una pantalla vacía sin explicación
 
   Escenario: Restablecimiento de contraseña por el administrador
     Dado que existe un usuario que olvidó su contraseña
     Cuando el administrador le restablece la contraseña
     Entonces el usuario puede iniciar sesión con la nueva contraseña
     Y su contraseña anterior deja de ser válida
+    Y si la cuenta estaba bloqueada temporalmente por intentos fallidos, el bloqueo se levanta
+
+  Escenario: Confirmación antes de una acción de impacto
+    Dado que el administrador seleccionó desactivar a un usuario
+    Cuando el sistema le pide confirmar la acción y el administrador la cancela
+    Entonces el usuario permanece activo
+    Y no queda registrada ninguna acción administrativa sobre él
 
   Escenario: Un administrador no puede desactivarse a sí mismo
     Dado que inicié sesión como administrador
@@ -258,7 +289,9 @@ Característica: Panel y reportes del administrador
 - **Último administrador intentando desactivarse**: bloqueado; el sistema nunca puede quedar sin ningún administrador con acceso.
 - **Reactivación de un usuario cuyo correo se intentó reutilizar entretanto**: no puede ocurrir, porque la unicidad del correo cubre también a los usuarios desactivados.
 - **Contraseña anterior tras un restablecimiento**: deja de ser válida de inmediato.
-- **Cuenta bloqueada temporalmente por intentos fallidos**: durante los 15 minutos se rechaza incluso la contraseña correcta, con un mensaje en español; el bloqueo se levanta solo, sin intervención del administrador. Un restablecimiento de contraseña por el administrador también levanta el bloqueo.
+- **Cuenta bloqueada temporalmente por intentos fallidos**: durante los 15 minutos se rechaza incluso la contraseña correcta, con un mensaje en español; el bloqueo se levanta solo, sin intervención del administrador. Un restablecimiento de contraseña por el administrador también levanta el bloqueo (FR-026, FR-033).
+- **Intentos fallidos sobre un correo inexistente**: se cuentan y bloquean igual que sobre una cuenta real, y el mensaje mostrado es idéntico, para no revelar qué cuentas existen (FR-008, FR-033).
+- **Acción administrativa cancelada en la confirmación**: no se aplica ningún cambio ni se registra nada en la bitácora (FR-035, FR-034).
 
 ## Requisitos *(obligatorio)*
 
@@ -271,12 +304,12 @@ Característica: Panel y reportes del administrador
 - **FR-005**: El sistema DEBE expirar la sesión automáticamente tras 30 minutos de inactividad, con la misma duración para todos los roles.
 - **FR-006**: El sistema DEBE permitir cerrar sesión explícitamente en cualquier momento, terminando la sesión de inmediato.
 - **FR-007**: El sistema NO DEBE almacenar contraseñas en texto plano ni exponer credenciales o tokens en el código fuente (Principio V).
-- **FR-008**: Los mensajes de error de autenticación DEBEN ser genéricos respecto a si el correo o la contraseña es lo incorrecto, para no filtrar qué cuentas existen.
+- **FR-008**: Los mensajes de error de autenticación DEBEN ser genéricos respecto a si el correo o la contraseña es lo incorrecto, para no filtrar qué cuentas existen. Esta regla alcanza también al mensaje de bloqueo temporal (FR-033), que DEBE mostrarse de forma idéntica exista o no una cuenta con el correo ingresado.
 - **FR-024**: El sistema DEBE invalidar de inmediato toda sesión activa de un usuario que sea desactivado, de modo que su siguiente acción sea rechazada.
 - **FR-025**: El sistema NO DEBE ofrecer autorregistro; el único camino de alta de usuarios es a través del administrador (HU-09).
 - **FR-030**: El sistema DEBE rechazar íntegramente cualquier acción iniciada con una sesión expirada, sin aplicar cambios parciales, y solicitar reautenticación.
 - **FR-031**: Tras un inicio de sesión exitoso, el sistema DEBE llevar al usuario a una página de inicio propia de su rol. Para cliente, negocio y repartidor esa página en v1 es mínima: muestra el nombre del usuario, su rol y la acción "Cerrar sesión"; las funciones específicas de cada rol se incorporan en sus épicas (E2/E3/E5). Para el administrador, la página de inicio es el panel de administración (HU-10).
-- **FR-033**: El sistema DEBE bloquear temporalmente el inicio de sesión de una cuenta tras 5 intentos fallidos consecutivos, durante 15 minutos, mostrando un mensaje en español; pasado ese lapso el bloqueo se levanta automáticamente, sin intervención del administrador. Un inicio de sesión exitoso reinicia el contador de intentos fallidos.
+- **FR-033**: El sistema DEBE bloquear temporalmente el inicio de sesión tras 5 intentos fallidos consecutivos, durante 15 minutos, mostrando un mensaje en español. El contador de intentos se asocia al correo electrónico ingresado, exista o no una cuenta con ese correo, y el mensaje de bloqueo es idéntico en ambos casos (FR-008). Pasado ese lapso el bloqueo se levanta automáticamente, sin intervención del administrador, y el contador vuelve a cero. Un inicio de sesión exitoso también reinicia el contador. Un restablecimiento de contraseña por el administrador (FR-026) levanta el bloqueo de inmediato y reinicia el contador.
 
 ### Requisitos Funcionales — HU-09 · Gestión de usuarios y roles
 
@@ -286,14 +319,15 @@ Característica: Panel y reportes del administrador
 - **FR-012**: El sistema DEBE permitir a un administrador desactivar un usuario, impidiendo que vuelva a iniciar sesión, sin eliminar su historial asociado.
 - **FR-013**: El sistema DEBE permitir a un administrador reactivar un usuario previamente desactivado, conservando sus credenciales previas.
 - **FR-014**: El sistema DEBE validar que el nombre completo, el correo electrónico, el teléfono, la contraseña inicial y el rol estén presentes antes de crear un usuario, mostrando un mensaje en español si falta alguno (Principio II).
-- **FR-015**: El sistema DEBE permitir listar y filtrar usuarios por rol y por estado (activo/desactivado), de forma combinable. El listado DEBE paginarse de a 20 usuarios por página e indicar el total de resultados que cumplen el filtro aplicado.
+- **FR-015**: El sistema DEBE permitir listar y filtrar usuarios por rol y por estado (activo/desactivado), y buscarlos por texto sobre su nombre completo y su correo electrónico, de forma combinable entre sí. La búsqueda DEBE encontrar coincidencias parciales, sin distinguir mayúsculas de minúsculas ni acentos, y DEBE aplicarse sobre ambos campos a la vez. El listado DEBE paginarse de a 20 usuarios por página e indicar el total de resultados que cumplen los criterios aplicados. Cuando la combinación de filtros y búsqueda no produce resultados, el listado DEBE mostrar un mensaje claro en español indicando que no hay usuarios para esos criterios, en lugar de una pantalla vacía sin explicación, con el mismo criterio que FR-022 aplica al panel (Principio II).
 - **FR-016**: El sistema NO DEBE almacenar contraseñas en texto plano ni exponer credenciales en el código fuente (Principio V), de forma consistente con HU-08.
 - **FR-017**: El sistema DEBE impedir el alta de dos usuarios con el mismo correo electrónico; la unicidad aplica también a los usuarios desactivados, cuyo correo queda reservado.
-- **FR-026**: El sistema DEBE permitir a un administrador restablecer la contraseña de cualquier usuario, invalidando la anterior de inmediato. No existe flujo de recuperación de contraseña por autoservicio en v1.
+- **FR-026**: El sistema DEBE permitir a un administrador restablecer la contraseña de cualquier usuario, invalidando la anterior de inmediato y levantando cualquier bloqueo temporal vigente sobre esa cuenta (FR-033). No existe flujo de recuperación de contraseña por autoservicio en v1.
 - **FR-027**: El sistema DEBE impedir que un administrador se desactive a sí mismo o cambie su propio rol; sí DEBE permitirle editar sus propios datos de contacto.
 - **FR-028**: El sistema DEBE contar con al menos un administrador desde su arranque, provisto como semilla inicial cuya contraseña proviene de configuración externa al repositorio (Principio V).
 - **FR-032**: El sistema DEBE exigir que toda contraseña asignada por el administrador —tanto la inicial (FR-009) como la restablecida (FR-026)— tenga al menos 8 caracteres, sin otras exigencias de composición, y DEBE rechazar la operación con un mensaje en español si no cumple (Principio II).
 - **FR-034**: El sistema DEBE registrar cada acción administrativa sobre un usuario —alta, edición, cambio de rol, desactivación, reactivación y restablecimiento de contraseña— dejando constancia de qué administrador la realizó, sobre qué usuario, qué acción fue y cuándo ocurrió. El registro solo admite entradas nuevas: nunca se edita ni se borra, y NO incluye contraseñas. En v1 no existe una vista para consultarlo.
+- **FR-035**: El sistema DEBE pedir al administrador una confirmación explícita antes de ejecutar una acción de impacto sobre otro usuario —cambio de rol (FR-011), desactivación (FR-012), reactivación (FR-013) y restablecimiento de contraseña (FR-026)—, mostrando en español a quién afecta y qué efecto tiene, y permitiendo cancelarla sin que se aplique ningún cambio (Principio IX). El alta (FR-009) y la edición de datos de contacto (FR-010) NO requieren confirmación adicional.
 
 ### Requisitos Funcionales — HU-10 · Panel y reportes del administrador
 
@@ -319,7 +353,8 @@ Característica: Panel y reportes del administrador
 
 ### Entidades Clave
 
-- **Usuario**: persona que accede a la plataforma. Atributos: nombre completo, correo electrónico (identificador de acceso, único en todo el sistema), teléfono, credencial de acceso (nunca en texto plano), rol y estado (activo/desactivado). Registra además los intentos fallidos consecutivos de inicio de sesión y, si corresponde, el momento hasta el cual su acceso está bloqueado temporalmente (FR-033). Un usuario tiene exactamente un rol.
+- **Usuario**: persona que accede a la plataforma. Atributos: nombre completo, correo electrónico (identificador de acceso, único en todo el sistema), teléfono, credencial de acceso (nunca en texto plano), rol y estado (activo/desactivado). Un usuario tiene exactamente un rol.
+- **Control de intentos de acceso**: cuenta de intentos fallidos consecutivos y momento hasta el cual el acceso está bloqueado, asociados al **correo electrónico ingresado** en la pantalla de inicio de sesión, exista o no un usuario con ese correo (FR-033). Se lleva por separado del Usuario precisamente para que el comportamiento observable sea idéntico en ambos casos y no revele qué cuentas existen (FR-008). Se reinicia por inicio de sesión exitoso, por vencimiento de los 15 minutos o por restablecimiento de contraseña.
 - **Rol**: categoría fija que determina el conjunto de funciones disponibles. Valores en v1: cliente, negocio, repartidor, administrador. No es editable ni extensible por el usuario final.
 - **Sesión**: vínculo temporal entre un usuario autenticado y su uso de la aplicación. Se crea al iniciar sesión, guarda el rol vigente en ese momento, y termina por cierre explícito, por 30 minutos de inactividad o por desactivación del usuario.
 - **Registro de acciones administrativas**: bitácora de solo-agregar que conserva, por cada acción de HU-09, el administrador que la realizó, el usuario afectado, el tipo de acción y su fecha y hora. Nunca contiene contraseñas y no tiene vista de consulta en v1.
@@ -339,7 +374,7 @@ Característica: Panel y reportes del administrador
 - **SC-007**: Un administrador accede al panel y ve las métricas generales en menos de 5 segundos en condiciones normales de red.
 - **SC-008**: El 100 % de los intentos de acceso al panel por usuarios sin rol "administrador" son bloqueados.
 - **SC-009**: El 100 % de las consultas de reporte filtradas devuelven únicamente datos que cumplen los criterios de filtro seleccionados.
-- **SC-010**: Una persona no técnica puede verificar todos los escenarios de esta especificación usando la aplicación directamente —iniciar y cerrar sesión, esperar la expiración, crear, editar y desactivar usuarios, filtrar el panel— sin leer código ni logs (Principio IV).
+- **SC-010**: Una persona no técnica puede verificar todos los escenarios de esta especificación usando la aplicación directamente —iniciar y cerrar sesión, esperar la expiración, crear, editar y desactivar usuarios, filtrar el panel— sin leer código ni logs (Principio IV). Se exceptúan de forma acotada y explícita dos aspectos, cuya verificación es técnica y se realiza en la revisión de la implementación: el registro de acciones administrativas (FR-034), que no tiene vista en v1, y el resguardo de credenciales (FR-007, FR-016, FR-028), que por su naturaleza no es observable desde la interfaz.
 - **SC-011**: El 100 % de los intentos de alta con un correo ya usado por otro usuario, activo o desactivado, son rechazados.
 - **SC-012**: Tras el restablecimiento de contraseña por el administrador, el 100 % de los intentos con la contraseña anterior son rechazados.
 - **SC-013**: El 100 % de las sesiones sin actividad durante 30 minutos exigen reautenticación en la siguiente acción.
@@ -347,6 +382,10 @@ Característica: Panel y reportes del administrador
 - **SC-015**: El 100 % de las vistas del panel de administración carecen de acciones que modifiquen datos operativos, verificable revisando las opciones disponibles en pantalla.
 - **SC-016**: El 100 % de los intentos de asignar una contraseña de menos de 8 caracteres —al crear un usuario o al restablecerla— son rechazados con un mensaje en español.
 - **SC-017**: El 100 % de los intentos de inicio de sesión realizados dentro de los 15 minutos posteriores a 5 fallos consecutivos son rechazados, y el acceso vuelve a permitirse automáticamente una vez transcurrido ese lapso.
+- **SC-018**: El mensaje mostrado tras 5 intentos fallidos es idéntico, palabra por palabra, para un correo registrado y para uno no registrado, verificable comparando ambas pantallas.
+- **SC-019**: El 100 % de las acciones de impacto sobre otro usuario —cambio de rol, desactivación, reactivación y restablecimiento de contraseña— exigen una confirmación explícita, y el 100 % de las confirmaciones canceladas dejan al usuario afectado sin ningún cambio.
+- **SC-020**: El 100 % de las búsquedas y filtros sin resultados —tanto en el listado de usuarios como en los reportes del panel— muestran un mensaje explicativo en español en lugar de una pantalla vacía.
+- **SC-021**: Un administrador encuentra a un usuario concreto en un padrón de cualquier tamaño escribiendo parte de su nombre o de su correo, sin recorrer páginas del listado, y el 100 % de los resultados devueltos contienen el texto buscado en alguno de esos dos campos.
 
 ## Supuestos
 
@@ -364,6 +403,14 @@ Los siguientes puntos fueron resueltos con la persona responsable del producto a
 10. **Datos obligatorios del usuario**: nombre completo, correo electrónico, teléfono y contraseña inicial, además del rol.
 11. **Autoprotección del administrador**: no puede autodesactivarse ni cambiarse su propio rol; sí puede editar sus datos de contacto.
 
+Decisiones tomadas el 2026-08-15 para resolver conflictos internos detectados en la revisión de calidad de requisitos (`checklists/security.md`, `checklists/ux.md`):
+
+12. **Bloqueo temporal y no revelación de cuentas**: el conteo de intentos fallidos se lleva por correo ingresado —exista o no la cuenta— y el mensaje de bloqueo es idéntico en ambos casos. Se descartó mostrar un mensaje específico solo a cuentas reales, porque habría filtrado qué correos están registrados, contradiciendo FR-008.
+13. **Verificabilidad de los requisitos de credenciales**: FR-007, FR-016 y FR-028 se declaran excepción acotada al Principio IV, junto con FR-034. No son observables desde la interfaz y se verifican en la revisión de la implementación; la alternativa —exponer indicios del almacenamiento en pantalla— habría sido en sí misma una debilidad de seguridad.
+14. **Búsqueda por nombre y correo en el padrón**: el escenario Gherkin insinuaba una búsqueda que ningún requisito respaldaba. Se resolvió ampliando FR-015 con búsqueda por texto sobre nombre completo y correo, combinable con los filtros por rol y estado, porque a medida que crece el padrón los filtros por rol y estado no bastan para llegar a una persona concreta dentro de páginas de 20. La búsqueda es parcial e insensible a mayúsculas y acentos; no se incorporan búsquedas por otros campos ni operadores avanzados (Principio I).
+15. **Confirmación antes de acciones de impacto**: cambio de rol, desactivación, reactivación y restablecimiento de contraseña exigen confirmación explícita y cancelable (FR-035), para dar cumplimiento al Principio IX. El alta y la edición de datos de contacto quedan fuera por ser reversibles y de bajo impacto.
+16. **Mensaje de "sin resultados" transversal**: la exigencia que FR-022 imponía solo al panel se extiende al listado de usuarios de HU-09 (FR-015), para que el comportamiento ante un filtro vacío sea uno solo en toda la épica.
+
 Supuestos adicionales de contexto:
 
 - **Mono-local**: v1 no contempla múltiples locales en la misma plataforma (decisión de alcance de `docs/epicas-hu/EPICS.md`), por lo que los roles "negocio" no se segmentan por local.
@@ -378,7 +425,7 @@ Supuestos adicionales de contexto:
 - Eliminación física (borrado permanente) de un usuario; solo baja lógica, por trazabilidad de pedidos históricos (HU-03).
 - Modelo de permisos granular por función dentro de un mismo rol; el rol determina de forma fija el conjunto de funciones disponibles (Principio I).
 - Cualquier acción que modifique datos operativos desde el panel; corresponde a HU-07 (Controles de flujos críticos, E8).
-- Vista de consulta del registro de acciones administrativas (FR-034): el registro se guarda, pero en v1 no se expone en pantalla; por eso es la única parte de esta épica no verificable por una persona no técnica desde la aplicación (excepción acotada a SC-010).
+- Vista de consulta del registro de acciones administrativas (FR-034): el registro se guarda, pero en v1 no se expone en pantalla; junto con el resguardo de credenciales (FR-007, FR-016, FR-028) son las dos únicas partes de esta épica no verificables por una persona no técnica desde la aplicación (excepciones acotadas declaradas en SC-010).
 - Exportación de reportes a archivos externos (PDF, Excel, CSV).
 - Actualización en tiempo real del panel.
 - Soporte multi-local.
