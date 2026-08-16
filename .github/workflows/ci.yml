@@ -70,6 +70,14 @@ jobs:
       # Turborepo reutiliza entre ejecuciones lo que no cambió. La clave lleva el
       # SHA para que cada commit escriba su propia entrada, y `restore-keys`
       # recupera la más reciente de la misma rama como punto de partida.
+      # En una máquina limpia el cliente no existe: dentro de un monorepo pnpm el
+      # `postinstall` de `@prisma/client` no encuentra el schema, y sin él los
+      # tipos que genera —`Role`, `UserStatus`, `AdminAction`— faltan y typecheck
+      # y build fallan. En local pasa inadvertido porque `db:migrate` ya lo
+      # generó alguna vez.
+      - name: Generar el cliente de Prisma
+        run: pnpm --filter @foodvoice/api db:generate
+
       - name: Restaurar la caché de Turborepo
         uses: actions/cache@v4
         with:
@@ -125,6 +133,11 @@ jobs:
 
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
+
+      # Mismo motivo que en el otro trabajo: `prisma migrate deploy` aplica las
+      # migraciones, pero no genera el cliente que la batería importa.
+      - name: Generar el cliente de Prisma
+        run: pnpm --filter @foodvoice/api db:generate
 
       - name: Restaurar la caché de Turborepo
         uses: actions/cache@v4
