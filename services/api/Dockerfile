@@ -22,9 +22,13 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY services/api services/api
+# `build:seed` compila la semilla a `dist-seed/`, aparte de `dist/`, para que el
+# `entrypoint` pueda ejecutarla sin depender de `tsx` ni de ninguna otra
+# herramienta de desarrollo. Va antes del `prune` porque necesita el compilador.
 RUN pnpm --filter @foodvoice/shared build \
  && pnpm --filter @foodvoice/api exec prisma generate \
  && pnpm --filter @foodvoice/api build \
+ && pnpm --filter @foodvoice/api build:seed \
  && pnpm prune --prod
 
 # --- Imagen final -----------------------------------------------------------

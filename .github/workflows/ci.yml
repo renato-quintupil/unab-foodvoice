@@ -22,6 +22,11 @@ on:
     branches: ['main', '[0-9][0-9][0-9]-*']
   pull_request:
     branches: ['main']
+  # Permite que el flujo de despliegue reutilice estas mismas comprobaciones en
+  # lugar de copiarlas. Desplegar un tag sin volver a verificarlo confiaría en
+  # que el commit que se etiquetó es el que se probó, y eso deja de ser cierto
+  # en cuanto alguien mueve un tag.
+  workflow_call:
 
 # Un push nuevo sobre la misma rama cancela el anterior: el resultado de un
 # commit ya superado no informa de nada y consume minutos.

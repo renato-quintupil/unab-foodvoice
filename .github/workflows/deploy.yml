@@ -1,0 +1,120 @@
+# Despliegue continuo de FoodVoice a producción (Railway).
+#
+# **El disparador es el tag, no el merge.** La convención del proyecto es que la
+# unidad de release es la épica y que el release lo dispara su verificación
+# funcional, no el final de la implementación (ver CLAUDE.md § Releases).
+# Desplegar en cada push a `main` contradiría esa regla: publicaría en
+# producción código que todavía nadie validó a mano.
+#
+# El tag se verifica antes de desplegarse. Reutiliza el flujo de CI completo en
+# lugar de dar por bueno que el commit etiquetado ya pasó por él: un tag puede
+# moverse, y entonces «ya se verificó» deja de ser una afirmación sobre lo que
+# se está a punto de publicar.
+
+name: Despliegue a producción
+
+on:
+  push:
+    tags: ['v*']
+  # Permite repetir un despliegue sin crear un tag nuevo, por ejemplo si la
+  # plataforma falló a mitad de camino.
+  workflow_dispatch:
+    inputs:
+      referencia:
+        description: 'Tag a desplegar (por ejemplo v0.1.0)'
+        required: true
+
+permissions:
+  contents: read
+
+# Dos despliegues simultáneos sobre el mismo entorno dejarían el resultado
+# a merced del orden de llegada. Aquí no se cancela el que va en curso: se
+# espera, porque interrumpir un despliegue a medias es peor que encolarlo.
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  verificacion:
+    name: Verificación previa
+    uses: ./.github/workflows/ci.yml
+
+  desplegar:
+    name: Publicar en Railway
+    needs: verificacion
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # El entorno de GitHub concentra el secreto y deja registro fechado de cada
+    # publicación. Si se le configura una regla de aprobación, el despliegue
+    # queda además detenido hasta que una persona lo autorice.
+    environment:
+      name: production
+      url: ${{ vars.URL_PRODUCCION }}
+
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.referencia || github.ref }}
+
+      # Mientras el ambiente productivo no exista, un tag no debe teñir de rojo
+      # el repositorio: la verificación previa ya corrió y es la que informa.
+      # Este paso decide si hay a dónde desplegar, y los siguientes se saltan si
+      # no lo hay. Cuando el secreto se configure, el flujo empieza a desplegar
+      # sin tocar una línea.
+      - name: Comprobar si hay destino de despliegue
+        id: destino
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "configurado=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No hay RAILWAY_TOKEN configurado todavía: se omite el despliegue."
+          else
+            echo "configurado=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar el CLI de Railway
+        if: steps.destino.outputs.configurado == 'true'
+        run: npm install -g @railway/cli
+
+      # Los dos servicios se publican por separado porque Railway despliega
+      # servicios, no un `docker-compose`. El orden importa: `api` aplica las
+      # migraciones en su arranque, y `web` no sirve de nada contra un esquema
+      # que todavía no existe.
+      - name: Desplegar la API
+        if: steps.destino.outputs.configurado == 'true'
+        run: railway up --service "${{ vars.RAILWAY_SERVICIO_API }}" --ci
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+
+      - name: Desplegar la web
+        if: steps.destino.outputs.configurado == 'true'
+        run: railway up --service "${{ vars.RAILWAY_SERVICIO_WEB }}" --ci
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+
+      # Comprobación de humo: que el despliegue termine sin error no significa
+      # que la aplicación responda. Esto es lo mínimo que distingue «se publicó»
+      # de «está en pie».
+      - name: Comprobar que producción responde
+        if: steps.destino.outputs.configurado == 'true'
+        run: |
+          url="${{ vars.URL_PRODUCCION }}"
+          if [ -z "$url" ]; then
+            echo "No hay URL_PRODUCCION configurada; se omite la comprobación." >&2
+            exit 0
+          fi
+          for intento in 1 2 3 4 5 6 7 8 9 10; do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' "$url" || echo 000)
+            echo "Intento $intento · HTTP $codigo"
+            if [ "$codigo" = "200" ]; then
+              echo "Producción responde correctamente."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Producción no respondió 200 tras diez intentos." >&2
+          exit 1

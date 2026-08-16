@@ -21,6 +21,7 @@ node_modules/
 
 # Builds
 dist/
+dist-seed/
 build/
 .next/
 out/

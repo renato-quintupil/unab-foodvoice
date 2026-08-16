@@ -49,8 +49,20 @@ async function bootstrap(): Promise<void> {
   // exige `class-validator`, que esta decisión abandona a propósito: tenerlo
   // montado significaría dos validadores con dos catálogos de mensajes.
 
-  await app.listen(entorno.PORT_API);
-  logger.log(`API escuchando en el puerto ${entorno.PORT_API} · entorno ${entorno.NODE_ENV}`);
+  // Con `HOST_API` definido, la API se enlaza a esa interfaz; sin ella, Node
+  // elige, que es el comportamiento de siempre en local y en contenedores. La
+  // variable existe para las plataformas cuya red interna es solo IPv6, donde
+  // hay que escuchar en `::` para ser alcanzable (ver `env.validation.ts`).
+  if (entorno.HOST_API !== undefined) {
+    await app.listen(entorno.PORT_API, entorno.HOST_API);
+  } else {
+    await app.listen(entorno.PORT_API);
+  }
+
+  const donde = entorno.HOST_API !== undefined ? ` · interfaz ${entorno.HOST_API}` : '';
+  logger.log(
+    `API escuchando en el puerto ${entorno.PORT_API}${donde} · entorno ${entorno.NODE_ENV}`,
+  );
 }
 
 void bootstrap().catch((error: unknown) => {

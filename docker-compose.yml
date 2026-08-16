@@ -34,6 +34,12 @@ services:
       PORT_API: ${PORT_API:-3001}
       ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:?define ADMIN_SEED_EMAIL en .env}
       ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:?define ADMIN_SEED_PASSWORD en .env}
+      # Aquí la semilla se ejecuta a mano (quickstart §2); el arranque no la
+      # dispara salvo que se pida de forma explícita en `.env`.
+      ADMIN_SEED_ON_BOOT: ${ADMIN_SEED_ON_BOOT:-false}
+      # Vacío: Node elige la interfaz. Solo se fija en plataformas con red
+      # interna únicamente IPv6.
+      HOST_API: ${HOST_API:-}
     depends_on:
       postgres:
         condition: service_healthy

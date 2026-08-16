@@ -1,0 +1,28 @@
+{
+  // Compilación de la semilla para la imagen de producción.
+  //
+  // `tsconfig.build.json` excluye `prisma/` a propósito: su `rootDir` es `src`, y
+  // meter la semilla ahí desplazaría la salida a `dist/src/main.js`, rompiendo la
+  // ruta que arranca el contenedor. Por eso la semilla se compila aparte, con su
+  // propia raíz y su propio destino.
+  //
+  // Por qué no basta con `db:seed`, que ejecuta el `.ts` con `tsx`: `tsx` es una
+  // dependencia de desarrollo, y que hoy siga presente en la imagen final es un
+  // efecto colateral de cómo `pnpm prune --prod` trata los espacios de trabajo
+  // de un monorepo, no una garantía. El arranque de producción no debería
+  // apoyarse en eso. Ejecutar JavaScript ya compilado no depende de ninguna
+  // herramienta de desarrollo.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Abarca `prisma/` y `src/`, porque la semilla importa la validación de
+    // entorno desde `src/config`. La salida conserva esa estructura:
+    // `dist-seed/prisma/seed.js` y `dist-seed/src/config/env.validation.js`.
+    "rootDir": ".",
+    "outDir": "./dist-seed",
+    // Mismo motivo que en `tsconfig.build.json`: un `.tsbuildinfo` heredado
+    // haría que `tsc` no emitiera nada y el fallo solo aparecería al sembrar.
+    "incremental": false
+  },
+  "include": ["prisma/seed.ts", "src/config/env.validation.ts"],
+  "exclude": ["node_modules", "dist", "dist-seed", "test", "**/*.spec.ts"]
+}

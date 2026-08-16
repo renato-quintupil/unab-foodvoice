@@ -22,6 +22,17 @@ export type EnvValidada = {
   DATABASE_URL: string;
   NODE_ENV: string;
   PORT_API: number;
+  /**
+   * Interfaz en la que escucha la API. Opcional: sin valor, Node elige por su
+   * cuenta y el comportamiento es el de siempre.
+   *
+   * Existe para las plataformas cuya red interna es **solo IPv6** —Railway,
+   * entre otras—, donde el servicio debe enlazarse a `::` para que el resto del
+   * proyecto lo alcance. No se fija a `::` por defecto porque un contenedor sin
+   * IPv6 fallaría al arrancar con `EAFNOSUPPORT`, y eso rompería el despliegue
+   * local, que es el que se usa a diario.
+   */
+  HOST_API: string | undefined;
 };
 
 class ErrorDeConfiguracion extends Error {}
@@ -49,10 +60,13 @@ export function validarEntorno(entorno: NodeJS.ProcessEnv = process.env): EnvVal
     throw new ErrorDeConfiguracion(`PORT_API no es un puerto válido: ${entorno.PORT_API}`);
   }
 
+  const host = entorno.HOST_API?.trim();
+
   return {
     DATABASE_URL: entorno.DATABASE_URL as string,
     NODE_ENV: entorno.NODE_ENV ?? 'development',
     PORT_API: puerto,
+    HOST_API: host === undefined || host === '' ? undefined : host,
   };
 }
 
