@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.git/
+Dockerfile*
+.dockerignore
+*.log
+.env*
+!.env.example
+
+# La caché incremental de TypeScript **no** puede viajar al contenedor: `tsc`
+# la creería vigente, no emitiría nada, y la imagen quedaría sin `dist/` — un
+# fallo que solo aparece al arrancar el contenedor y que no delata su causa.
+**/*.tsbuildinfo

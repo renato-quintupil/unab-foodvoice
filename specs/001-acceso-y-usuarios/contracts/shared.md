@@ -75,6 +75,15 @@ export const PasswordSchema = z
 
 Entre 8 y 72 caracteres, **sin otras exigencias de composición** (FR-032). Se reutiliza en `CreateUserSchema` y en `ResetPasswordSchema`: una sola definición para las dos rutas que asignan contraseña (FR-009, FR-026, SC-016).
 
+**Las dos rutas son todas las rutas.** Una contraseña entra al sistema por exactamente dos caminos, y el inventario está cerrado:
+
+| Camino | Esquema | Requisito |
+|---|---|---|
+| Alta de un usuario | `CreateUserSchema.password` | FR-009 |
+| Restablecimiento por el administrador | `ResetPasswordSchema.password` | FR-026 |
+
+No hay un tercero. `UpdateUserSchema` no admite `password` —lo que en un contrato menos explícito podría leerse como un olvido— y en v1 **no existe ninguna pantalla ni endpoint donde un usuario cambie su propia contraseña**, ni siquiera conociéndola, ni siquiera el administrador la suya (spec § Fuera de Alcance). Esa ausencia es deliberada y está declarada: el restablecimiento por el administrador es el único mecanismo de cambio después del alta. Que las dos rutas compartan `PasswordSchema` cierra el círculo —no hay forma de asignar una contraseña que esquive la validación de FR-032, porque no hay una tercera puerta que pudiera olvidarse de aplicarla—.
+
 **Sobre el máximo de 72**: lo exige FR-032, y su origen es una restricción de bcrypt, que trunca su entrada a 72 bytes (D-002). Sin este límite, dos contraseñas que compartan sus primeros 72 bytes serían equivalentes para el sistema sin que nadie lo advirtiera. La medición es en **bytes UTF-8** y no en caracteres, porque el truncamiento de bcrypt ocurre en bytes: una contraseña de 72 caracteres acentuados supera el límite real. El mensaje al usuario habla de caracteres porque es lo que la persona percibe; la validación es exacta.
 
 Este máximo **no aparece en `LoginSchema`**: al iniciar sesión no se valida longitud alguna, para no revelar por diferencia de mensaje ninguna característica de las credenciales almacenadas (FR-008).
@@ -97,7 +106,8 @@ La contraseña **no** se valida aquí contra el mínimo de 8 caracteres: hacerlo
 export const CreateUserSchema = z.object({
   fullName: z.string().trim().min(2, 'El nombre completo es obligatorio.').max(120),
   email:    z.string().trim().toLowerCase()
-              .email('Debes ingresar un correo electrónico válido.'),
+              .email('Debes ingresar un correo electrónico válido.')
+              .max(254, 'El correo electrónico es demasiado largo.'),
   phone:    z.string().trim().min(6, 'El teléfono es obligatorio.').max(20),
   password: PasswordSchema,
   role:     z.nativeEnum(Role, { errorMap: () => ({ message: 'Debes seleccionar un rol válido.' }) }),
@@ -108,7 +118,7 @@ Los cinco campos son obligatorios (FR-014, SC-005). La **unicidad del correo no 
 
 ### `UpdateUserSchema` — FR-010
 
-Los tres campos de contacto, todos opcionales, con al menos uno presente. **No** admite `role`, `status` ni `password`: son acciones de impacto con endpoint y confirmación propios (FR-035).
+Los tres campos de contacto, todos opcionales, con al menos uno presente. Cada campo presente se valida **con exactamente las mismas reglas que en `CreateUserSchema`** —reutilizando sus definiciones, no repitiéndolas—, de modo que ninguna edición pueda dejar un usuario en un estado que su alta habría rechazado (FR-014). **No** admite `role`, `status` ni `password`: son acciones de impacto con endpoint y confirmación propios (FR-035).
 
 ### `ListUsersQuerySchema` — FR-015
 
@@ -124,6 +134,38 @@ export const ListUsersQuerySchema = z.object({
 No expone `pageSize`: el tamaño de página es la constante `PAGE_SIZE = 20`, también definida en este paquete para que la interfaz y la API no puedan discrepar. `PAGE_SIZE` es su **única fuente**: ni los contratos, ni la interfaz, ni la API repiten el número 20 como literal.
 
 Tampoco expone parámetros de ordenamiento: el orden del listado es fijo, `created_at DESC, id DESC`, y no es elegible por el usuario (D-016).
+
+### `OrdersQuerySchema` — FR-020
+
+```ts
+const FechaSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Debes ingresar una fecha con el formato AAAA-MM-DD.')
+  .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00.000Z`)),
+          'Esa fecha no existe.');
+
+export const OrdersQuerySchema = z
+  .object({
+    status: z.nativeEnum(OrderStatus).optional(),
+    from:   FechaSchema.optional(),
+    to:     FechaSchema.optional(),
+    page:   z.coerce.number().int().min(1).default(1),
+  })
+  .refine((q) => !q.from || !q.to || q.from <= q.to,
+          { message: 'La fecha inicial no puede ser posterior a la final.', path: ['from'] });
+```
+
+Solo fecha, sin hora ni huso: el administrador filtra por días. La comparación `from <= to` funciona sobre las cadenas porque el formato `AAAA-MM-DD` ordena igual como texto que como fecha —una propiedad del formato ISO que evita convertir a `Date` solo para compararlas—.
+
+Los dos extremos son **inclusivos** y se interpretan como días del calendario en el huso de referencia del producto. La conversión a un intervalo de instantes ocurre **en el servicio**, no aquí: este paquete valida la forma de la fecha y nada más. `FechaSchema` no comprueba que la fecha sea pasada ni acota la amplitud del rango (ver `api.md`).
+
+El huso de referencia sí vive en este paquete, como constante:
+
+```ts
+export const HUSO_REFERENCIA = 'America/Santiago';
+```
+
+Está aquí, y no en el servicio, por la misma razón que `normalizarBusqueda`: la interfaz lo necesita para **mostrar** las fechas y el servidor para **interpretarlas**, y si cada lado tuviera el suyo, un reporte mostraría un día distinto del que consultó. Es una constante, no un ajuste por usuario: v1 no ofrece selección de huso (spec § Fuera de Alcance).
 
 ---
 
@@ -155,7 +197,47 @@ export const MSG_SIN_RESULTADOS_USUARIOS = 'No hay usuarios que coincidan con lo
 export const MSG_SIN_RESULTADOS_PEDIDOS  = 'No hay pedidos para los filtros seleccionados.';
 export const MSG_CORREO_YA_EXISTE        = 'Ya existe un usuario registrado con ese correo electrónico.';
 export const MSG_AUTOPROTECCION          = 'No puedes desactivar tu propia cuenta ni cambiar tu propio rol.';
+export const MSG_ERROR_INESPERADO        = 'No pudimos completar la operación. Vuelve a intentarlo en unos momentos.';
+export const MSG_CONTRASENA_OLVIDADA     = 'Si olvidaste tu contraseña, solicita al administrador que te la restablezca.';
+export const MSG_RANGO_FECHAS_INVALIDO   = 'La fecha inicial no puede ser posterior a la final.';
+export const MSG_SIN_DATOS_PEDIDOS       = 'Todavía no hay pedidos registrados.';
 ```
+
+Además, las **etiquetas visibles** de los enums y los textos de éxito, que la interfaz no puede escribir por su cuenta sin arriesgarse a que dos pantallas nombren distinto lo mismo (spec § Vocabulario visible):
+
+```ts
+export const ETIQUETA_ROL: Record<Role, string> = {
+  CLIENTE: 'Cliente', NEGOCIO: 'Negocio',
+  REPARTIDOR: 'Repartidor', ADMINISTRADOR: 'Administrador',
+};
+
+export const ETIQUETA_ESTADO: Record<UserStatus, string> = {
+  ACTIVO: 'Activo', DESACTIVADO: 'Desactivado',
+};
+
+export const ETIQUETA_ESTADO_PEDIDO: Record<OrderStatus, string> = {
+  creado: 'Creado', en_preparacion: 'En preparación',
+  asignado_repartidor: 'Asignado a repartidor',
+  entregado: 'Entregado', cerrado: 'Cerrado',
+};
+
+export const MSG_EXITO: Record<AdminAction, (nombre: string) => string> = {
+  CREAR:                (n) => `Se creó el usuario ${n}.`,
+  EDITAR:               (n) => `Se guardaron los datos de ${n}.`,
+  CAMBIAR_ROL:          (n) => `Se cambió el rol de ${n}.`,
+  DESACTIVAR:           (n) => `Se desactivó a ${n}.`,
+  REACTIVAR:            (n) => `Se reactivó a ${n}.`,
+  RESTABLECER_PASSWORD: (n) => `Se restableció la contraseña de ${n}.`,
+};
+```
+
+`ETIQUETA_ROL` y `ETIQUETA_ESTADO` son la razón por la que los identificadores internos en mayúsculas **nunca** llegan a la pantalla: la interfaz no tiene ninguna otra forma de nombrar un rol, y no puede caer en mostrar `ADMINISTRADOR` por descuido. `MSG_EXITO` está indexado por `AdminAction`, de modo que las seis acciones registrables y los seis mensajes de éxito no puedan desalinearse: añadir una acción sin su mensaje deja de compilar (FR-037).
+
+`MSG_ERROR_INESPERADO` cubre el `500` de la API y el `502` del proxy. Es **el mismo texto para ambos** a propósito: para la persona que lo lee, «el servicio falló» y «el servicio no respondió» son la misma situación y admiten la misma reacción, y distinguirlos en pantalla solo revelaría la topología interna del despliegue (Principio II).
+
+`MSG_CONTRASENA_OLVIDADA` es el aviso permanente de la pantalla de inicio de sesión que exige FR-026. No es un mensaje de error: se muestra antes de cualquier intento fallido, y existe porque en v1 no hay autoservicio de contraseña y una pantalla que no lo diga deja a la persona reintentando hasta bloquearse la cuenta (FR-033).
+
+**Esta lista es la única fuente de estos textos.** Ningún otro documento del proyecto —`api.md` incluido— reproduce su contenido: los referencian por el nombre de la constante. Un texto copiado en dos sitios es un texto que puede divergir, y la igualdad literal que exige SC-018 dejaría de estar garantizada por construcción para pasar a depender de que nadie edite solo una de las dos copias.
 
 **Por qué son constantes y no literales dispersos**: SC-018 exige que el mensaje de bloqueo sea idéntico *palabra por palabra* para un correo registrado y para uno inexistente. Con dos literales escritos en dos ramas del código, esa igualdad depende de que nadie edite uno solo de los dos. Con una constante, es imposible que diverjan. El mismo razonamiento aplica a `MSG_CREDENCIALES_INVALIDAS` (FR-008) y a los mensajes de "sin resultados" (FR-015, FR-022, SC-020), que la spec exige unificar en toda la épica.
 
@@ -210,6 +292,40 @@ export type Paginated<T> = {
 
 ---
 
+## Frontera de responsabilidad: qué valida Zod y qué validan los servicios
+
+El criterio es uno solo y no admite matices: **Zod valida todo lo que puede decidirse mirando únicamente la petición; los servicios validan todo lo que exige consultar el estado del sistema.** Enunciado así, ninguna regla puede caer en los dos lados ni en ninguno, porque toda regla o necesita leer la base de datos o no la necesita.
+
+| Regla | Dónde vive | Por qué |
+|---|---|---|
+| Campos obligatorios presentes (FR-014) | Zod | Se ve en la petición |
+| Longitudes de nombre, teléfono y correo (FR-014) | Zod | Se ven en la petición |
+| Formato del correo (FR-014) y su normalización (FR-001) | Zod | Se ve en la petición |
+| Rango de 8 a 72 bytes de la contraseña (FR-032) | Zod | Se ve en la petición |
+| Rol dentro de los cuatro valores (RN-001) | Zod | Se ve en la petición |
+| `page` entero ≥ 1, formato de `from`/`to`, `from <= to` (FR-015, FR-020) | Zod | Se ven en la petición |
+| Unicidad del correo (FR-017, RN-005) | Servicio + restricción única del motor | Exige consultar el padrón |
+| Autoprotección del administrador (FR-027) | Servicio | Exige comparar con la sesión de quien llama |
+| Existencia del usuario `:id` | Servicio | Exige consultar el padrón |
+| Verificación de la contraseña (FR-001) | Servicio | Exige leer el hash almacenado |
+| Bloqueo temporal vigente (FR-033) | Servicio | Exige leer el contador y el reloj |
+| Validez de la sesión y rol suficiente (FR-003, FR-005) | Guards | Exigen leer la sesión |
+
+Dos consecuencias se siguen de la frontera y conviene dejarlas escritas. La primera: **el frontend nunca podrá anticipar los errores de la columna inferior**. Un correo duplicado o una autoprotección solo se descubren al enviar la petición, y la interfaz debe estar preparada para mostrar un `409` sobre un formulario que ella misma había dado por válido. La segunda: **las reglas de la columna superior se validan dos veces**, en el navegador y en el servidor, con el mismo esquema y el mismo mensaje. Eso no es duplicación —es una sola definición aplicada en dos puntos— y es lo que permite que la validación del servidor sea autoritativa sin que el usuario tenga que enviar el formulario para enterarse de que le falta un campo.
+
+## Compatibilidad de versiones del paquete
+
+**No existe versionado independiente de `packages/shared`, y la pregunta de qué ocurre si `apps/web` y `services/api` se despliegan con versiones distintas no tiene respuesta porque no puede ocurrir.** Cuatro condiciones lo garantizan por construcción:
+
+1. Ambos consumidores lo declaran como `"@foodvoice/shared": "workspace:*"`. pnpm resuelve esa especificación al código del propio repositorio, nunca a un artefacto publicado.
+2. El paquete no se publica en ningún registro. No hay ningún lugar del que descargar una versión distinta de la que está en el árbol.
+3. Turborepo compila `packages/shared` antes que sus dos consumidores en cada `build`, de modo que ambos se compilan contra el mismo código fuente.
+4. Las tres imágenes se construyen del mismo commit y se levantan juntas en el mismo `docker compose`.
+
+La consecuencia práctica es que un cambio incompatible en el paquete —renombrar una constante, cambiar la forma de un esquema— **rompe la compilación de sus consumidores en el acto**, en la máquina de quien lo hizo, en lugar de manifestarse como un fallo en tiempo de ejecución tras un despliegue parcial. Es el resultado deseado: el error aparece en el único momento en que es barato arreglarlo.
+
+Lo que sí exige atención es el caso inverso, y queda declarado aquí porque no es evidente: `normalizarBusqueda` alimenta una columna **persistida** (`search_normalized`, D-011). Cambiar esa función no rompe ninguna compilación, pero deja los datos ya guardados calculados con la versión anterior, y unos usuarios se encontrarán y otros no sin patrón visible. Por eso toda modificación de esa función **debe** ir acompañada de una migración que repueble la columna entera. Es la única parte de este paquete cuyo cambio tiene efectos que el compilador no puede detectar.
+
 ## Pruebas del paquete
 
 Vitest, sobre lógica pura (D-009):
@@ -219,4 +335,6 @@ Vitest, sobre lógica pura (D-009):
 - La normalización del correo (recorte y minúsculas) es consistente en todos los esquemas.
 - `transicionesValidas` cubre los cinco estados; `cerrado` es terminal.
 - Los mensajes fijos existen y no están vacíos — impide que una constante se borre por accidente y rompa la igualdad que exige SC-018.
+- `OrdersQuerySchema` acepta `AAAA-MM-DD`, rechaza `15-08-2026`, rechaza el día inexistente `2026-02-30`, acepta `from = to`, rechaza `from > to` y acepta cada extremo por separado (FR-020).
+- `UpdateUserSchema` aplica a cada campo presente las mismas reglas que `CreateUserSchema` —el test compara ambos resultados sobre las mismas entradas inválidas—, y rechaza un cuerpo sin ningún campo (FR-010, FR-014).
 - `normalizarBusqueda` pliega acentos y la eñe, colapsa espacios y recorta; `escaparLike` neutraliza `%`, `_` y `\`. Se prueba con los casos de SC-021 —«MARÍA», «maria», «Nuñez» y «Nunez»— y con un término que contiene `%`, que debe encontrar solo a quien tenga ese carácter y no al padrón completo.

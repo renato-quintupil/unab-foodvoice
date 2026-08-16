@@ -1,0 +1,125 @@
+// Esquema de datos de FoodVoice · E1 (data-model.md)
+//
+// Los nombres de tabla y de columna van en snake_case singular; los del cliente
+// TypeScript, en camelCase. La correspondencia se declara con @map/@@map para
+// que las consultas SQL a mano —la guía de validación, el disparador de
+// inmutabilidad, el UPSERT del contador— usen los nombres del documento.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENTE
+  NEGOCIO
+  REPARTIDOR
+  ADMINISTRADOR
+}
+
+enum UserStatus {
+  ACTIVO
+  DESACTIVADO
+}
+
+enum AdminAction {
+  CREAR
+  EDITAR
+  CAMBIAR_ROL
+  DESACTIVAR
+  REACTIVAR
+  RESTABLECER_PASSWORD
+}
+
+/// Persona que accede a la plataforma. No hay borrado físico (RN-002):
+/// `status = DESACTIVADO` conserva el historial asociado.
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  fullName         String     @map("full_name")
+  /// `text` con UNIQUE, no `citext` (D-015). La normalización a minúsculas y
+  /// sin espacios al borde la aplican los esquemas Zod compartidos, que son la
+  /// única puerta de entrada de datos.
+  email            String     @unique
+  phone            String
+  passwordHash     String     @map("password_hash")
+  role             Role
+  status           UserStatus @default(ACTIVO)
+  /// Derivada de `normalizarBusqueda(full_name + ' ' + email)` (D-011).
+  /// Cambiar esa función exige una migración que repueble esta columna.
+  searchNormalized String     @map("search_normalized")
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions      Session[]
+  auditActed    AdminAuditLog[] @relation("actor")
+  auditTargeted AdminAuditLog[] @relation("target")
+
+  @@index([searchNormalized], map: "user_search_normalized_idx")
+  @@index([role, status], map: "user_role_status_idx")
+  /// Orden por defecto del listado (D-016). El desempate por `id` es lo que
+  /// hace el orden total: sin él un usuario puede aparecer en dos páginas.
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "user_created_at_id_idx")
+  @@map("user")
+}
+
+/// Vínculo temporal entre un usuario autenticado y su uso de la aplicación.
+/// **Sin restricción de unicidad sobre `user_id`**: un usuario puede tener
+/// varias sesiones vivas a la vez, en distintos navegadores (security CHK004).
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+  /// Congelado al iniciar sesión (FR-011, D-007): el cambio de rol rige desde
+  /// el próximo inicio de sesión, y ninguna sesión viva muta sus privilegios.
+  role           Role
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId], map: "session_user_id_idx")
+  @@map("session")
+}
+
+/// Contador de intentos fallidos y bloqueo temporal, asociado al **correo
+/// ingresado**, exista o no una cuenta con él (FR-033, D-003).
+///
+/// **Ausencia deliberada de clave foránea hacia `user`**: si la tuviera, sería
+/// imposible contar intentos sobre correos no registrados y el sistema
+/// respondería distinto para una cuenta existente que para una inexistente,
+/// filtrando exactamente lo que FR-008 prohíbe filtrar.
+///
+/// Sin índice sobre `locked_until`: se consulta siempre por el correo exacto.
+model LoginAttemptControl {
+  email       String    @id
+  failedCount Int       @default(0) @map("failed_count")
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("login_attempt_control")
+}
+
+/// Bitácora de solo-agregar de las acciones de HU-09 (FR-034).
+///
+/// Los usuarios se registran **por referencia, nunca por copia**: no hay
+/// ninguna columna con nombre, correo, teléfono ni valores anteriores. Su
+/// inmutabilidad la impone un disparador declarado en la migración inicial, no
+/// una convención de código. Sin índice sobre `target_user_id`: en v1 ninguna
+/// consulta lo aprovecharía (data CHK032).
+model AdminAuditLog {
+  id           String      @id @default(uuid()) @db.Uuid
+  actorUserId  String      @map("actor_user_id") @db.Uuid
+  targetUserId String      @map("target_user_id") @db.Uuid
+  action       AdminAction
+  occurredAt   DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  actor  User @relation("actor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  target User @relation("target", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  @@map("admin_audit_log")
+}

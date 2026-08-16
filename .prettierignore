@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+.next/
+coverage/
+pnpm-lock.yaml
+apps/web/src/components/ui/
+services/api/prisma/migrations/
