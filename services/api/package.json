@@ -1,6 +1,6 @@
 {
   "name": "@foodvoice/api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "API de FoodVoice — NestJS 11, monolito con módulos internos (auth, users, dashboard, audit, health)",
   "engines": {

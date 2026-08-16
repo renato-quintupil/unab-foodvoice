@@ -55,7 +55,8 @@ historial sobre pedidos que E2 crea).
   con Next.js, que reenvía a la API por la red interna de Docker (cookie
   same-origin, sin CORS).
 - **`services/api`** — NestJS 11, Prisma 6, bcrypt (coste 12), Zod. Monolito con
-  módulos internos (`auth`, `users`, `dashboard`, `audit`, `health`).
+  módulos internos (`auth`, `users`, `dashboard`, `audit`, `health`,
+  `categories`, `products`, `menu`).
 - **`packages/shared`** — fuente única de contratos: enums, esquemas Zod,
   mensajes en español y máquina de estados del pedido. No puede depender de
   `apps/web` ni de `services/api`.
@@ -71,7 +72,7 @@ cp .env.example .env               # variables obligatorias; sin ellas el arranq
 pnpm install
 docker compose up -d postgres
 pnpm --filter api db:migrate
-pnpm --filter api db:seed          # administrador semilla, idempotente
+pnpm --filter api db:seed          # administrador y catálogo, idempotente
 pnpm dev                           # api :3001 · web :3000
 
 pnpm test              # unitarios (falla si no se cumplen los umbrales de cobertura)
@@ -80,8 +81,13 @@ pnpm lint && pnpm typecheck && pnpm build
 ```
 
 Alternativa íntegra en contenedores: `docker compose up --build`.
-Detalle de variables, umbrales y validación funcional en
-`specs/001-acceso-y-usuarios/quickstart.md`.
+Detalle de variables, umbrales y validación funcional en el `quickstart.md` de
+cada épica: `specs/001-acceso-y-usuarios/` y
+`specs/002-administracion-menu-productos/`.
+
+**Producción**: el despliegue lo dispara un tag `v*`, que reejecuta el CI
+completo sobre el commit etiquetado antes de publicar. Instructivo, variables
+por servicio y comprobaciones posteriores en `docs/despliegue-produccion.md`.
 
 ## Convenciones
 
@@ -91,7 +97,8 @@ Detalle de variables, umbrales y validación funcional en
   puerta de entrada de datos, en frontend y backend.
 - **Autorización declarativa** con guards de NestJS (`@Roles(...)`), para que su
   ausencia sea visible en revisión de código.
-- Base de datos en `snake_case` singular (`user`, `session`, `admin_audit_log`).
+- Base de datos en `snake_case` singular (`user`, `session`, `admin_audit_log`,
+  `category`, `product`).
 - **Ningún secreto en el repositorio**; `.env` está en `.gitignore`.
 - Ramas de funcionalidad `NNN-nombre-en-kebab` (p. ej. `001-acceso-y-usuarios`);
   commits Conventional Commits con el asunto en español (`docs: ...`, `feat: ...`).
