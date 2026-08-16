@@ -129,6 +129,24 @@ export type ProductDto = {
   createdAt: string;
 };
 
+/**
+ * Respuesta de `GET /menu/products` (contracts/api.md § Consulta del menú).
+ *
+ * **No es `Paginated`**: el menú se muestra completo en una sola pantalla
+ * desplazable (D-029), de modo que no lleva `page` ni `totalPages` que nadie
+ * usaría.
+ *
+ * `priceTiers` viaja junto a los productos, y no dentro de cada uno, porque es
+ * una propiedad del **catálogo**: los dos cortes se calculan sobre todos los
+ * productos activos, con independencia de los filtros aplicados. `null` significa
+ * que **no hay tramos** —menos de tres productos activos, o todos al mismo
+ * precio (RN-016)—, y entonces una intención de precio no descarta ninguno.
+ */
+export type MenuResponse = {
+  items: ProductDto[];
+  priceTiers: { c1: number; c2: number } | null;
+};
+
 /** Formato único de respuesta de error de la API (`contracts/api.md`). */
 export type ApiError = {
   error: {

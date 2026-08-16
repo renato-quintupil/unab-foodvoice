@@ -6,6 +6,7 @@ import { CommonModule } from './common/common.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
 
 /**
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     DashboardModule,
     CategoriesModule,
+    ProductsModule,
   ],
 })
 export class AppModule {}

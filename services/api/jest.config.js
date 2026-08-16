@@ -32,6 +32,16 @@ module.exports = {
     '!src/auth/auth.controller.ts',
     '!src/auth/session.service.ts',
     '!src/users/users.controller.ts',
+    // El catálogo de E3, por la misma razón (D-031): la unicidad normalizada, el
+    // conteo de bloqueadores, la atomicidad de la desactivación y que un producto
+    // no ofrecible nunca salga de una consulta son garantías del motor. Lo que sí
+    // es lógica pura —los esquemas, el formato, la clasificación por tramo— tiene
+    // sus unitarios en `packages/shared` y en `price-tier.spec.ts`.
+    '!src/categories/categories.service.ts',
+    '!src/categories/categories.controller.ts',
+    '!src/products/products.service.ts',
+    '!src/products/products.controller.ts',
+    '!src/menu/**',
     '!src/dashboard/**',
     '!src/health/**',
     '!src/prisma/**',

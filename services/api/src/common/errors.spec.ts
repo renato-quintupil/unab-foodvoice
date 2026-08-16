@@ -23,7 +23,7 @@ import {
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los once códigos y ninguno más', () => {
+  it('declara los quince códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -37,6 +37,11 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         'ACCOUNT_LOCKED',
         'INTERNAL_ERROR',
         'UPSTREAM_UNAVAILABLE',
+        // Los cuatro que suma E3 (contracts/api.md § Códigos de error nuevos).
+        'CATEGORY_NAME_ALREADY_EXISTS',
+        'PRODUCT_NAME_ALREADY_EXISTS',
+        'CATEGORY_IN_USE',
+        'CATEGORY_INACTIVE',
       ].sort(),
     );
   });
