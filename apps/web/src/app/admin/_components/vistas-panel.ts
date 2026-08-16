@@ -30,7 +30,7 @@ export const VISTAS_DEL_PANEL: readonly VistaDelPanel[] = [
     ruta: '/admin',
     nombre: 'Panel',
     contenido:
-      'Usuarios activos por rol (cuatro cifras) y pedidos por estado (cinco cifras), más el enlace a Usuarios.',
+      'Usuarios activos por rol (cuatro cifras) y pedidos por estado (cinco cifras), más los enlaces a Usuarios, al reporte de pedidos y al menú.',
     accionesDeEscritura: [],
   },
   {

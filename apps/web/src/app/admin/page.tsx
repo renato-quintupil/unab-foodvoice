@@ -94,6 +94,24 @@ export default async function PaginaPanel() {
           </Link>
         </p>
       </section>
+
+      {/* El menú, que los cuatro roles consultan por igual (T073 de E3,
+          supuesto 13). El administrador lo ve **como el cliente**: navegar no es
+          modificar, y desde aquí no hay ninguna entrada a la administración del
+          catálogo, que es del rol negocio (FR-027). */}
+      <section aria-labelledby="menu" className="flex flex-col gap-3">
+        <h2 id="menu" className="text-lg font-medium">
+          Menú
+        </h2>
+        <p>
+          <Link
+            href="/menu"
+            className="text-sm text-[var(--color-primario)] underline underline-offset-4"
+          >
+            Ver el menú del local
+          </Link>
+        </p>
+      </section>
     </div>
   );
 }

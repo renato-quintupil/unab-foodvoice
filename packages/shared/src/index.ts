@@ -134,4 +134,5 @@ export type {
   CategoryDto,
   CategoryRef,
   ProductDto,
+  MenuResponse,
 } from './types/api';
