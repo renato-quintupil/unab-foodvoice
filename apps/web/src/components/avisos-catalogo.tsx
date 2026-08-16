@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { CatalogAction } from '@foodvoice/shared';
 import { AvisoExitoCatalogo } from '@/components/aviso-exito-catalogo';
 
@@ -25,8 +26,22 @@ import { AvisoExitoCatalogo } from '@/components/aviso-exito-catalogo';
  * Fuera de un proveedor, `useAvisoCatalogo` devuelve `null`: quien lo use
  * entonces pinta el aviso donde estaba, que es lo correcto para un formulario de
  * página completa —allí no hay lista de la que salirse—.
+ *
+ * **Hasta dónde sobrevive.** Sobrevivir a la fila no es sobrevivir a todo: el
+ * aviso vale para el listado en el que ocurrió la acción. Al cambiar los filtros
+ * se está mirando otra cosa, y «Se dio de baja Pizza Cuatro Quesos.» sobre una
+ * lista donde ese producto ya no figura describe una pantalla que no está a la
+ * vista. Por eso el aviso recuerda con qué parámetros de búsqueda nació y se
+ * retira en cuanto cambian.
+ *
+ * El refresco que dispara la propia acción no toca los parámetros, así que la
+ * confirmación que E3 arregló sigue apareciendo: lo que la retira es que la
+ * persona navegue a otro listado, no que los datos se recarguen.
  */
 type Aviso = { accion: CatalogAction; nombre: string };
+
+/** El aviso junto al listado al que se refiere, para saber cuándo caduca. */
+type AvisoVigente = Aviso & { parametros: string };
 
 const Contexto = createContext<((aviso: Aviso) => void) | null>(null);
 
@@ -35,13 +50,24 @@ export function useAvisoCatalogo(): ((aviso: Aviso) => void) | null {
 }
 
 export function AvisosCatalogo({ children }: { children: ReactNode }) {
-  const [aviso, setAviso] = useState<Aviso | null>(null);
+  const parametros = useSearchParams().toString();
+  const [aviso, setAviso] = useState<AvisoVigente | null>(null);
+
+  const publicar = useCallback(
+    (nuevo: Aviso) => setAviso({ ...nuevo, parametros }),
+    [parametros],
+  );
+
+  // Derivado en el render, sin efecto: el aviso caduca en la misma pintura en
+  // que llegan los parámetros nuevos, de modo que no llega a verse sobre el
+  // listado al que ya no pertenece.
+  const vigente = aviso?.parametros === parametros ? aviso : null;
 
   return (
-    <Contexto.Provider value={setAviso}>
+    <Contexto.Provider value={publicar}>
       {/* Reserva el sitio arriba del listado; el aviso aparece donde la vista
           empieza, no al final de una tabla de veinte filas. */}
-      {aviso && <AvisoExitoCatalogo accion={aviso.accion} nombre={aviso.nombre} />}
+      {vigente && <AvisoExitoCatalogo accion={vigente.accion} nombre={vigente.nombre} />}
       {children}
     </Contexto.Provider>
   );

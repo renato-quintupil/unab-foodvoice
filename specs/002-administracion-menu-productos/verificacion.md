@@ -19,6 +19,11 @@ pedidos, es decir de E2.
 las 572 pruebas automáticas detectaba, y los dos estaban en la parte de la épica
 que más confianza daba. Están descritos abajo, con su corrección.
 
+**Y tampoco lo fue la prueba de humo posterior**, hecha ya sobre el despliegue
+en contenedores antes de integrar: encontró **tres cosas más**, entre ellas un
+arranque roto en Windows que ninguna de las tres capas podía ver. Está al final
+del documento, en § Prueba de humo previa a la integración.
+
 ---
 
 ## Resumen
@@ -235,3 +240,90 @@ las dos capas.
   catálogo y que no exista ningún histórico— quedó comprobado en V-53.
 - **Navegadores distintos del de la validación**: se recorrió sobre Chrome. El
   compromiso de FR-038 con el resto se hereda de FR-040 de E1.
+
+---
+
+## Prueba de humo previa a la integración (2026-08-16)
+
+Ejecutada **después** de fusionar `002-administracion-menu-productos` en la rama
+de integración y **sobre el despliegue en contenedores**, no en modo desarrollo:
+`docker compose up --build`, que es la diferencia que la hace valer la pena.
+
+Se recorrieron el inicio de sesión, la autorización de las tres pantallas, el
+listado del negocio con sus filtros, las cuatro acciones de estado, el alta con
+su validación, la ficha y el menú del cliente. **Todo lo que la validación
+funcional había dejado en verde siguió en verde**, incluidas las dos
+correcciones de los defectos de arriba, que se comprobaron una a una.
+
+Aun así aparecieron **tres cosas nuevas**, y la primera es la que justifica que
+esta prueba exista.
+
+### 3 · El arranque en contenedores estaba roto en Windows (CRLF)
+
+**Qué pasaba.** `docker compose up --build` fallaba con
+`exec ./docker-entrypoint.sh: no such file or directory`, y el contenedor `api`
+entraba en un ciclo de reinicios. El archivo existía y era ejecutable.
+
+**Por qué.** Con `core.autocrlf=true` —el valor por omisión de Git en Windows—
+el script quedaba en el árbol de trabajo con finales CRLF, así que el kernel de
+Linux leía el shebang como `/bin/sh\r` y buscaba un intérprete inexistente. El
+mensaje de error no menciona los finales de línea por ninguna parte.
+
+**Por qué ninguna capa lo detectó.** Las tres son ciegas a esto por
+construcción: las unitarias y las de integración no arrancan contenedores, y CI
+corre sobre Linux, donde `autocrlf` no reescribe nada. **Solo falla en la
+máquina de quien desarrolla en Windows**, que es justo donde nadie mira dos
+veces.
+
+**Corrección.** Un `.gitattributes` en la raíz que fija `eol=lf` para `*.sh`,
+`Dockerfile` y `docker-compose*.yml`. Se comprobó borrando el script y
+restaurándolo con `git checkout`: vuelve con LF y deja de figurar como
+modificado.
+
+### 4 · La ficha de un producto inexistente respondía 200
+
+**Qué pasaba.** `/menu/<id-que-no-existe>` mostraba el texto correcto —«No
+encontramos el producto que buscas»— con código **200**.
+
+**Por qué importa.** Para la persona no cambia nada; para todo lo que no es una
+persona —buscadores, monitoreo, esta misma prueba de humo— un 200 afirma que la
+dirección es válida.
+
+**Corrección.** `notFound()` y la pantalla movida a `not-found.tsx`. **No
+debilita a FR-028, lo refuerza**: un producto dado de baja y uno inexistente
+devuelven ahora el mismo 404 y la misma pantalla, de modo que tampoco desde
+fuera del navegador se puede sondear qué identificadores existen. Verificado en
+los tres casos: inexistente 404, dado de baja 404, válido 200.
+
+### 5 · El aviso de éxito sobrevivía al cambio de filtros
+
+**Qué pasaba.** Tras dar de baja un producto, al filtrar por «Dado de baja» el
+aviso «Se dio de baja Pizza Cuatro Quesos.» seguía en pantalla, ahora sobre un
+listado donde ese producto aparece precisamente como dado de baja.
+
+**Por qué.** Es el reverso del arreglo del defecto 1. Al elevar el aviso por
+encima del listado para que sobreviviera a su fila, pasó a sobrevivir también a
+la navegación, porque el proveedor no se desmonta al cambiar los parámetros de
+búsqueda. **La corrección de un defecto de esta familia creó otro de la misma
+familia**, que es la observación más útil de esta prueba.
+
+**Corrección.** El aviso recuerda con qué parámetros de búsqueda nació y se
+retira en cuanto cambian; el refresco que dispara la propia acción no los toca,
+así que la confirmación del defecto 1 sigue apareciendo. Cubierto por una prueba
+nueva que fija las dos mitades del comportamiento.
+
+### Comprobaciones tras las tres correcciones
+
+| Orden | Resultado |
+|---|---|
+| `pnpm test` | ✅ **445 pruebas** (`shared` 181 · `web` 144 · `api` 120) |
+| `pnpm test:integration` | ✅ **434 pruebas, 38 baterías**, contra PostgreSQL real |
+| `pnpm lint` | ✅ sin avisos |
+| `pnpm typecheck` | ✅ los tres paquetes |
+| `pnpm build` | ⚠️ la misma nota de Windows de arriba · ✅ en el contenedor Linux |
+
+La lección que E3 lleva a las épicas siguientes se amplía con una tercera:
+además de que **cada pieza puede funcionar aislada sin que el usuario vea lo
+prometido**, y de que **arreglar un defecto de presentación puede crear otro
+igual**, ahora consta que **el despliegue en contenedores es una capa aparte**:
+las 879 pruebas automáticas no dicen nada sobre si la aplicación arranca.

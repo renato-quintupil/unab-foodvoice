@@ -25,9 +25,12 @@ import { FormularioProducto } from '@/app/negocio/productos/_components/formular
 const refresh = vi.fn();
 const push = vi.fn();
 
+/** Mutable: hay pruebas que necesitan mover a la persona a otro listado. */
+const navegacion = { parametros: new URLSearchParams() };
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => navegacion.parametros,
 }));
 
 const PIZZAS: CategoryDto = {
@@ -74,6 +77,7 @@ let fetchSimulado: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   refresh.mockClear();
   push.mockClear();
+  navegacion.parametros = new URLSearchParams();
   fetchSimulado = vi.fn();
   vi.stubGlobal('fetch', fetchSimulado);
 });
@@ -519,6 +523,37 @@ describe('Acciones de fila · baja y reactivación (FR-020, FR-021)', () => {
     expect(screen.getByTestId('aviso-exito')).toHaveTextContent(
       MSG_EXITO_CATALOGO[CatalogAction.DAR_DE_BAJA_PRODUCTO]('Pizza Napolitana'),
     );
+  });
+
+  it('pero **caduca al cambiar los filtros**: no describe un listado que no se está mirando', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(respuesta(200, { ...PRODUCTO, active: false }));
+
+    // Un elemento nuevo en cada pintura: React se salta el render si recibe el
+    // mismo objeto, y entonces la prueba no probaría nada.
+    const arbol = () => (
+      <AvisosCatalogo>
+        <AccionesFila producto={PRODUCTO} />
+      </AvisosCatalogo>
+    );
+    const { rerender } = render(arbol());
+
+    await usuario.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    const dialogo = screen.getByRole('alertdialog');
+    const confirmar = within(dialogo).getAllByRole('button', { name: 'Dar de baja' });
+    await usuario.click(confirmar[confirmar.length - 1]!);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('aviso-exito')).toBeInTheDocument();
+    });
+
+    // La persona filtra por «Dado de baja». El aviso hablaba del listado
+    // anterior; dejarlo ahí anuncia una baja sobre una lista donde el producto
+    // aparece justamente como dado de baja.
+    navegacion.parametros = new URLSearchParams({ status: 'DADO_DE_BAJA' });
+    rerender(arbol());
+
+    expect(screen.queryByTestId('aviso-exito')).not.toBeInTheDocument();
   });
 
   it('**ofrece reclasificar** un producto dado de baja, que es la salida de FR-021', () => {

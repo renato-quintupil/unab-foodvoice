@@ -1,16 +1,15 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   ETIQUETA_DIMENSION,
   ETIQUETA_ESTADO_PRODUCTO,
   ETIQUETA_TRAMO,
   Dimension,
   MSG_INGREDIENTES_REFERENCIALES,
-  MSG_PRODUCTO_NO_ENCONTRADO,
   ProductStatus,
   formatearPrecio,
   type ProductDto,
 } from '@foodvoice/shared';
-import { Button } from '@/components/ui/button';
 import { pedirALaApiOpcional } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
 
@@ -23,10 +22,11 @@ export const dynamic = 'force-dynamic';
  * cliente decide, y el recorte de la tarjeta existe solo para que veinte
  * descripciones quepan en una pantalla (D-033).
  *
- * Un producto que no existe y uno dado de baja llevan **a la misma pantalla**, sin
- * ninguna diferencia observable: distinguirlos revelaría que el identificador
- * existe, que es justo lo que FR-028 evita al exigir que un producto retirado no
- * aparezca «ni accediendo directamente a su ficha por su dirección».
+ * Un producto que no existe y uno dado de baja llevan **a la misma pantalla** y
+ * al mismo código 404, sin ninguna diferencia observable: distinguirlos
+ * revelaría que el identificador existe, que es justo lo que FR-028 evita al
+ * exigir que un producto retirado no aparezca «ni accediendo directamente a su
+ * ficha por su dirección». La pantalla está en `not-found.tsx`.
  */
 export default async function PaginaFichaProducto({
   params,
@@ -37,7 +37,7 @@ export default async function PaginaFichaProducto({
   const { id } = await params;
 
   const producto = await pedirALaApiOpcional<ProductDto>(`/menu/products/${id}`);
-  if (!producto) return <NoEncontrado />;
+  if (!producto) notFound();
 
   const agotado = producto.status === ProductStatus.AGOTADO;
 
@@ -109,24 +109,6 @@ export default async function PaginaFichaProducto({
           </p>
         </section>
       )}
-    </main>
-  );
-}
-
-/**
- * La misma pantalla para un identificador inexistente y para un producto que ya
- * no está en el menú (T070, D-032).
- */
-function NoEncontrado() {
-  return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
-      <h1 className="text-2xl font-semibold">{MSG_PRODUCTO_NO_ENCONTRADO}</h1>
-      <p className="text-sm text-[var(--color-tenue)]">
-        Puede que ya no esté en el menú o que la dirección no sea correcta.
-      </p>
-      <Button asChild variant="outline">
-        <Link href="/menu">Volver al menú</Link>
-      </Button>
     </main>
   );
 }

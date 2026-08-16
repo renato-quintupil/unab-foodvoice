@@ -1,0 +1,28 @@
+# Finales de línea normalizados.
+#
+# Sin esta declaración, un clon en Windows con `core.autocrlf=true` deja los
+# scripts de shell con CRLF, y el `docker-entrypoint.sh` de `api` falla al
+# arrancar con «exec ./docker-entrypoint.sh: no such file or directory»: el
+# kernel de Linux lee el shebang como `/bin/sh\r` y busca un intérprete que no
+# existe. El error no menciona los finales de línea por ninguna parte.
+
+# Por defecto, Git decide qué es texto y lo normaliza a LF en el repositorio.
+* text=auto
+
+# Todo lo que un contenedor Linux ejecuta o interpreta va con LF **también en
+# el árbol de trabajo**, sin importar el sistema de quien clone.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# Archivos binarios: Git no debe tocarlos.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
