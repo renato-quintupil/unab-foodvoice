@@ -105,6 +105,10 @@ Su base de datos la levanta el script `pretest:integration`, que arranca `docker
 
 Que la URL la fije el código y no se herede del entorno es deliberado, y no solo por comodidad: la batería trunca todas las tablas entre casos, así que una `DATABASE_URL` heredada apuntando a la base de desarrollo habría borrado los datos de quien la ejecutara. Para apuntar a otra base —un servidor de integración continua, por ejemplo— existe `DATABASE_URL_TEST`, que obliga a nombrarla a propósito. Al terminar, `docker compose -p foodvoice-test -f docker-compose.test.yml down` la retira; dejarla en pie solo cuesta memoria y ahorra el arranque siguiente.
 
+**La contraseña `test` que aparece en `docker-compose.test.yml` y en `test/setup.ts` no es un secreto, y se declara aquí para que no se lea como una contradicción con SC-027** (T138). Ese criterio exige que el repositorio no contenga ninguna contraseña ni valor secreto, y quien lo recorra al pie de la letra encontrará esas dos apariciones. La diferencia es de fondo, no de matiz: **no protege nada**. Da acceso a una base que se crea vacía al arrancar la batería, vive íntegramente en memoria (`tmpfs`), no tiene volumen ni sobrevive al contenedor, escucha en un puerto distinto del de desarrollo y jamás contiene un dato real —cada caso la deja sin una sola fila—. Un valor que no resguarda nada no es una credencial: es un parámetro de arranque, del mismo orden que el nombre de la base o el número de puerto, que también están escritos ahí.
+
+Se descartó generarla al vuelo. Habría que pasarla del `docker compose up` al proceso de pruebas por alguna vía —una variable exportada, un archivo temporal—, es decir reintroducir exactamente el acoplamiento con el entorno que T132 quitó y que, mal resuelto, ya provocó una vez que la batería apuntara a donde no debía. Se pagaría complejidad real a cambio de proteger algo que no existe. Lo que SC-027 sí protege —la contraseña del administrador semilla, la de la PostgreSQL de desarrollo y la cadena de conexión— sigue viviendo **solo** en `.env`, que no se versiona, y el repositorio conserva únicamente la plantilla que las nombra sin valores.
+
 **Se considera aprobado** cuando las cinco órdenes terminan sin error y se cumplen los umbrales de cobertura:
 
 | Ámbito | Umbral | Motivo |
@@ -251,7 +255,7 @@ Catorce comprobaciones que no se hacen mirando la aplicación. **Diez de ellas s
 | # | Qué comprobar | Requisito |
 |---|---|---|
 | D1 | La tabla `user` no contiene ninguna contraseña legible; `password_hash` almacena hashes bcrypt | FR-007, FR-016 |
-| D2 | No hay credenciales ni secretos en el repositorio; `.env` está ignorado por git | FR-007, FR-028 |
+| D2 | No hay credenciales ni secretos en el repositorio; `.env` está ignorado por git. **Única excepción declarada**: la contraseña `test` de la base efímera de pruebas, que no resguarda nada — ver § Comprobaciones automáticas | FR-007, FR-028 |
 | D3 | Cada acción administrativa de B1–B11 dejó una fila en `admin_audit_log` con administrador, usuario afectado, acción y fecha | FR-034 |
 | D4 | La cancelación de B16 **no** dejó ninguna fila en `admin_audit_log` | FR-034, FR-035 |
 | D5 | `admin_audit_log` no contiene contraseñas en ninguna de sus columnas | FR-034 |

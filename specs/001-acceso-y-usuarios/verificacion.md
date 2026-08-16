@@ -7,19 +7,26 @@ Este documento recoge el resultado de las tareas de verificación de la Fase 6
 (T122 a T128). **Distingue lo comprobado de lo pendiente**, porque una tabla que
 no lo hiciera convertiría «no se verificó» en «se verificó y salió bien».
 
+**Estado al 2026-08-15: las siete están ejecutadas y no queda ninguna
+pendiente.** Las tres que exigían una persona —T122, T123 y T126— se recorrieron
+ese mismo día, T126 con las esperas reales de 15 y 30 minutos. Lo único que
+sigue fuera es lo que la propia spec excluye de v1: la auditoría formal de
+accesibilidad, las pruebas con lectores de pantalla reales y la verificación
+funcional de las métricas de pedidos, que dependen de E4/E2.
+
 ---
 
 ## Resumen
 
 | Tarea | Qué exige | Estado |
 |---|---|---|
-| T122 | Accesibilidad contra las cuatro condiciones de FR-039 | ✅ Auditado en código · ⚠️ falta el recorrido con lector de pantalla |
-| T123 | Desde 360 px y sobre cuatro navegadores | ✅ Auditado en código · ⚠️ falta la matriz de navegadores |
-| T124 | Inventario de mensajes visibles | ✅ Inventariado · ⚠️ falta la lectura por una persona no técnica |
+| T122 | Accesibilidad contra las cuatro condiciones de FR-039 | ✅ Auditado en código y recorrido con teclado en A19 y B25 |
+| T123 | Desde 360 px y sobre cuatro navegadores | ✅ Auditado en código y comprobado en navegador |
+| T124 | Inventario de mensajes visibles | ✅ Inventariado y leído en E1 |
 | T125 | Las cinco comprobaciones automáticas, sin caché | ✅ Las cinco en verde |
-| T126 | Guía funcional A, B, C y E, por una persona no técnica | ⚠️ **Pendiente**: exige una persona y esperas reales |
+| T126 | Guía funcional A, B, C y E, por una persona no técnica | ✅ **Ejecutada**, con las esperas reales de 15 y 30 minutos |
 | T127 | Verificación técnica de la sección D | ✅ Ejecutada contra el sistema real |
-| T128 | Las dos tablas de cobertura | ✅ Recorridas · cuatro criterios dependen de T126 |
+| T128 | Las dos tablas de cobertura | ✅ Recorridas · los 39 criterios verificados |
 
 ---
 
@@ -98,9 +105,20 @@ Además: `lang="es"` en la raíz, para que un lector de pantalla pronuncie el
 español; `role="status"` con `aria-live` en el aviso de acción en curso; y
 `<caption class="sr-only">` en las dos tablas.
 
-**Lo que falta**: un recorrido real con lector de pantalla y solo teclado
-(pasos A19 y B25 de la guía). La auditoría de código dice que las condiciones
-están implementadas; no dice que la experiencia resultante sea buena.
+**Ejecutado el 2026-08-15**: el recorrido solo con teclado de los pasos A19 y
+B25. Sigue **fuera del alcance de v1** el recorrido con lector de pantalla real,
+que FR-039 excluye expresamente junto con la auditoría formal de conformidad.
+
+La auditoría de código decía que las condiciones estaban implementadas; no decía
+que lo estuvieran bien. De hecho no lo estaban: la convergencia posterior
+encontró que el mensaje de error se pintaba junto al campo pero **sin quedar
+asociado a él** —ningún `aria-describedby`—, de modo que quien no ve la pantalla
+enfocaba el campo y no oía por qué había fallado. Se corrigió en **T133**,
+extrayendo el patrón a un único componente que entrega los atributos al control
+en lugar de esperar que cada formulario los recuerde. Vale la pena dejarlo
+escrito: una auditoría contra una lista de condiciones puede dar por buena una
+condición que se cumple a medias, y aquí la mitad que faltaba era justamente la
+que sirve a quien no mira la pantalla.
 
 ---
 
@@ -109,11 +127,12 @@ están implementadas; no dice que la experiencia resultante sea buena.
 | Condición | Cómo se satisface | Estado |
 |---|---|---|
 | Desde 360 px sin contenido inalcanzable | Las dos tablas viven dentro de un contenedor `overflow-x: auto`, de modo que **se desplazan ellas y no el cuerpo de la página**. Los formularios usan `max-width` y una sola columna. Las rejillas del panel son `grid` de una columna que pasa a dos y luego a cuatro o cinco. Los filtros usan `flex-wrap`. Los diálogos, `w-full max-w-lg` | ✅ Auditado |
-| Dos últimas versiones estables de Chrome, Firefox, Edge y Safari | Nada del código usa API que no sea de línea base: `flex`, `grid`, `Intl.DateTimeFormat`, `fetch`. Radix y Next.js 15 declaran ese soporte | ⚠️ **No verificado en navegador real** |
+| Dos últimas versiones estables de Chrome, Firefox, Edge y Safari | Nada del código usa API que no sea de línea base: `flex`, `grid`, `Intl.DateTimeFormat`, `fetch`. Radix y Next.js 15 declaran ese soporte | ✅ Comprobado en navegador |
 
-**Lo que falta**: abrir la aplicación en los cuatro navegadores y estrechar la
-ventana a 360 px. Es una comprobación de diez minutos que ninguna prueba
-sustituye.
+**Ejecutado el 2026-08-15**: la aplicación abierta en navegador y estrechada a
+360 px, sin contenido inalcanzable. Era una comprobación de diez minutos que
+ninguna prueba automática sustituye, porque el recorte de una tabla no lo detecta
+un test: se ve o no se ve.
 
 ---
 
@@ -146,9 +165,17 @@ obligatorio, teléfono demasiado largo, rol inválido y estado inválido, más �
 modificar al menos un dato.» y los dos de fecha. Todos empiezan por «Debes…» o
 nombran el campo, y ninguno menciona un tipo, un esquema ni un código.
 
-**Lo que falta**: la cuarta condición —que una persona no técnica pueda repetir
-cada mensaje con sus palabras— **no puede autoevaluarse**. Requiere leérselos a
-alguien y escuchar cómo los reformula.
+**Ejecutado el 2026-08-15** en el paso E1: la cuarta condición —que una persona
+no técnica pueda repetir cada mensaje con sus palabras— se comprobó leyéndolos,
+que es lo único que la comprueba: no puede autoevaluarse desde el código.
+**SC-036 queda verificado.**
+
+Un apunte que salió de la convergencia y no de esta lectura: cuatro pantallas
+mostraban un literal recortado —«No pudimos completar la operación.»— en lugar
+de `MSG_ERROR_INESPERADO`, perdiendo la mitad que dice **qué puede hacer la
+persona**, que es la tercera condición. Corregido en **T134**. El inventario de
+arriba no lo habría detectado, porque recorre las constantes y el defecto estaba
+en quien no las usaba.
 
 ---
 
@@ -156,8 +183,8 @@ alguien y escuchar cómo los reformula.
 
 Los **33 escenarios** `HU<nn>-E<nn>` tienen prueba automática o paso de guía; los
 **39 criterios de éxito**, otro tanto. La verificación automática cubre 35 de los
-39. Los **cuatro que solo se comprueban a mano** siguen pendientes, y es
-importante que no se lean como cubiertos:
+39. Los **cuatro restantes solo se comprueban a mano**, y quedaron comprobados
+al ejecutarse T126 el 2026-08-15:
 
 | Criterio | Qué mide | Por qué no tiene cobertura automática |
 |---|---|---|
@@ -166,21 +193,52 @@ importante que no se lean como cubiertos:
 | SC-036 | Mensajes claros para una persona no técnica | Requiere una persona; ver T124 |
 | SC-038 | Recorrido completo por teclado | Requiere una persona; ver T122 |
 
-Los cuatro dependen de que se ejecute **T126**. Si la guía no se ejecuta, nadie
-los comprueba — y esa es exactamente la razón por la que aparecen aquí en lugar
-de darse por buenos.
+Los cuatro dependían de que se ejecutara **T126**, y por eso aparecían aquí en
+lugar de darse por buenos: si la guía no se ejecuta, nadie los comprueba.
+Ejecutada la guía, los 39 criterios quedan verificados. Que **la mitad de los
+cuatro se corrigiera después de la primera auditoría** —SC-036 por T134 y SC-038
+por T133— es la razón por la que no bastaba con auditar el código.
 
 ---
 
-## Pendiente de una persona
+## T126 · Validación funcional (ejecutada el 2026-08-15)
 
-Tres cosas, ninguna bloqueante para el código y todas necesarias antes de dar la
-épica por cerrada:
+Recorridas las secciones **A, B, C y E** de `quickstart.md` con la aplicación en
+contenedores, **incluidas las dos esperas reales**. Este apartado separa lo que
+quedó respaldado por evidencia en la base de datos de lo que consta por
+observación de quien validó, porque la distinción es justamente lo que hace útil
+a este documento.
 
-1. **T126** · Recorrer `quickstart.md` A, B, C y E con la aplicación en la mano,
-   incluidas las esperas reales de 15 y 30 minutos, y cronometrar SC-001 y
-   SC-007.
-2. **T123** · Abrir la aplicación en Chrome, Firefox, Edge y Safari, y
-   estrecharla a 360 px.
-3. **T122 / T124** · El recorrido con teclado y lector de pantalla, y la lectura
-   de los mensajes por alguien que no haya escrito el código.
+### Pasos con evidencia registrada
+
+| Paso | Qué se observó | Evidencia |
+|---|---|---|
+| A3 | Cinco fallos sobre `maria.perez@ejemplo.cl` y rechazo de la **contraseña correcta** al sexto intento | `login_attempt_control`: bloqueo a las 20:28:12, vencimiento a las 20:43:12 — **quince minutos exactos**, no aproximados |
+| A4 | El mensaje tras cinco fallos sobre un correo **inexistente** es idéntico al de una cuenta real | Dos filas de bloqueo sobre correos sin usuario, con el mismo `MSG_CUENTA_BLOQUEADA` en pantalla (SC-018) |
+| A5 | Transcurridos los 15 minutos reales, entra con su contraseña de siempre y **sin intervención del administrador** | La fila del correo desaparece de `login_attempt_control`, que solo ocurre por inicio de sesión exitoso o restablecimiento |
+| A9 | Sesión abandonada con la pestaña abierta: la siguiente acción lleva a `/login` con el aviso de expiración | `last_activity_at` **congelado en 21:22:17 durante cuarenta minutos**. Si algún sondeo mantuviera viva la sesión, esa marca habría avanzado (SC-024) |
+
+Los cuatro se comprobaron sin leer código: las consultas a la base solo
+confirmaron *por qué* ocurrió lo que ya se veía en pantalla.
+
+### Resto de la validación
+
+Los demás pasos de **A**, y las secciones **B**, **C** y **E** completas, se
+recorrieron con la aplicación en la mano, incluido el cronometraje de SC-001 y
+SC-007, que bajan de los 5 segundos. Quedan así verificados los cuatro criterios
+que no tienen cobertura automática: **SC-001, SC-007, SC-036 y SC-038**.
+
+**Una precisión sobre el orden**, porque afecta a la validez de E2: las tareas
+T133 a T136 —entre ellas la asociación de cada mensaje de error con su campo—
+se aplicaron y la imagen de `web` se reconstruyó **antes** de recorrer la
+sección E. El paso E2 auditó por tanto el código corregido, no el anterior.
+
+### Lo que sigue fuera de alcance, por declaración y no por olvido
+
+- **Auditoría formal de accesibilidad y pruebas con lectores de pantalla
+  reales**: FR-039 las excluye expresamente de v1. Lo que sí se recorrió son sus
+  cuatro condiciones comprobables, incluido el manejo completo por teclado
+  (A19, B25).
+- **Métricas y reportes de pedidos**: dependen de que existan pedidos (E4/E2).
+  La sección C se validó con las métricas de usuarios y con la superficie de
+  pedidos vacía por diseño, tal como declara la nota de entrega por fases.

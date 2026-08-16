@@ -12,7 +12,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 
 | Épica | HU | Spec | Estado |
 | --- | --- | --- | --- |
-| **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | Diseño y tareas completos · **implementación no iniciada** (0 / 109 tareas) |
+| **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | **Terminada** · 138 / 138 tareas · construida y verificada, incluida la validación funcional a mano |
 | E4 · Trazabilidad del pedido | HU-03 | — | Sin especificar |
 | E3 · Administración de menú | HU-02, HU-14 | — | Sin especificar |
 | E2 · Gestión de pedidos | HU-01, HU-11, HU-12 | — | Sin especificar |
@@ -37,13 +37,28 @@ Rama de trabajo: `001-acceso-y-usuarios`.
 | [`data-model.md`](./001-acceso-y-usuarios/data-model.md) | Entidades, transiciones y esquema Prisma |
 | [`contracts/`](./001-acceso-y-usuarios/contracts/) | Endpoints HTTP y contratos de dominio compartidos |
 | [`quickstart.md`](./001-acceso-y-usuarios/quickstart.md) | Puesta en marcha y validación funcional paso a paso |
-| [`tasks.md`](./001-acceso-y-usuarios/tasks.md) | 109 tareas ordenadas por dependencia |
+| [`tasks.md`](./001-acceso-y-usuarios/tasks.md) | 138 tareas ordenadas por dependencia |
+| [`verificacion.md`](./001-acceso-y-usuarios/verificacion.md) | Resultado de las tareas de verificación, con lo comprobado y lo pendiente |
 | [`checklists/`](./001-acceso-y-usuarios/checklists/) | Calidad de requisitos por ámbito |
 
 Fases de entrega: **A** cimientos (monorepo, `packages/shared`, esquema, semilla)
 → **B** HU-08 autenticación y sesión → **C** HU-09 gestión de usuarios y roles →
 **D** HU-10 panel y reportes. Cada fase es verificable de forma independiente con
 la sección correspondiente de `quickstart.md`.
+
+**Por qué se da por terminada.** Las cuatro fases están construidas, las dos
+capas automáticas pasan en verde —unitarios con sus umbrales de cobertura, e
+integración contra PostgreSQL real— y la **validación funcional se ejecutó el
+2026-08-15** con las esperas reales de 15 y 30 minutos, de modo que los cuatro
+criterios sin cobertura automática —SC-001, SC-007, SC-036 y SC-038— quedan
+verificados. El detalle está en
+[`verificacion.md`](./001-acceso-y-usuarios/verificacion.md).
+
+Sigue fuera de v1, por decisión declarada y no por omisión: la auditoría formal
+de accesibilidad y las pruebas con lectores de pantalla reales (FR-039), y la
+verificación funcional de las **métricas y reportes de pedidos**, que necesitan
+que existan pedidos y por tanto esperan a E4/E2. Su superficie está construida y
+responde vacía por diseño.
 
 ## Alcance de v1
 

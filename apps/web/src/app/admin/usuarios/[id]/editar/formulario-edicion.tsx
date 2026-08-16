@@ -6,14 +6,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   AdminAction,
+  MSG_ERROR_INESPERADO,
   UpdateUserSchema,
   type UpdateUserInput,
   type UserDto,
 } from '@foodvoice/shared';
 import { AccionEnCurso } from '@/components/accion-en-curso';
 import { AvisoExito } from '@/components/aviso-exito';
+import { Campo } from '@/components/campo';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { api, ErrorDeApi } from '@/lib/api-client';
 
 /**
@@ -55,7 +56,7 @@ export function FormularioEdicion({ usuario }: { usuario: UserDto }) {
       router.refresh();
     } catch (fallo) {
       if (!(fallo instanceof ErrorDeApi)) {
-        setError('No pudimos completar la operación.');
+        setError(MSG_ERROR_INESPERADO);
         return;
       }
 
@@ -84,29 +85,17 @@ export function FormularioEdicion({ usuario }: { usuario: UserDto }) {
         </p>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="fullName">Nombre completo</Label>
-        <Input id="fullName" {...register('fullName')} aria-invalid={!!errors.fullName} />
-        {errors.fullName && (
-          <p className="text-sm text-[var(--color-error)]">{errors.fullName.message}</p>
-        )}
-      </div>
+      <Campo id="fullName" etiqueta="Nombre completo" error={errors.fullName?.message}>
+        {(control) => <Input {...control} {...register('fullName')} />}
+      </Campo>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input id="email" type="email" {...register('email')} aria-invalid={!!errors.email} />
-        {errors.email && (
-          <p className="text-sm text-[var(--color-error)]">{errors.email.message}</p>
-        )}
-      </div>
+      <Campo id="email" etiqueta="Correo electrónico" error={errors.email?.message}>
+        {(control) => <Input {...control} type="email" {...register('email')} />}
+      </Campo>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="phone">Teléfono</Label>
-        <Input id="phone" {...register('phone')} aria-invalid={!!errors.phone} />
-        {errors.phone && (
-          <p className="text-sm text-[var(--color-error)]">{errors.phone.message}</p>
-        )}
-      </div>
+      <Campo id="phone" etiqueta="Teléfono" error={errors.phone?.message}>
+        {(control) => <Input {...control} {...register('phone')} />}
+      </Campo>
 
       <AccionEnCurso type="submit" enCurso={isSubmitting} textoEnCurso="Guardando…">
         Guardar cambios

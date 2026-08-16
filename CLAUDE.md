@@ -9,11 +9,21 @@ espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
 poblados, y las dos capas automáticas pasan en verde: unitarios con sus umbrales
 de cobertura, e integración con 19 baterías y 180 pruebas contra PostgreSQL real.
 
-Quedan **dos verificaciones que exigen una persona** y no código, ambas trazadas
-en `specs/001-acceso-y-usuarios/verificacion.md`: la guía funcional completa con
-las esperas reales de 15 y 30 minutos (T126) y el recorrido en cuatro navegadores
-desde 360 píxeles (T123). Mientras T126 no se ejecute, SC-001, SC-007, SC-036 y
-SC-038 no están verificados. La siguiente épica del orden sugerido es E4.
+La **validación funcional se ejecutó el 2026-08-15**, con las esperas reales de
+15 y 30 minutos, junto con el recorrido por teclado y desde 360 píxeles. Los 39
+criterios de éxito quedan verificados, incluidos los cuatro que no tienen
+cobertura automática (SC-001, SC-007, SC-036 y SC-038). El detalle, paso por
+paso, en `specs/001-acceso-y-usuarios/verificacion.md`.
+
+Esa validación **no fue un trámite**: dos de esos cuatro criterios no se cumplían
+cuando solo se había auditado el código —el error de formulario no quedaba
+asociado a su campo, y cuatro pantallas usaban un mensaje recortado en lugar del
+compartido—, y se corrigieron en T133 y T134. Vale la pena tenerlo presente al
+cerrar las épicas siguientes.
+
+Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
+de pantalla reales (FR-039), y la verificación funcional de las métricas de
+pedidos, que espera a E4/E2. La siguiente épica del orden sugerido es **E4**.
 
 ## Stack y decisiones vigentes
 

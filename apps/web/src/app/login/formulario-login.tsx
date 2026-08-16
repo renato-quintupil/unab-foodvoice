@@ -7,12 +7,13 @@ import { useForm } from 'react-hook-form';
 import {
   LoginSchema,
   MSG_CONTRASENA_OLVIDADA,
+  MSG_ERROR_INESPERADO,
   type LoginInput,
   type SessionUser,
 } from '@foodvoice/shared';
 import { AccionEnCurso } from '@/components/accion-en-curso';
+import { Campo } from '@/components/campo';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { api, ErrorDeApi } from '@/lib/api-client';
 
 type RespuestaLogin = { user: SessionUser; redirectTo: string };
@@ -50,9 +51,7 @@ export function FormularioLogin() {
       // Cualquier fallo del inicio de sesión —credenciales, bloqueo, sistema—
       // se presenta como aviso sobre el formulario, **conservando lo escrito**.
       // Nunca junto a un campo: FR-008 prohíbe indicar cuál de los dos falló.
-      setAvisoDelSistema(
-        error instanceof ErrorDeApi ? error.mensaje : 'No pudimos completar la operación.',
-      );
+      setAvisoDelSistema(error instanceof ErrorDeApi ? error.mensaje : MSG_ERROR_INESPERADO);
     }
   }
 
@@ -77,39 +76,22 @@ export function FormularioLogin() {
         </p>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          aria-invalid={errors.email ? 'true' : undefined}
-          aria-describedby={errors.email ? 'error-email' : undefined}
-          {...register('email')}
-        />
-        {errors.email && (
-          <p id="error-email" className="text-sm text-[var(--color-error)]">
-            {errors.email.message}
-          </p>
+      <Campo id="email" etiqueta="Correo electrónico" error={errors.email?.message}>
+        {(control) => (
+          <Input {...control} type="email" autoComplete="email" {...register('email')} />
         )}
-      </div>
+      </Campo>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          aria-invalid={errors.password ? 'true' : undefined}
-          aria-describedby={errors.password ? 'error-password' : undefined}
-          {...register('password')}
-        />
-        {errors.password && (
-          <p id="error-password" className="text-sm text-[var(--color-error)]">
-            {errors.password.message}
-          </p>
+      <Campo id="password" etiqueta="Contraseña" error={errors.password?.message}>
+        {(control) => (
+          <Input
+            {...control}
+            type="password"
+            autoComplete="current-password"
+            {...register('password')}
+          />
         )}
-      </div>
+      </Campo>
 
       <AccionEnCurso type="submit" enCurso={isSubmitting} textoEnCurso="Ingresando…">
         Iniciar sesión

@@ -196,7 +196,12 @@ specs/001-acceso-y-usuarios/
 │       │   │   └── api/                  #   Route Handlers · proxy BFF (D-006)
 │       │   ├── components/
 │       │   │   ├── ui/                   #   shadcn/ui
-│       │   │   └── *.tsx                 #   confirmación (FR-035), éxito (FR-037), acción en curso (FR-038)
+│       │   │   ├── confirmar-accion.tsx  #   confirmación antes de actuar (FR-035)
+│       │   │   ├── aviso-exito.tsx       #   confirmación de éxito (FR-037)
+│       │   │   ├── accion-en-curso.tsx   #   acción en curso y doble envío (FR-038)
+│       │   │   ├── campo.tsx             #   campo con etiqueta y error asociados (FR-039c)
+│       │   │   ├── cerrar-sesion.tsx     #   cierre explícito de sesión (FR-006)
+│       │   │   └── inicio-de-rol.tsx     #   página de inicio mínima por rol (FR-031)
 │       │   ├── lib/
 │       │   └── middleware.ts             #   protección de rutas por rol
 │       ├── tests/                        # Vitest + Testing Library
@@ -245,6 +250,8 @@ La separación no es decorativa. `packages/shared` **no puede depender** de `app
 Esta estructura es la misma que describen `contracts/shared.md` y `quickstart.md`; se cotejaron carpeta por carpeta el 2026-08-15 y la única discrepancia encontrada —`search/`, que el árbol de este plan omitía— quedó corregida arriba. Un segundo cotejo, esta vez **contra `tasks.md`**, encontró dos omisiones más: la página de denegación por rol (`sin-permiso/`, T072) y los tres componentes transversales de `components/` (T073, T100, T102). También quedan corregidas arriba. Que el primer cotejo no las viera tiene una causa que conviene nombrar: se hizo contra los otros documentos de diseño, y ninguno de ellos enumera rutas de la interfaz.
 
 Un **tercer cotejo, esta vez contra el código construido** (T131), encontró una omisión que los dos anteriores no podían ver, porque ninguna tarea la nombra: `entrada/`. Es la página que reparte desde la raíz hacia el segmento del rol, y existe porque el middleware no puede hacerlo por su cuenta —la cookie es un identificador opaco y el rol vive en la sesión del servidor (D-001, D-007)—. Concentrarla en una página es lo que evita duplicar la regla en el borde. Queda inventariada arriba. La lección se repite: un recorrido inverso solo encuentra lo que su fuente enumera, y hasta que existió el código ninguna fuente enumeraba esta ruta.
+
+Un **cuarto cotejo, archivo por archivo y ya no carpeta por carpeta** (T137), encontró tres componentes que la anotación de `components/` no nombraba: `cerrar-sesion.tsx` (FR-006), `inicio-de-rol.tsx` (FR-031) y `campo.tsx` (FR-039c). Los tres se remiten a un requisito, de modo que no eran alcance fantasma; lo que fallaba era el inventario. Y la causa del fallo merece nombrarse porque es distinta de la de T131: aquí la fuente **sí** enumeraba el directorio, pero lo hacía con un comodín `*.tsx` seguido de tres ejemplos, y una lista con comodín se lee como completa sin serlo. Los seis quedan ahora enumerados uno a uno, con su requisito al lado. De los tres que faltaban, **dos no los alcanzaba ningún artefacto** —ni este plan ni `tasks.md`—, que es exactamente la condición que hace invisible a un archivo en el recorrido inverso del Principio III.
 
 **Elementos de la estructura sin requisito funcional.** El recorrido inverso que exige el Principio III, aplicado a las carpetas y no solo a los datos:
 
