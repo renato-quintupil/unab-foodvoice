@@ -45,11 +45,17 @@ Zod. **E3 no incorpora ninguna dependencia nueva**, ni de producción ni de desa
 **Almacenamiento**: PostgreSQL 16, con `prisma migrate`. Dos tablas nuevas (`category`,
 `product`) y un enum nuevo (`dimension`). Ninguna tabla existente cambia.
 
-**Pruebas**: Vitest para unitarios en los tres paquetes con los umbrales de cobertura ya
-configurados; la capa de integración de E1 —API contra PostgreSQL efímera en Docker— se amplía
-con las baterías de esta épica. La unicidad normalizada, el conteo de bloqueadores de una
-categoría y la atomicidad de la desactivación **no se cubren con unitarios**: son de
-integración por definición.
+**Pruebas**: se hereda íntegra la disposición de E1, **sin unificar runners ni mover archivos**.
+Unitarios con **Vitest** en `packages/shared` y `apps/web`, y con **Jest** en `services/api`,
+todos con los umbrales de cobertura ya configurados. Integración con **Jest** en
+`services/api`, contra PostgreSQL efímera en Docker: los archivos viven en
+`services/api/test/` y se llaman `<dominio>-<aspecto>.integration-spec.ts`, porque
+`jest.integration.config.js` los selecciona con `testRegex: 'test/.*\.integration-spec\.ts$'` y
+**una batería fuera de ese patrón no se ejecutaría, pasando por verde sin haber corrido**. Un
+archivo por batería, como en E1.
+
+La unicidad normalizada, el conteo de bloqueadores de una categoría y la atomicidad de la
+desactivación **no se cubren con unitarios**: son de integración por definición.
 
 **Plataforma objetivo**: navegador (desde 360 px de ancho) y contenedores Linux, igual que E1.
 
@@ -66,8 +72,10 @@ ninguna llamada a un modelo de lenguaje y ninguna clave de servicio nueva; sin b
 de productos ni de categorías; el precio es un entero en pesos chilenos.
 
 **Escala/Alcance**: catálogo de decenas de productos —doce como mínimo exigible a la semilla,
-cincuenta como catálogo de referencia para medir el tiempo de respuesta—. Nueve pantallas
-nuevas y catorce endpoints nuevos, detallados en § Estructura del Proyecto.
+cincuenta como catálogo de referencia para medir el tiempo de respuesta—. **Ocho pantallas
+nuevas** —tres de categorías, tres de productos, el menú y la ficha— y **doce endpoints
+nuevos** —cuatro de categorías, cinco de productos y tres de consulta—, detallados en
+§ Estructura del Proyecto y en `contracts/api.md`.
 
 ## Constitution Check
 
@@ -88,19 +96,19 @@ nuevas y catorce endpoints nuevos, detallados en § Estructura del Proyecto.
 | **XI · Calidad guiada por especificación (test-first)** | Los 34 escenarios Gherkin están escritos y trazados a requisito y criterio **antes** de este plan. Cada batería de pruebas se nombra por el escenario que ejerce. |
 | **XII · Trazabilidad del pedido** | No aplica en E3 —no hay pedidos—. Lo que sí aporta es su mitad del contrato hacia E2: FR-024 obliga a que el pedido guarde su propio precio, y E3 se compromete a no reescribir nada hacia atrás. |
 
-### Dos lecturas del Principio VIII que conviene declarar
+### Las dos lecturas del Principio VIII
 
 El principio habla de «el catálogo y el stock (…) **por local**». Este plan lo cumple con dos
-matices que no son desviaciones, sino el alcance ya declarado de v1:
+matices —«stock» como el interruptor `disponible` y ningún modelo de local mientras v1 sea
+mono-local— que **ya no son una interpretación de esta épica**: están declarados en
+`.specify/memory/constitution.md` § Alcance en v1 del Principio VIII, enmienda 1.1.0 del
+2026-08-16, motivada precisamente por el análisis de E3.
 
-1. **«Stock» se implementa como el interruptor `disponible`, no como un contador.** La spec lo
-   deja fuera de alcance con su razón: un contador exigiría descontarlo al confirmar el
-   pedido, devolverlo al cancelarlo y decidir qué hacer con las reservas, todo ello en E2 y sin
-   que ninguna historia lo pida. Lo que el principio exige de fondo —que no se pueda pedir lo
-   que no se puede preparar— queda cumplido.
-2. **«Por local» no se modela: v1 es mono-local.** No hay columna de local ni segmentación. Si
-   llegaran varios locales, sería una migración con un requisito propio, no un mecanismo que se
-   deje preparado ahora (Principio I, Principio III).
+Lo que sí es responsabilidad de este plan es la parte del principio que no admite excepción:
+**ningún producto inexistente, dado de baja o agotado se muestra como pedible**, y eso se
+implementa en la consulta (FR-029, RN-018), no en la pantalla. Conviene retener la caducidad
+declarada en la enmienda: en cuanto exista un segundo local, el catálogo debe segmentarse
+**antes** de admitirlo, no después.
 
 ### Reevaluación posterior a la Fase 1
 
@@ -195,12 +203,19 @@ apps/web/src/
 │       └── [id]/page.tsx              # ficha de producto (FR-034)
 └── components/ui/                     # MODIFICADO · solo si falta alguna primitiva
 
-tests/integration/                      # NUEVO · baterías de esta épica
-├── categories.spec.ts
-├── products.spec.ts
-├── menu.spec.ts
-└── seed.spec.ts
+services/api/test/                      # baterías de integración, junto a las de E1
+├── catalog-schema.integration-spec.ts       # NUEVO · migración e índices
+├── categories-create|unique|status|roles.integration-spec.ts   # NUEVO
+├── products-create|unique|classification|switches|reactivate|list|roles.integration-spec.ts  # NUEVO
+├── menu-price-tiers|filters|visibility|detail.integration-spec.ts  # NUEVO
+└── catalog-seed.integration-spec.ts         # NUEVO · idempotencia de la semilla
 ```
+
+El sufijo `.integration-spec.ts` y la carpeta `services/api/test/` **no son negociables**:
+`jest.integration.config.js` selecciona las baterías con
+`testRegex: 'test/.*\.integration-spec\.ts$'`, de modo que una prueba escrita en otro sitio no
+se ejecutaría y la suite pasaría en verde sin haberla corrido. Un archivo por batería, como en
+E1 (`users-list`, `users-email`, …).
 
 **Decisión de estructura**: se conserva íntegra la de E1 —tres espacios de trabajo, monolito
 modular en NestJS, App Router agrupado por rol en Next.js—. Los tres módulos nuevos siguen el
@@ -246,7 +261,7 @@ HU14-E12 a E17, HU02-E06, E10, E12 y E13.
 ### Fase E · Semilla, accesibilidad y validación funcional
 
 Semilla del catálogo con sus cantidades mínimas y su contenido revisado a mano; repaso de las
-cuatro condiciones de accesibilidad de FR-037 sobre las nueve pantallas nuevas; y el recorrido
+cuatro condiciones de accesibilidad de FR-037 sobre las ocho pantallas nuevas; y el recorrido
 completo de `quickstart.md`, incluida la revisión humana de SC-032. **Esta fase no es un
 trámite**: en E1, dos de los cuatro criterios sin cobertura automática no se cumplían cuando
 solo se había auditado el código.
