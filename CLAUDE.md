@@ -83,6 +83,31 @@ Detalle de variables, umbrales y validación funcional en
 
 Las reglas de producto viven en `.specify/memory/constitution.md` y el estado del producto en `specs/README.md`.
 
+## Releases
+
+**La unidad de release es la épica, y el disparador es su verificación
+funcional**, no el final de la implementación. La distinción no es formal: E1
+pasaba todas las pruebas automáticas y aun así SC-007 y SC-036 fallaban en la
+validación manual. Un tag puesto antes habría declarado estable algo que no lo
+era.
+
+El momento exacto: `specs/NNN-.../verificacion.md` con todos sus criterios de
+éxito verificados y la rama ya integrada en `main`.
+
+- Una **minor** por épica verificada: `v0.1.0` para E1, `v0.2.0` para E3, y así
+  hasta `v1.0.0` cuando estén todas las de v1.
+- Los **patch** quedan para correcciones sobre una épica ya liberada.
+- **No** disparan release: terminar `/speckit.implement` sin verificación, cerrar
+  una HU suelta, ni los cambios de documentación o de specs.
+
+Mecánica: versión alineada en los cuatro `package.json`, tag anotado sobre `main`
+y notas que enlacen a la spec y al registro de verificación de la épica.
+
+```bash
+git tag -a v0.2.0 -m "..." && git push origin v0.2.0
+gh release create v0.2.0 --repo renato-quintupil/unab-foodvoice --title "..." --notes "..."
+```
+
 ---
 
 ## Spec-kit
