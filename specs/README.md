@@ -13,17 +13,20 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | Épica | HU | Spec | Estado |
 | --- | --- | --- | --- |
 | **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | **Terminada** · 138 / 138 tareas · construida y verificada, incluida la validación funcional a mano |
-| E4 · Trazabilidad del pedido | HU-03 | — | Sin especificar |
-| E3 · Administración de menú | HU-02, HU-14 | — | Sin especificar |
+| E3 · Administración de menú | HU-02, HU-14 | — | Borrador listo para `/speckit-specify`: [`E3-borrador-specify.md`](../docs/epicas-hu/E3-borrador-specify.md). Detalle ampliado en [HU-02](../docs/epicas-hu/HU-02-administracion-de-menu.md), [HU-14](../docs/epicas-hu/HU-14-metadata-y-clasificacion-de-productos.md) y el [modelo de datos](../docs/epicas-hu/E3-modelo-de-datos-borrador.md) |
 | E2 · Gestión de pedidos | HU-01, HU-11, HU-12 | — | Sin especificar |
+| E4 · Trazabilidad del pedido | HU-03 | — | Borrador de HU en [`docs/epicas-hu/HU-03-trazabilidad-del-pedido.md`](../docs/epicas-hu/HU-03-trazabilidad-del-pedido.md) |
 | E6 · Búsqueda por voz | HU-06, HU-13 | — | Sin especificar |
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
 
-El orden de la tabla es el orden sugerido de especificación (E1 → E4 → E3 → E2 →
-E6 → E5 → E7 → E8): E1 es prerrequisito de casi todo lo demás, E4 define el
-contrato de estados que E2, E5 y E7 consumen, y E3 debe existir antes que E2 y E6.
+El orden de la tabla es el orden sugerido de especificación (E1 → E3 → E2 → E4 →
+E6 → E5 → E7 → E8): E1 es prerrequisito de casi todo lo demás, E3 debe existir
+antes que E2 y E6 (no hay pedido ni búsqueda sin catálogo), y E2 crea la entidad
+Pedido sobre la cual E4 registra el historial. El contrato de estados que E2, E5 y
+E7 consumen no condiciona este orden, porque ya está construido en
+`packages/shared` desde E1.
 
 ## E1 · Acceso y usuarios
 

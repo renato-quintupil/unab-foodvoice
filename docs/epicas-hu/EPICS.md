@@ -65,13 +65,20 @@ Este documento es la referencia de planificación de alto nivel del proyecto. Se
   HU-13 (la búsqueda y el agregado por voz no deben sugerir ni agregar productos agotados).
 - **HU-04 / HU-05 / HU-01 y la trazabilidad (HU-03)**: la máquina de estados
   (creado → en preparación → asignado a repartidor → entregado → cerrado, principio XII de la
-  constitución) se define en HU-03. HU-01, HU-04 y HU-05 disparan transiciones sobre ese
-  contrato, no deben redefinir sus propios estados.
+  constitución) ya está construida en `packages/shared` desde E1. HU-01, HU-04 y HU-05
+  disparan transiciones sobre ese contrato, no deben redefinir sus propios estados; HU-03
+  añade el historial persistido de esas transiciones y su consulta. Los estados son **cinco**:
+  no existe un estado "aceptado" (la aceptación del negocio es la transición
+  creado → en preparación) ni estado de rechazo o cancelación en v1.
+- **HU-03 y la entidad Pedido**: el historial se registra sobre pedidos que ya existen, y la
+  entidad Pedido se crea en E2. Por eso E2 se especifica antes que E4.
 
 ## Orden sugerido de especificación
 
-E1 → E4 → E3 → E2 → E6 → E5 → E7 → E8
+E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8
 
-Razón: E1 (roles) es prerequisito de casi todas las demás; E4 define el contrato de estados
-que E2, E5 y E7 consumen; E3 debe existir antes de E2 (no hay pedido sin catálogo) y antes de
-E6 (no hay búsqueda sin catálogo clasificado).
+Razón: E1 (roles) es prerequisito de casi todas las demás; E3 debe existir antes de E2 (no hay
+pedido sin catálogo) y antes de E6 (no hay búsqueda sin catálogo clasificado); E2 crea la
+entidad Pedido, sin la cual E4 no tiene sobre qué registrar historial. El contrato de estados
+que E2, E5 y E7 consumen no bloquea este orden: ya está construido en `packages/shared`
+desde E1.

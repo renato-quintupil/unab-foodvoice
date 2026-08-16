@@ -23,7 +23,9 @@ cerrar las épicas siguientes.
 
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039), y la verificación funcional de las métricas de
-pedidos, que espera a E4/E2. La siguiente épica del orden sugerido es **E4**.
+pedidos, que espera a E2/E4. La siguiente épica del orden sugerido es **E3**
+(el orden se reordenó a E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8, porque E4 registra
+el historial sobre pedidos que E2 crea).
 
 ## Stack y decisiones vigentes
 
