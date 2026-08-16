@@ -1,5 +1,20 @@
 <!--
-Sync Impact Report
+Sync Impact Report · enmienda 2026-08-16
+- Versión: 1.0.0 → 1.1.0
+- Tipo de cambio: MINOR (ampliación material de la guía del Principio VIII)
+- Principios modificados: VIII · El catálogo y el stock son la única verdad, por local
+  Se añade una § Alcance en v1 que declara cómo se aplica el principio mientras el producto
+  sea mono-local y no tenga contador de unidades. No se redefine ni se relaja lo que el
+  principio exige —que no se pueda mostrar ni pedir lo que no existe o no se puede preparar—;
+  se declara con qué mecanismos se cumple hoy y qué exigiría un cambio de alcance.
+- Motivo: el análisis de E3 (`/speckit-analyze`, hallazgo D1) detectó que el plan de esa épica
+  asumía dos lecturas del principio —«stock» como interruptor de disponibilidad y ausencia de
+  modelo de local— que la constitución no contemplaba por escrito. Antes que dejar la tensión
+  en el plan de una épica, se declara aquí.
+- Plantillas dependientes: sin cambios.
+- TODOs diferidos: ninguno
+
+Sync Impact Report · ratificación inicial
 - Versión: N/A (plantilla) → 1.0.0
 - Tipo de cambio: MAJOR (ratificación inicial de la constitución del proyecto)
 - Principios añadidos:
@@ -117,6 +132,25 @@ inventa ni se sugiere ningún producto fuera de esta fuente de verdad.
 **Razón**: mostrar productos inexistentes, inactivos o sin stock genera pedidos que no se
 pueden cumplir y daña la confianza del cliente y del local.
 
+**Alcance en v1** (enmienda 1.1.0). El principio se cumple íntegro con dos mecanismos que
+conviene declarar, para que ninguna épica tenga que interpretarlos por su cuenta:
+
+1. **«Stock disponible» se implementa como un interruptor de disponibilidad por producto, no
+   como un contador de unidades.** Lo que el principio exige de fondo —que no se pueda mostrar
+   como pedible algo que el local no puede preparar— queda cumplido: un producto no disponible
+   se muestra marcado y no se puede pedir. Un contador exigiría descontarlo al confirmar el
+   pedido, devolverlo al cancelarlo y decidir qué hacer con las reservas, sin que ninguna
+   historia de usuario lo pida (Principio I, Principio III). Introducirlo sería un requisito
+   propio, no un detalle de implementación.
+2. **«Por local» no se modela mientras el producto sea mono-local.** v1 tiene un único
+   catálogo y no lo segmenta. La exigencia de fondo —que no se compartan ni se infieran datos
+   entre locales— se cumple de forma trivial cuando solo hay uno. **En el momento en que exista
+   un segundo local, esta excepción caduca**: el catálogo, la disponibilidad y toda consulta
+   deberán segmentarse por local antes de admitir el segundo, y no después.
+
+Ninguna de las dos es permiso para mostrar o permitir pedir algo que no existe, no está activo
+o no se puede preparar. Esa parte del principio no admite excepción de alcance.
+
 ### IX. Confirmar antes de actuar y poder deshacer
 
 Antes de agregar cualquier producto al carrito, el sistema muestra al cliente lo que entendió
@@ -185,4 +219,4 @@ inicio de este archivo, y se refleja en un incremento de versión según semver:
 verifica su alineación con los principios de esta constitución, en particular los marcados
 como NO NEGOCIABLE.
 
-**Versión**: 1.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-13
+**Versión**: 1.1.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-16
