@@ -1,4 +1,4 @@
-# Especificación de Funcionalidad: E3 · Administración de menú
+﻿# Especificación de Funcionalidad: E3 · Administración de menú
 
 **Rama de funcionalidad**: `002-administracion-menu-productos` (el directorio de la spec es `specs/002-administracion-menu-productos`)
 
@@ -305,44 +305,44 @@ Característica: Administración del menú
 
 Cada escenario de aceptación lleva un identificador estable `HU<nn>-E<nn>` en su título. La tabla lo enlaza con el requisito que ejerce y el criterio de éxito que lo declara superado. **Ningún escenario queda sin las dos columnas**: si alguna vez un escenario no tuviera criterio de éxito, sería señal de que se está probando algo que la spec no exige.
 
-La columna de *paso de validación* se incorpora cuando exista `quickstart.md`, que se redacta en la fase de planificación; los identificadores de paso deben cubrir todos los escenarios de esta tabla.
+La columna de *paso de validación* remite a los pasos `V-nn` de [`quickstart.md`](./quickstart.md) § Validación funcional, redactado en la fase de planificación. Los 34 escenarios tienen paso asignado; ninguno queda sin las tres columnas.
 
-| Escenario | Requisitos | Criterios de éxito |
-|---|---|---|
-| HU14-E01 · El negocio crea una categoría | FR-002, FR-027 | SC-009, SC-011 |
-| HU14-E02 · La descripción de la categoría es obligatoria | FR-003, FR-005, FR-039 | SC-008, SC-031 |
-| HU14-E03 · El formulario enseña a describir una categoría | FR-005 | SC-008, SC-009 |
-| HU14-E04 · Nombre duplicado en la misma dimensión | FR-004 | SC-014 |
-| HU14-E05 · Mismo nombre en dimensiones distintas sí se permite | FR-004 | SC-014 |
-| HU14-E06 · La clasificación es obligatoria al dar de alta | FR-012, FR-013 | SC-007 |
-| HU14-E07 · Una sola categoría por dimensión | FR-012 | SC-007 |
-| HU14-E08 · Desactivar una categoría | FR-007, FR-011 | SC-006, SC-015 |
-| HU14-E09 · No se puede desactivar una categoría en uso | FR-007 | SC-015 |
-| HU14-E10 · Las categorías no se borran | FR-009 | SC-006 |
-| HU14-E11 · Reclasificar un producto | FR-022, FR-031 | SC-011 |
-| HU14-E12 · Tramo de precio derivado del catálogo | FR-032 | SC-016 |
-| HU14-E13 · El tramo se recalcula al cambiar el catálogo | FR-032 | SC-016 |
-| HU14-E14 · Catálogo demasiado pequeño para tramos | FR-032 | SC-017 |
-| HU14-E15 · Filtro manual por categoría | FR-029, FR-031 | SC-004, SC-011, SC-018 |
-| HU14-E16 · Un producto agotado no se ofrece por categoría | FR-029 | SC-004 |
-| HU14-E17 · Combinación de dos filtros | FR-031, FR-032, FR-035 | SC-018 |
-| HU14-E18 · Reactivar una categoría desactivada | FR-008 | SC-006 |
-| HU14-E19 · Dimensión sin ninguna categoría activa | FR-012 | SC-010 |
-| HU02-E01 · Alta de producto | FR-012, FR-025, FR-028 | SC-001, SC-013 |
-| HU02-E02 · Nombre duplicado rechazado | FR-014 | SC-014 |
-| HU02-E03 · Precio inválido rechazado | FR-015 | SC-012 |
-| HU02-E04 · La descripción es obligatoria | FR-013, FR-016, FR-039 | SC-007, SC-031 |
-| HU02-E05 · El formulario enseña a describir | FR-016 | SC-007, SC-019 |
-| HU02-E06 · Ingredientes con advertencia | FR-017, FR-034 | SC-020 |
-| HU02-E07 · Marcar un producto como agotado | FR-019, FR-029 | SC-002, SC-003, SC-004 |
-| HU02-E08 · Reponer un producto agotado | FR-019, FR-029 | SC-002, SC-003 |
-| HU02-E09 · Baja lógica y reactivación | FR-020, FR-028 | SC-005, SC-006 |
-| HU02-E10 · El cliente no ve productos dados de baja | FR-028, FR-034 | SC-005 |
-| HU02-E11 · Solo el negocio administra el catálogo | FR-027 | SC-021 |
-| HU02-E12 · Menú vacío | FR-030 | SC-022 |
-| HU02-E13 · Cambio de precio y pedidos ya creados | FR-024 | SC-023 |
-| HU02-E14 · Catálogo grande | FR-023 | SC-024 |
-| HU02-E15 · Reactivación bloqueada por categoría desactivada | FR-021 | SC-010 |
+| Escenario | Requisitos | Criterios de éxito | Paso de validación |
+|---|---|---|---|
+| HU14-E01 · El negocio crea una categoría | FR-002, FR-027 | SC-009, SC-011 | V-01 |
+| HU14-E02 · La descripción de la categoría es obligatoria | FR-003, FR-005, FR-039 | SC-008, SC-031 | V-03, V-04 |
+| HU14-E03 · El formulario enseña a describir una categoría | FR-005 | SC-008, SC-009 | V-05 |
+| HU14-E04 · Nombre duplicado en la misma dimensión | FR-004 | SC-014 | V-06 |
+| HU14-E05 · Mismo nombre en dimensiones distintas sí se permite | FR-004 | SC-014 | V-07 |
+| HU14-E06 · La clasificación es obligatoria al dar de alta | FR-012, FR-013 | SC-007 | V-18 |
+| HU14-E07 · Una sola categoría por dimensión | FR-012 | SC-007 | V-19 |
+| HU14-E08 · Desactivar una categoría | FR-007, FR-011 | SC-006, SC-015 | V-10 |
+| HU14-E09 · No se puede desactivar una categoría en uso | FR-007 | SC-015 | V-09 |
+| HU14-E10 · Las categorías no se borran | FR-009 | SC-006 | V-08 |
+| HU14-E11 · Reclasificar un producto | FR-022, FR-031 | SC-011 | V-27 |
+| HU14-E12 · Tramo de precio derivado del catálogo | FR-032 | SC-016 | V-34 |
+| HU14-E13 · El tramo se recalcula al cambiar el catálogo | FR-032 | SC-016 | V-35 |
+| HU14-E14 · Catálogo demasiado pequeño para tramos | FR-032 | SC-017 | V-36 |
+| HU14-E15 · Filtro manual por categoría | FR-029, FR-031 | SC-004, SC-011, SC-018 | V-32 |
+| HU14-E16 · Un producto agotado no se ofrece por categoría | FR-029 | SC-004 | V-51 |
+| HU14-E17 · Combinación de dos filtros | FR-031, FR-032, FR-035 | SC-018 | V-33 |
+| HU14-E18 · Reactivar una categoría desactivada | FR-008 | SC-006 | V-11 |
+| HU14-E19 · Dimensión sin ninguna categoría activa | FR-012 | SC-010 | V-20 |
+| HU02-E01 · Alta de producto | FR-012, FR-025, FR-028 | SC-001, SC-013 | V-13, V-14 |
+| HU02-E02 · Nombre duplicado rechazado | FR-014 | SC-014 | V-15 |
+| HU02-E03 · Precio inválido rechazado | FR-015 | SC-012 | V-17 |
+| HU02-E04 · La descripción es obligatoria | FR-013, FR-016, FR-039 | SC-007, SC-031 | V-03, V-04 |
+| HU02-E05 · El formulario enseña a describir | FR-016 | SC-007, SC-019 | V-05 |
+| HU02-E06 · Ingredientes con advertencia | FR-017, FR-034 | SC-020 | V-38 |
+| HU02-E07 · Marcar un producto como agotado | FR-019, FR-029 | SC-002, SC-003, SC-004 | V-21, V-22 |
+| HU02-E08 · Reponer un producto agotado | FR-019, FR-029 | SC-002, SC-003 | V-23 |
+| HU02-E09 · Baja lógica y reactivación | FR-020, FR-028 | SC-005, SC-006 | V-24, V-25 |
+| HU02-E10 · El cliente no ve productos dados de baja | FR-028, FR-034 | SC-005 | V-39, V-51 |
+| HU02-E11 · Solo el negocio administra el catálogo | FR-027 | SC-021 | V-50 |
+| HU02-E12 · Menú vacío | FR-030 | SC-022 | V-40 |
+| HU02-E13 · Cambio de precio y pedidos ya creados | FR-024 | SC-023 | V-53 |
+| HU02-E14 · Catálogo grande | FR-023 | SC-024 | V-28, V-29 |
+| HU02-E15 · Reactivación bloqueada por categoría desactivada | FR-021 | SC-010 | V-26 |
 
 **Requisitos sin escenario Gherkin propio**: cuatro requisitos son transversales a todas las pantallas y no corresponden al comportamiento de un escenario concreto, de modo que se declaran superados por su criterio de éxito y no por un Gherkin. Son **FR-026** (doble disparo, SC-027), **FR-036** (semilla del catálogo, SC-026), **FR-037** (accesibilidad, SC-028) y **FR-038** (anchos de pantalla y navegadores, verificado junto a SC-028). El texto visible en español (SC-029) se comprueba del mismo modo, recorriendo todas las pantallas, y el umbral de tiempo de respuesta (SC-030) se comprueba con un cronómetro sobre el catálogo de referencia, sin escenario propio.
 
