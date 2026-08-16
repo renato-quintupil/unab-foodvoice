@@ -1,0 +1,151 @@
+# Integración continua de FoodVoice.
+#
+# Ejecuta en cada push y en cada pull request las mismas cinco comprobaciones
+# que `quickstart` pide antes de dar una épica por verificada. La diferencia con
+# ejecutarlas en local no es el resultado, sino **quién lo afirma**: aquí el
+# registro queda fechado, con la salida completa y fuera del control de quien
+# escribió el código.
+#
+# Dos trabajos en paralelo, no cinco:
+#
+# - `verificacion` agrupa lint, typecheck, build y unitarios. Comparten la misma
+#   instalación de dependencias, que es el paso caro; separarlos en trabajos
+#   distintos la repetiría cuatro veces para ganar un detalle que el registro ya
+#   muestra paso a paso.
+# - `integracion` va aparte porque levanta PostgreSQL en Docker y tarda más. Si
+#   los unitarios fallan, no hace falta esperar a que termine para saberlo.
+
+name: CI
+
+on:
+  push:
+    branches: ['main', '[0-9][0-9][0-9]-*']
+  pull_request:
+    branches: ['main']
+
+# Un push nuevo sobre la misma rama cancela el anterior: el resultado de un
+# commit ya superado no informa de nada y consume minutos.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Ningún trabajo escribe en el repositorio.
+permissions:
+  contents: read
+
+jobs:
+  verificacion:
+    name: Lint · typecheck · build · unitarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # `next build` resuelve la URL interna de la API en tiempo de construcción.
+      # En CI nadie hace esa llamada; el valor solo tiene que existir y ser válido.
+      API_INTERNAL_URL: http://localhost:3001
+      # Inerte a propósito: `prisma generate` no abre la conexión. Los tests que
+      # sí la necesitan corren en el otro trabajo, contra la base efímera.
+      DATABASE_URL: postgresql://foodvoice:ci@localhost:5432/foodvoice_ci
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      # Antes que `setup-node`, porque su caché necesita encontrar pnpm ya
+      # instalado. La versión sale del campo `packageManager` de package.json.
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # `--frozen-lockfile` aborta si el lockfile no cuadra con los manifiestos,
+      # en lugar de resolver versiones distintas de las que se probaron en local.
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # Turborepo reutiliza entre ejecuciones lo que no cambió. La clave lleva el
+      # SHA para que cada commit escriba su propia entrada, y `restore-keys`
+      # recupera la más reciente de la misma rama como punto de partida.
+      - name: Restaurar la caché de Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-${{ runner.os }}-
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      # Falla si no se cumplen los umbrales de cobertura de cada paquete.
+      - name: Unitarios
+        run: pnpm test
+
+      # Se guardan aunque los tests fallen: cuando fallan es justo cuando sirven.
+      - name: Publicar los informes de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: |
+            apps/web/coverage
+            services/api/coverage
+            packages/shared/coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integracion:
+    name: Integración contra PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Restaurar la caché de Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-integracion-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-integracion-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-integracion-${{ runner.os }}-
+
+      # No hace falta declarar aquí ninguna base de datos ni ningún servicio: el
+      # runner trae Docker, `pretest:integration` levanta la PostgreSQL efímera
+      # de `docker-compose.test.yml` y espera su healthcheck, y `test/setup.ts`
+      # fija la conexión y aplica `prisma migrate deploy`. La batería es la misma
+      # orden que en local, sin variantes para CI que pudieran divergir de ella.
+      #
+      # Tampoco se define `DATABASE_URL`: `setup.ts` la ignora justamente para
+      # que la batería solo pueda alcanzar la base efímera, nunca otra.
+      - name: Integración
+        run: pnpm test:integration
+
+      - name: Retirar la base de datos efímera
+        if: always()
+        run: docker compose -p foodvoice-test -f docker-compose.test.yml down -v
