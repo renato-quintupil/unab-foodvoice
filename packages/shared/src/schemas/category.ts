@@ -3,8 +3,7 @@ import { Dimension } from '../enums/dimension';
 import {
   LIMITES_DESCRIPCION_CATEGORIA,
   aplanarDescripcion,
-  mensajeDescripcion,
-  validarDescripcion,
+  comprobarSustancia,
 } from './description';
 
 /**
@@ -38,30 +37,16 @@ const CamposCategoria = z.object({
 });
 
 /**
- * Aplica las tres condiciones de sustancia de FR-039 sobre la pareja
- * nombre + descripción.
+ * Alta de una categoría (FR-002). Queda activa desde su creación.
  *
- * Se valida **a nivel del objeto** y no del campo suelto porque la segunda
- * condición necesita ver también el nombre (D-025).
+ * Las tres condiciones de sustancia de FR-039 se aplican **a nivel del objeto** y
+ * no del campo suelto, porque la segunda necesita ver también el nombre (D-025).
+ * La comprobación vive en `description.ts`; aquí solo se enchufa con los límites
+ * de la categoría.
  */
-function conSustancia<T extends z.ZodType<{ name: string; description: string }>>(esquema: T) {
-  return esquema.superRefine((datos, ctx) => {
-    const r = validarDescripcion(datos.description, datos.name, LIMITES_DESCRIPCION_CATEGORIA);
-    if (!r.valida) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        // El error queda **asociado al campo** que falla, no suelto en la
-        // página: es lo que exigen FR-003 y el Principio II, y lo que en E1 no
-        // se cumplía hasta que la validación funcional lo descubrió (T133).
-        path: ['description'],
-        message: mensajeDescripcion(r.motivo, LIMITES_DESCRIPCION_CATEGORIA),
-      });
-    }
-  });
-}
-
-/** Alta de una categoría (FR-002). Queda activa desde su creación. */
-export const CreateCategorySchema = conSustancia(CamposCategoria);
+export const CreateCategorySchema = CamposCategoria.superRefine((datos, ctx) => {
+  comprobarSustancia(datos, ctx, LIMITES_DESCRIPCION_CATEGORIA);
+});
 
 export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;
 
@@ -78,7 +63,11 @@ export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;
  * mismas reglas que el alta, de modo que ninguna edición pueda dejar una
  * categoría en un estado que su creación habría rechazado (§ Límites).
  */
-export const UpdateCategorySchema = conSustancia(CamposCategoria.omit({ dimension: true }));
+export const UpdateCategorySchema = CamposCategoria.omit({ dimension: true }).superRefine(
+  (datos, ctx) => {
+    comprobarSustancia(datos, ctx, LIMITES_DESCRIPCION_CATEGORIA);
+  },
+);
 
 export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;
 

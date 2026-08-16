@@ -3,8 +3,7 @@ import { PRECIO_MAXIMO, PRECIO_MINIMO } from '../format/precio';
 import {
   LIMITES_DESCRIPCION_PRODUCTO,
   aplanarDescripcion,
-  mensajeDescripcion,
-  validarDescripcion,
+  comprobarSustancia,
 } from './description';
 
 /**
@@ -80,18 +79,18 @@ const CamposProducto = z.object({
     .describe('Categoría de dimensión PERFIL_SALUD'),
 });
 
-/** Aplica las tres condiciones de FR-039 sobre nombre + descripción (D-025). */
-function conSustancia<T extends z.ZodType<{ name: string; description: string }>>(esquema: T) {
-  return esquema.superRefine((datos, ctx) => {
-    const r = validarDescripcion(datos.description, datos.name, LIMITES_DESCRIPCION_PRODUCTO);
-    if (!r.valida) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['description'],
-        message: mensajeDescripcion(r.motivo, LIMITES_DESCRIPCION_PRODUCTO),
-      });
-    }
-  });
+/**
+ * Las tres condiciones de FR-039 sobre nombre + descripción (D-025).
+ *
+ * La comprobación vive en `description.ts`; aquí solo se enchufa con los límites
+ * del producto. El alta y la edición la comparten, de modo que ninguna edición
+ * pueda dejar un producto en un estado que su alta habría rechazado.
+ */
+function sustanciaDeProducto(
+  datos: { name: string; description: string },
+  ctx: Parameters<Parameters<typeof CamposProducto.superRefine>[0]>[1],
+): void {
+  comprobarSustancia(datos, ctx, LIMITES_DESCRIPCION_PRODUCTO);
 }
 
 /**
@@ -102,7 +101,7 @@ function conSustancia<T extends z.ZodType<{ name: string; description: string }>
  * su propio endpoint. Tampoco admite tramo de precio, que no existe como dato
  * (FR-032).
  */
-export const CreateProductSchema = conSustancia(CamposProducto);
+export const CreateProductSchema = CamposProducto.superRefine(sustanciaDeProducto);
 
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 
@@ -114,7 +113,7 @@ export type CreateProductInput = z.infer<typeof CreateProductSchema>;
  * fuera, con endpoints propios, porque agotar sin confirmación (FR-019) y dar de
  * baja con confirmación (FR-020) son acciones de naturaleza distinta a editar.
  */
-export const UpdateProductSchema = conSustancia(CamposProducto);
+export const UpdateProductSchema = CamposProducto.superRefine(sustanciaDeProducto);
 
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 

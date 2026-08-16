@@ -153,6 +153,34 @@ export function validarDescripcion(
 }
 
 /**
+ * Comprobación lista para usar dentro de un `superRefine` de Zod (D-025).
+ *
+ * Aplica `validarDescripcion` y, si falla, añade el problema **asociado al campo
+ * `description`** con el mensaje de la condición incumplida. Se expone así, y no
+ * como un envoltorio de esquema, porque un envoltorio genérico colapsa el tipo
+ * inferido: TypeScript fija la salida en el objeto mínimo de la restricción y
+ * los demás campos del esquema desaparecen. Aquí cada esquema conserva su tipo y
+ * la regla sigue viviendo en un solo sitio.
+ */
+export function comprobarSustancia(
+  datos: { name: string; description: string },
+  ctx: { addIssue: (problema: { code: 'custom'; path: string[]; message: string }) => void },
+  limites: LimitesDescripcion,
+): void {
+  const r = validarDescripcion(datos.description, datos.name, limites);
+  if (r.valida) return;
+
+  ctx.addIssue({
+    code: 'custom',
+    // El error queda **asociado al campo** que falla, no suelto en la página: es
+    // lo que exigen FR-003, FR-013 y el Principio II, y lo que en E1 no se
+    // cumplía hasta que la validación funcional lo descubrió (T133).
+    path: ['description'],
+    message: mensajeDescripcion(r.motivo, limites),
+  });
+}
+
+/**
  * Traduce un motivo de rechazo a su mensaje en español (FR-039, SC-031).
  *
  * Se indexa con un `Record` sobre `MotivoDescripcion` y no con un `switch` con

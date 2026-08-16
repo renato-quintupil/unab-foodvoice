@@ -102,24 +102,24 @@ que HU-02 esté construida. Corresponde a los pasos **V-01 a V-12** de quickstar
 
 > Se escriben antes que la implementación y deben fallar primero.
 
-- [ ] T022 [P] [US1] Batería de integración de creación y validación de categorías en `services/api/test/categories-create.integration-spec.ts`, cubriendo HU14-E01, E02 y E03, y comprobando que ninguna categoría llega a guardarse con descripción de menos de 30 caracteres (SC-008)
-- [ ] T023 [P] [US1] Batería de integración de unicidad en `services/api/test/categories-unique.integration-spec.ts`: duplicado en la misma dimensión con acentos y mayúsculas distintas, mismo nombre en la otra dimensión, y colisión con una categoría **desactivada** (HU14-E04, E05, SC-014)
-- [ ] T024 [P] [US1] Batería de integración de desactivación y reactivación en `services/api/test/categories-status.integration-spec.ts`, incluido el rechazo con conteo de bloqueadores y el envío simultáneo de dos peticiones idénticas (HU14-E08, E09, E18, SC-015, SC-027)
+- [X] T022 [P] [US1] Batería de integración de creación y validación de categorías en `services/api/test/categories-create.integration-spec.ts`, cubriendo HU14-E01, E02 y E03, y comprobando que ninguna categoría llega a guardarse con descripción de menos de 30 caracteres (SC-008)
+- [X] T023 [P] [US1] Batería de integración de unicidad en `services/api/test/categories-unique.integration-spec.ts`: duplicado en la misma dimensión con acentos y mayúsculas distintas, mismo nombre en la otra dimensión, y colisión con una categoría **desactivada** (HU14-E04, E05, SC-014)
+- [X] T024 [P] [US1] Batería de integración de desactivación y reactivación en `services/api/test/categories-status.integration-spec.ts`, incluido el rechazo con conteo de bloqueadores y el envío simultáneo de dos peticiones idénticas (HU14-E08, E09, E18, SC-015, SC-027)
 - [ ] T025 [P] [US1] Batería de integración del **efecto** de la desactivación en `services/api/test/categories-visibility.integration-spec.ts`: una categoría desactivada desaparece de `GET /menu/categories` y de las que ofrece el alta de productos, y los productos que ya la tenían **la conservan** (FR-011, RN-009, HU14-E08)
-- [ ] T026 [P] [US1] Batería de integración de autorización en `services/api/test/categories-roles.integration-spec.ts`: cada endpoint de `/business/categories` invocado con sesión de cliente, repartidor y administrador devuelve `403` (FR-027, SC-021)
+- [X] T026 [P] [US1] Batería de integración de autorización en `services/api/test/categories-roles.integration-spec.ts`: cada endpoint de `/business/categories` invocado con sesión de cliente, repartidor y administrador devuelve `403` (FR-027, SC-021)
 
 ### Implementación de la Historia 1
 
-- [ ] T027 [US1] Implementar `CategoriesService` con creación, edición y listado, derivando `nameNormalized` con `normalizarBusqueda` y traduciendo la violación del índice único a `CATEGORY_NAME_ALREADY_EXISTS`, en `services/api/src/categories/categories.service.ts` (FR-002, FR-004, FR-006, D-021)
-- [ ] T028 [US1] Implementar la desactivación en `CategoriesService` contando los productos activos bloqueadores **dentro de la misma transacción** que aplica el cambio, y la reactivación conservando nombre, descripción y dimensión, en `services/api/src/categories/categories.service.ts` (FR-007, FR-008, D-027)
-- [ ] T029 [US1] Implementar `CategoriesController` con los cuatro endpoints de contracts/api.md, sin ningún verbo `DELETE`, y con `@Roles(NEGOCIO)` en la clase entera, en `services/api/src/categories/categories.controller.ts` (FR-009, FR-027)
-- [ ] T030 [US1] Registrar `CategoriesModule` en `services/api/src/app.module.ts` y crear `services/api/src/categories/categories.module.ts`
-- [ ] T031 [P] [US1] Construir el formulario de categoría con react-hook-form y el resolver de los esquemas compartidos, mostrando la ayuda contextual **visible sin interacción previa** junto al campo de descripción, en `apps/web/src/app/negocio/categorias/_components/formulario-categoria.tsx` (FR-005, SC-019)
-- [ ] T032 [US1] Construir la pantalla de alta en `apps/web/src/app/negocio/categorias/nueva/page.tsx` (FR-002)
-- [ ] T033 [US1] Construir la pantalla de edición, con la dimensión visible pero **no editable**, en `apps/web/src/app/negocio/categorias/[id]/editar/page.tsx` (FR-006)
-- [ ] T034 [US1] Construir el listado agrupado por dimensión y filtrable por estado, con las acciones de desactivar y reactivar y **ninguna acción de borrado**, en `apps/web/src/app/negocio/categorias/page.tsx` (FR-010, FR-009)
-- [ ] T035 [US1] Presentar el rechazo de desactivación con el número de productos que lo bloquean, tomado de `blockingProducts` y no analizando el texto, en `apps/web/src/app/negocio/categorias/page.tsx` (FR-007)
-- [ ] T036 [US1] Asociar cada mensaje de error a su campo, añadir la confirmación de éxito en español tras cada acción y **deshabilitar cada control mientras espera respuesta** para que un doble clic no dispare dos veces, en las tres pantallas de categorías de `apps/web/src/app/negocio/categorias/` (FR-025, FR-026, FR-037, SC-027)
+- [X] T027 [US1] Implementar `CategoriesService` con creación, edición y listado, derivando `nameNormalized` con `normalizarBusqueda` y traduciendo la violación del índice único a `CATEGORY_NAME_ALREADY_EXISTS`, en `services/api/src/categories/categories.service.ts` (FR-002, FR-004, FR-006, D-021)
+- [X] T028 [US1] Implementar la desactivación en `CategoriesService` contando los productos activos bloqueadores **dentro de la misma transacción** que aplica el cambio, y la reactivación conservando nombre, descripción y dimensión, en `services/api/src/categories/categories.service.ts` (FR-007, FR-008, D-027)
+- [X] T029 [US1] Implementar `CategoriesController` con los cuatro endpoints de contracts/api.md, sin ningún verbo `DELETE`, y con `@Roles(NEGOCIO)` en la clase entera, en `services/api/src/categories/categories.controller.ts` (FR-009, FR-027)
+- [X] T030 [US1] Registrar `CategoriesModule` en `services/api/src/app.module.ts` y crear `services/api/src/categories/categories.module.ts`
+- [X] T031 [P] [US1] Construir el formulario de categoría con react-hook-form y el resolver de los esquemas compartidos, mostrando la ayuda contextual **visible sin interacción previa** junto al campo de descripción, en `apps/web/src/app/negocio/categorias/_components/formulario-categoria.tsx` (FR-005, SC-019)
+- [X] T032 [US1] Construir la pantalla de alta en `apps/web/src/app/negocio/categorias/nueva/page.tsx` (FR-002)
+- [X] T033 [US1] Construir la pantalla de edición, con la dimensión visible pero **no editable**, en `apps/web/src/app/negocio/categorias/[id]/editar/page.tsx` (FR-006)
+- [X] T034 [US1] Construir el listado agrupado por dimensión y filtrable por estado, con las acciones de desactivar y reactivar y **ninguna acción de borrado**, en `apps/web/src/app/negocio/categorias/page.tsx` (FR-010, FR-009)
+- [X] T035 [US1] Presentar el rechazo de desactivación con el número de productos que lo bloquean, tomado de `blockingProducts` y no analizando el texto, en `apps/web/src/app/negocio/categorias/page.tsx` (FR-007)
+- [X] T036 [US1] Asociar cada mensaje de error a su campo, añadir la confirmación de éxito en español tras cada acción y **deshabilitar cada control mientras espera respuesta** para que un doble clic no dispare dos veces, en las tres pantallas de categorías de `apps/web/src/app/negocio/categorias/` (FR-025, FR-026, FR-037, SC-027)
 
 **Punto de control**: HU-14 es demostrable por sí sola. Es el MVP de la épica.
 
