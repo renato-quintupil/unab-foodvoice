@@ -65,6 +65,17 @@ Cada motivo tiene su propio mensaje en español, porque FR-039 exige que el rech
 de las condiciones falló**. La comparación con el nombre usa `normalizarBusqueda`, de modo que
 «Pizza Napolitana» y «pizza napolitana» son el mismo texto a estos efectos.
 
+**La descripción es párrafo plano** (§ Límites de los campos): el esquema **colapsa a un solo
+espacio** los saltos de línea, las tabulaciones y los espacios repetidos **antes** de medir la
+longitud y de aplicar las tres condiciones, y lo que se guarda es el texto ya colapsado. Un
+salto de línea separa palabras como cualquier otro espacio. El control de la interfaz es un
+`textarea` de pocas líneas —cabe una descripción larga sin que el campo la esconda—, pero lo
+que viaja y se persiste es una sola línea.
+
+**Los límites de longitud son inclusivos**: 20 y 1.000 se aceptan, igual que 30 y 500 en la
+categoría. Es lo que `min`/`max` de Zod hacen, y ahora está declarado en la spec para que las
+pruebas de borde tengan texto que las respalde.
+
 Los límites se pasan como parámetro y no se codifican dentro: producto es 20–1.000 y categoría
 30–500, y una sola implementación sirve a las dos.
 
@@ -118,6 +129,24 @@ export function formatearPrecio(valor: number): string;
 Única fuente del formato. Ninguna pantalla lo compone a mano, con el mismo criterio con que E1
 centralizó el formato de fechas. **Es solo presentación**: el dato viaja y se guarda como
 entero desnudo, y el campo de entrada del formulario no aplica el formato mientras se escribe.
+
+## Recorte de la descripción en los listados
+
+```ts
+/** Longitud máxima de una descripción en un listado (§ Presentación de la descripción). */
+export const MAX_DESCRIPCION_LISTADO = 160;
+
+/**
+ * Recorta en el último espacio anterior al límite y añade puntos suspensivos.
+ * Nunca parte una palabra. Devuelve el texto intacto si ya cabe.
+ */
+export function recortarDescripcion(texto: string, maximo?: number): string;
+```
+
+Vive aquí y no en cada listado por la misma razón que `formatearPrecio`: el menú del cliente y
+el listado de administración deben recortar igual. **Es solo presentación**: la API devuelve
+siempre la descripción completa —`ProductDto.description` no está recortada— y el filtro y la
+búsqueda operan sobre el texto íntegro.
 
 ## Mensajes fijos en español
 

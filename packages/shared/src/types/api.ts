@@ -1,3 +1,4 @@
+import { Dimension, PriceTier, ProductStatus } from '../enums/dimension';
 import { OrderStatus } from '../enums/order-status';
 import { Role, UserStatus } from '../enums/role';
 
@@ -56,6 +57,75 @@ export type Paginated<T> = {
 export type OrderDto = {
   id: string;
   status: OrderStatus;
+  createdAt: string;
+};
+
+// ---------------------------------------------------------------------------
+// E3 · Administración de menú
+// ---------------------------------------------------------------------------
+
+/**
+ * Forma en que una categoría cruza la frontera de la API.
+ *
+ * No expone `nameNormalized` —detalle de almacenamiento (D-021)— ni `updatedAt`,
+ * con el mismo criterio que `UserDto`.
+ */
+export type CategoryDto = {
+  id: string;
+  dimension: Dimension;
+  name: string;
+  description: string;
+  active: boolean;
+  createdAt: string;
+};
+
+/**
+ * Categoría tal como viaja **dentro** de un producto: lo justo para pintar la
+ * clasificación y enlazar el filtro, sin arrastrar su descripción, que en un
+ * listado de veinte productos serían veinte descripciones de categoría
+ * repetidas.
+ */
+export type CategoryRef = Pick<CategoryDto, 'id' | 'name' | 'dimension'>;
+
+/**
+ * La **única** forma en que un producto sale de la API.
+ *
+ * Por eso RN-018 se sostiene de forma estructural: los productos con
+ * `active = false` no se excluyen campo a campo, sencillamente no se construye
+ * ningún `ProductDto` para ellos en las rutas de `/menu`.
+ *
+ * Tres decisiones sobre esta forma:
+ *
+ * 1. **No expone `nameNormalized`**: es un detalle de almacenamiento (D-021).
+ * 2. **No expone `updatedAt`**: metadato operativo sin superficie funcional.
+ * 3. **`status` y `priceTier` son derivados y viajan calculados.** Podrían
+ *    computarse en el cliente, pero entonces habría dos implementaciones de la
+ *    misma regla —una en la interfaz y otra en la API para la futura voz de E6—
+ *    y bastaría que una cambiara para que un producto apareciera en distinto
+ *    tramo según quién preguntara.
+ *
+ * `description` viaja **completa**: el recorte de los listados es solo
+ * presentación y lo aplica la interfaz con `recortarDescripcion` (D-033).
+ */
+export type ProductDto = {
+  id: string;
+  name: string;
+  description: string;
+  /** `null` cuando no se declararon. **La ausencia no significa que no los contenga** (RN-019). */
+  ingredients: string | null;
+  /** Entero en pesos chilenos. Se muestra con `formatearPrecio` (§ Presentación del precio). */
+  price: number;
+  foodTypeCategory: CategoryRef;
+  healthProfileCategory: CategoryRef;
+  active: boolean;
+  available: boolean;
+  /** Derivado de los dos interruptores, por conveniencia de la interfaz. */
+  status: ProductStatus;
+  /**
+   * `null` cuando **no hay tramos** —menos de tres productos activos, o todos al
+   * mismo precio (RN-016)—, que es distinto de pertenecer a uno.
+   */
+  priceTier: PriceTier | null;
   createdAt: string;
 };
 

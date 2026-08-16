@@ -7,7 +7,7 @@
  */
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { Role, UserStatus } from '@prisma/client';
+import { Dimension, Role, UserStatus } from '@prisma/client';
 import { normalizarBusqueda } from '@foodvoice/shared';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
@@ -126,4 +126,98 @@ export async function iniciarSesion(
 /** Cabecera de cookie lista para adjuntar a una petición. */
 export function conSesion(cookie: string): string {
   return `${COOKIE_SESION}=${cookie}`;
+}
+
+// ---------------------------------------------------------------------------
+// E3 · Catálogo
+//
+// Los helpers escriben **directamente en la base**, no por la API: preparar el
+// escenario de una prueba no debe depender de que el endpoint que se está
+// probando funcione. Es el mismo criterio de `crearUsuario`.
+// ---------------------------------------------------------------------------
+
+/** Descripciones que cumplen FR-039 sin ser el objeto de la prueba. */
+export const DESCRIPCION_CATEGORIA =
+  'Agrupa preparaciones horneadas de masa con distintas combinaciones de queso y verduras.';
+export const DESCRIPCION_PRODUCTO =
+  'Masa delgada con salsa de tomate, mozzarella fresca y hojas de albahaca.';
+
+/** Crea una categoría activa en la dimensión indicada. */
+export async function crearCategoria(datos: {
+  dimension: Dimension;
+  name: string;
+  description?: string;
+  active?: boolean;
+}) {
+  return prisma.category.create({
+    data: {
+      dimension: datos.dimension,
+      name: datos.name,
+      nameNormalized: normalizarBusqueda(datos.name),
+      description: datos.description ?? DESCRIPCION_CATEGORIA,
+      active: datos.active ?? true,
+    },
+  });
+}
+
+/**
+ * Crea **una categoría activa por cada dimensión**, que es el mínimo con el que
+ * se puede dar de alta un producto (RN-012). Casi toda batería de productos
+ * empieza por aquí.
+ */
+export async function crearClasificacionMinima(sufijo = '') {
+  const foodType = await crearCategoria({
+    dimension: Dimension.TIPO_COMIDA,
+    name: `Pizzas${sufijo}`,
+  });
+  const healthProfile = await crearCategoria({
+    dimension: Dimension.PERFIL_SALUD,
+    name: `Indulgente${sufijo}`,
+  });
+  return { foodType, healthProfile };
+}
+
+/** Crea un producto activo y disponible, con su clasificación completa. */
+export async function crearProducto(datos: {
+  name: string;
+  foodTypeCategoryId: string;
+  healthProfileCategoryId: string;
+  description?: string;
+  ingredients?: string | null;
+  price?: number;
+  active?: boolean;
+  available?: boolean;
+}) {
+  return prisma.product.create({
+    data: {
+      name: datos.name,
+      nameNormalized: normalizarBusqueda(datos.name),
+      description: datos.description ?? DESCRIPCION_PRODUCTO,
+      // Se distingue «no indicado» de `null` **explícito**: con `??`, pedir un
+      // producto sin ingredientes habría recibido los de por omisión, y la
+      // prueba del caso opcional de FR-017 no habría probado nada.
+      ingredients: 'ingredients' in datos ? datos.ingredients : 'Masa, tomate, mozzarella, albahaca',
+      price: datos.price ?? 8990,
+      foodTypeCategoryId: datos.foodTypeCategoryId,
+      healthProfileCategoryId: datos.healthProfileCategoryId,
+      active: datos.active ?? true,
+      available: datos.available ?? true,
+    },
+  });
+}
+
+/**
+ * Crea un usuario de rol negocio y devuelve su cookie de sesión: el punto de
+ * partida de toda prueba de administración del catálogo (FR-027).
+ */
+export async function sesionNegocio(entorno: Entorno, email = 'negocio@foodvoice.test') {
+  await crearUsuario({ email, role: Role.NEGOCIO, fullName: 'Local De Prueba' });
+  return conSesion(await iniciarSesion(entorno, email));
+}
+
+/** Crea un usuario del rol indicado y devuelve su cookie de sesión. */
+export async function sesionDeRol(entorno: Entorno, role: Role) {
+  const email = `${role.toLowerCase()}@foodvoice.test`;
+  await crearUsuario({ email, role });
+  return conSesion(await iniciarSesion(entorno, email));
 }

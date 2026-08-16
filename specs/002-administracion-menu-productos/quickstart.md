@@ -108,7 +108,7 @@ Con la sesión del **cliente** salvo que se indique otra cosa.
 | **V-38** | Abrir la ficha de un producto con ingredientes | Se ven los ingredientes y, junto a ellos, la advertencia de que son referenciales y no una declaración de alérgenos |
 | **V-39** | Copiar la dirección de la ficha, dar de baja el producto desde el negocio y volver a abrirla | Página de «no encontrado» en español; el producto no aparece por ningún medio |
 | **V-40** | Dar de baja **todos** los productos y abrir el menú | Mensaje en español explicando que todavía no hay productos; ni error, ni pantalla en blanco, ni carga permanente |
-| **V-41** | Elegir tres productos al azar del catálogo y alcanzar cada uno **solo con filtros** | Se llega a los tres sin micrófono ni búsqueda por voz |
+| **V-41** | Elegir tres productos de la semilla con el criterio de SC-025 —uno de cada tramo de precio, los tres de categorías de tipo de comida distintas— y alcanzar cada uno **solo con filtros**. Anotar cuáles fueron | Se llega a los tres sin micrófono ni búsqueda por voz |
 | **V-42** | Con la sesión del **administrador** y la del **repartidor**, abrir el menú | Lo consultan igual que el cliente; ninguno tiene acceso a la administración del catálogo |
 
 ### D · Mensajes, presentación y accesibilidad
@@ -121,7 +121,8 @@ Con la sesión del **cliente** salvo que se indique otra cosa.
 | **V-46** | Recorrer y operar las nueve pantallas **solo con el teclado**, incluidos los diálogos de confirmación | Todo alcanzable, con el foco visible en todo momento |
 | **V-47** | Revisar cada campo de formulario | Todos tienen etiqueta asociada, y su error aparece junto al campo |
 | **V-48** | Reducir la ventana a 360 px de ancho | Ningún contenido queda inalcanzable; el listado de productos se desplaza o se reorganiza, pero no se recorta |
-| **V-49** | Leer una por una las descripciones de la semilla | Cada una menciona algo que su nombre no dice |
+| **V-49** | Leer una por una las descripciones **y los ingredientes** de la semilla | Cada descripción menciona algo que su nombre no dice, y cada campo de ingredientes enumera al menos tres componentes reconocibles, no adjetivos (SC-032) |
+| **V-56** | Escribir en un producto una descripción de 1.000 caracteres y mirarla en el menú, en el listado de administración y en su ficha | En los dos listados aparece recortada a 160 caracteres, cortada en un espacio y con puntos suspensivos; en la ficha, íntegra. El filtro y la búsqueda siguen operando sobre el texto completo |
 
 ### E · Verificación técnica
 
@@ -166,7 +167,7 @@ indicado.
 | SC-022 | V-40 | Parcial |
 | SC-023 | V-53 | Parcial — la mitad de E2 espera |
 | SC-024 | V-28, V-29 | Sí (integración) |
-| SC-025 | V-41 | No — se recorre a mano |
+| SC-025 | V-41 | No — se recorre a mano, con el criterio de selección declarado |
 | SC-026 | V-54 | Sí (integración) |
 | SC-027 | V-31 | Sí (integración) |
 | SC-028 | V-46, V-47 | No — teclado y foco |
@@ -186,7 +187,7 @@ lugar del compartido. Conviene recorrerlos con esa expectativa, no como un trám
 E3 se da por terminada cuando:
 
 1. `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
-2. Los 55 pasos de esta guía se han ejecutado y anotado.
+2. Los 56 pasos de esta guía se han ejecutado y anotado.
 3. Los 32 criterios de éxito están verificados, **salvo la mitad de SC-023 que depende de E2**,
    declarada en § Entrega por fases de la spec.
 4. El contenido de la semilla ha sido leído por una persona, no solo contado por una prueba.

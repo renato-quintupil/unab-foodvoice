@@ -44,9 +44,9 @@ haberla corrido**. Los unitarios usan Vitest en `packages/shared` y `apps/web`, 
 proyecto, ni instalar dependencias, ni configurar linters: E3 no incorpora **ninguna dependencia
 nueva** y hereda la configuración de E1 tal cual.
 
-- [ ] T001 [P] Crear el árbol de carpetas vacío de los módulos nuevos en `services/api/src/categories/`, `services/api/src/products/` y `services/api/src/menu/`
-- [ ] T002 [P] Crear el árbol de carpetas vacío de las pantallas nuevas en `apps/web/src/app/negocio/categorias/`, `apps/web/src/app/negocio/productos/` y `apps/web/src/app/menu/`
-- [ ] T003 Comprobar que `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan en verde **antes** de tocar nada, para que cualquier fallo posterior sea atribuible a esta épica; se ejecutan desde la raíz del repositorio, según [quickstart.md](./quickstart.md) § Comprobaciones automáticas
+- [X] T001 [P] Crear el árbol de carpetas vacío de los módulos nuevos en `services/api/src/categories/`, `services/api/src/products/` y `services/api/src/menu/`
+- [X] T002 [P] Crear el árbol de carpetas vacío de las pantallas nuevas en `apps/web/src/app/negocio/categorias/`, `apps/web/src/app/negocio/productos/` y `apps/web/src/app/menu/`
+- [X] T003 Comprobar que `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan en verde **antes** de tocar nada, para que cualquier fallo posterior sea atribuible a esta épica; se ejecutan desde la raíz del repositorio, según [quickstart.md](./quickstart.md) § Comprobaciones automáticas
 
 ---
 
@@ -60,27 +60,28 @@ esquemas Zod no hay validación, y sin la migración no hay dónde escribir.
 
 ### Contratos compartidos — `packages/shared`
 
-- [ ] T004 [P] Crear el enum `Dimension` y las etiquetas visibles de sus dos valores en `packages/shared/src/enums/dimension.ts` (FR-001, D-020)
-- [ ] T005 [P] Crear los enums `PriceTier` y `ProductStatus` en `packages/shared/src/enums/dimension.ts` (FR-032, § Vocabulario visible del catálogo)
-- [ ] T006 Implementar `validarDescripcion` con el mínimo, el máximo y las tres condiciones de sustancia, devolviendo el motivo concreto del rechazo, en `packages/shared/src/schemas/description.ts` (FR-039, D-025)
-- [ ] T007 [P] Escribir las pruebas unitarias de `validarDescripcion` en `packages/shared/src/schemas/description.spec.ts`, cubriendo los seis motivos y los límites exactos de 20 y 30 caracteres (SC-031)
-- [ ] T008 [P] Implementar `formatearPrecio` con `Intl.NumberFormat` para producir `$4.990`, y sus pruebas unitarias, en `packages/shared/src/format/precio.ts` y su `.spec.ts` (§ Presentación del precio, D-030)
-- [ ] T009 Añadir los mensajes fijos del catálogo a `packages/shared/src/messages/es.ts`, incluidos `MSG_CATEGORIA_EN_USO` y `MSG_CATEGORIA_INACTIVA` como funciones porque su texto lleva un dato variable (contracts/shared.md § Mensajes fijos)
-- [ ] T010 Añadir a `packages/shared/src/messages/es.ts` las constantes de ayuda contextual `AYUDA_DESCRIPCION_PRODUCTO` y `AYUDA_DESCRIPCION_CATEGORIA`, cada una con su ejemplo completo y su explicación (FR-005, FR-016)
-- [ ] T011 Añadir `ETIQUETA_DIMENSION`, `ETIQUETA_TRAMO`, `ETIQUETA_ESTADO_PRODUCTO` y `ETIQUETA_ESTADO_CATEGORIA` a `packages/shared/src/messages/etiquetas.ts`, respetando el vocabulario prohibido de la spec (§ Vocabulario visible del catálogo)
-- [ ] T012 Crear los esquemas de categoría `CreateCategorySchema` y `UpdateCategorySchema` —este último **sin** `dimension`— en `packages/shared/src/schemas/category.ts` (FR-003, FR-006)
-- [ ] T013 Crear los esquemas de producto `CreateProductSchema` y `UpdateProductSchema`, con el precio entero que rechaza decimales sin redondear, en `packages/shared/src/schemas/product.ts` (FR-013, FR-015)
-- [ ] T014 [P] Crear los esquemas de cambio de estado `ChangeCategoryStatusSchema`, `ChangeProductStatusSchema` y `ChangeAvailabilitySchema` en `packages/shared/src/schemas/product.ts` y `category.ts` (FR-007, FR-019, FR-020)
-- [ ] T015 Añadir `ListCategoriesQuerySchema`, `ListProductsQuerySchema` —reutilizando `PAGE_SIZE`— y `MenuQuerySchema` —**sin** `page`— a `packages/shared/src/schemas/query.ts` (FR-023, FR-031, D-029)
-- [ ] T016 [P] Escribir las pruebas unitarias de los esquemas de categoría y producto en `packages/shared/src/schemas/category.spec.ts` y `product.spec.ts`, incluidos los precios `0`, `-100`, `4990.5` y no numérico (SC-012)
-- [ ] T017 Añadir los tipos `CategoryDto`, `CategoryRef` y `ProductDto` —sin `nameNormalized` ni `updatedAt`, con `status` y `priceTier` derivados— a `packages/shared/src/types/api.ts` (contracts/shared.md § Tipos de transferencia)
-- [ ] T018 Exportar toda la superficie nueva desde `packages/shared/src/index.ts` sin filtrar nada que no esté en el contrato
+- [X] T004 [P] Crear el enum `Dimension` y las etiquetas visibles de sus dos valores en `packages/shared/src/enums/dimension.ts` (FR-001, D-020)
+- [X] T005 [P] Crear los enums `PriceTier` y `ProductStatus` en `packages/shared/src/enums/dimension.ts` (FR-032, § Vocabulario visible del catálogo)
+- [X] T006 Implementar `validarDescripcion` con el mínimo, el máximo y las tres condiciones de sustancia, devolviendo el motivo concreto del rechazo, y **colapsando saltos de línea, tabulaciones y espacios repetidos a un solo espacio antes de medir y de validar** —la descripción es párrafo plano—, en `packages/shared/src/schemas/description.ts` (FR-039, D-025, D-033)
+- [X] T007 [P] Escribir las pruebas unitarias de `validarDescripcion` en `packages/shared/src/schemas/description.spec.ts`, cubriendo los seis motivos, los límites **inclusivos** de 20, 30, 500 y 1.000 caracteres, y el colapso de saltos de línea —una descripción con saltos cuenta sus palabras como si fueran espacios— (SC-031, D-033)
+- [X] T008 [P] Implementar `formatearPrecio` con `Intl.NumberFormat` para producir `$4.990`, y sus pruebas unitarias, en `packages/shared/src/format/precio.ts` y su `.spec.ts` (§ Presentación del precio, D-030)
+- [X] T087 [P] Implementar `recortarDescripcion` y `MAX_DESCRIPCION_LISTADO`, cortando en el último espacio anterior al límite sin partir palabras, y sus pruebas unitarias, en `packages/shared/src/format/texto.ts` y su `.spec.ts` (§ Presentación de la descripción en los listados, D-033)
+- [X] T009 Añadir los mensajes fijos del catálogo a `packages/shared/src/messages/es.ts`, incluidos `MSG_CATEGORIA_EN_USO` y `MSG_CATEGORIA_INACTIVA` como funciones porque su texto lleva un dato variable (contracts/shared.md § Mensajes fijos)
+- [X] T010 Añadir a `packages/shared/src/messages/es.ts` las constantes de ayuda contextual `AYUDA_DESCRIPCION_PRODUCTO` y `AYUDA_DESCRIPCION_CATEGORIA`, cada una con su ejemplo completo y su explicación (FR-005, FR-016)
+- [X] T011 Añadir `ETIQUETA_DIMENSION`, `ETIQUETA_TRAMO`, `ETIQUETA_ESTADO_PRODUCTO` y `ETIQUETA_ESTADO_CATEGORIA` a `packages/shared/src/messages/etiquetas.ts`, respetando el vocabulario prohibido de la spec (§ Vocabulario visible del catálogo)
+- [X] T012 Crear los esquemas de categoría `CreateCategorySchema` y `UpdateCategorySchema` —este último **sin** `dimension`— en `packages/shared/src/schemas/category.ts` (FR-003, FR-006)
+- [X] T013 Crear los esquemas de producto `CreateProductSchema` y `UpdateProductSchema`, con el precio entero que rechaza decimales sin redondear, en `packages/shared/src/schemas/product.ts` (FR-013, FR-015)
+- [X] T014 [P] Crear los esquemas de cambio de estado `ChangeCategoryStatusSchema`, `ChangeProductStatusSchema` y `ChangeAvailabilitySchema` en `packages/shared/src/schemas/product.ts` y `category.ts` (FR-007, FR-019, FR-020)
+- [X] T015 Añadir `ListCategoriesQuerySchema`, `ListProductsQuerySchema` —reutilizando `PAGE_SIZE`— y `MenuQuerySchema` —**sin** `page`— a `packages/shared/src/schemas/query.ts` (FR-023, FR-031, D-029)
+- [X] T016 [P] Escribir las pruebas unitarias de los esquemas de categoría y producto en `packages/shared/src/schemas/category.spec.ts` y `product.spec.ts`, incluidos los precios `0`, `-100`, `4990.5` y no numérico (SC-012)
+- [X] T017 Añadir los tipos `CategoryDto`, `CategoryRef` y `ProductDto` —sin `nameNormalized` ni `updatedAt`, con `status` y `priceTier` derivados— a `packages/shared/src/types/api.ts` (contracts/shared.md § Tipos de transferencia)
+- [X] T018 Exportar toda la superficie nueva desde `packages/shared/src/index.ts` sin filtrar nada que no esté en el contrato
 
 ### Esquema de datos — `services/api`
 
-- [ ] T019 Añadir el enum `Dimension` y los modelos `Category` y `Product` a `services/api/prisma/schema.prisma`, con las dos claves foráneas obligatorias y todos los índices de data-model.md (D-024)
-- [ ] T020 Generar la migración con `prisma migrate dev` y añadirle a mano la restricción `CHECK (price >= 1 AND price <= 10000000)`, que Prisma no expresa en el esquema (D-026)
-- [ ] T021 Comprobar sobre una base efímera que la migración aplica limpia y que los índices únicos existen, en `services/api/test/catalog-schema.integration-spec.ts`
+- [X] T019 Añadir el enum `Dimension` y los modelos `Category` y `Product` a `services/api/prisma/schema.prisma`, con las dos claves foráneas obligatorias y todos los índices de data-model.md (D-024)
+- [X] T020 Generar la migración con `prisma migrate dev` y añadirle a mano la restricción `CHECK (price >= 1 AND price <= 10000000)`, que Prisma no expresa en el esquema (D-026)
+- [X] T021 Comprobar sobre una base efímera que la migración aplica limpia y que los índices únicos existen, en `services/api/test/catalog-schema.integration-spec.ts`
 
 **Punto de control**: los contratos compilan y la base tiene las dos tablas. Las historias
 pueden empezar.
@@ -211,16 +212,17 @@ dos de los criterios sin cobertura automática no se cumplían cuando solo se ha
 código.
 
 - [ ] T074 Escribir la semilla del catálogo con sus mínimos exigibles —las dos dimensiones, tres categorías activas por dimensión, doce productos con ingredientes y los tres tramos cubiertos— reconociendo los registros existentes por nombre normalizado, en `services/api/prisma/seed/catalogo.ts` (FR-036, D-028)
-- [ ] T075 Redactar el contenido real de la semilla en `services/api/prisma/seed/catalogo.ts` y revisarlo leyéndolo entero, aplicando el criterio operativo de SC-032: **cada descripción menciona algo que su nombre no dice**, y ninguna se limita a cumplir el mínimo mecánico de FR-039 (SC-032, paso V-49)
+- [ ] T075 Redactar el contenido real de la semilla en `services/api/prisma/seed/catalogo.ts` y revisarlo leyéndolo entero, aplicando los dos criterios operativos de SC-032: **cada descripción menciona algo que su nombre no dice** y ninguna se limita a cumplir el mínimo mecánico de FR-039; y **cada campo de ingredientes enumera al menos tres componentes reconocibles**, no adjetivos ni frases (SC-032, paso V-49)
 - [ ] T076 Enlazar la semilla del catálogo con la de E1 en el comando `db:seed` de `services/api/package.json`, de forma que una sola ejecución cargue ambas
 - [ ] T077 [P] Batería de integración de la semilla en `services/api/test/catalog-seed.integration-spec.ts`: sobre base vacía carga los mínimos y cubre los tres tramos; ejecutada dos veces no duplica ni modifica nada (SC-026)
+- [ ] T088 [P] Aplicar `recortarDescripcion` en los dos listados —`apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`— y comprobar que la ficha y los formularios muestran la descripción íntegra (§ Presentación de la descripción en los listados, D-033, paso V-56)
 - [ ] T078 [P] Aplicar `formatearPrecio` en las cuatro superficies que muestran precios —`apps/web/src/app/menu/page.tsx`, `apps/web/src/app/menu/[id]/page.tsx`, `apps/web/src/app/negocio/productos/page.tsx` y el formulario de producto— y comprobar que ninguna lo compone a mano (§ Presentación del precio, paso V-44)
 - [ ] T079 Recorrer las ocho pantallas nuevas de `apps/web/src/app/negocio/` y `apps/web/src/app/menu/` comprobando el vocabulario de § Vocabulario visible del catálogo y que ningún sinónimo prohibido aparece en pantalla (SC-029, paso V-43)
 - [ ] T080 Recorrer y operar las ocho pantallas **solo con teclado**, incluidos los diálogos de confirmación de `apps/web/src/app/negocio/productos/_components/dialogo-confirmacion.tsx`, verificando foco visible y etiqueta asociada en cada campo (FR-037, SC-028, pasos V-46 y V-47)
 - [ ] T081 Comprobar las ocho pantallas a 360 píxeles de ancho, en particular `apps/web/src/app/negocio/productos/page.tsx`, que tiene más columnas que el listado de usuarios de E1 (FR-038, paso V-48)
 - [ ] T082 Ejecutar desde la raíz del repositorio `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`, y dejarlas en verde ([quickstart.md](./quickstart.md) § Comprobaciones automáticas)
 - [ ] T083 Cargar el catálogo hasta 50 productos activos y cronometrar `apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`, con y sin filtros (SC-030, paso V-55)
-- [ ] T084 Ejecutar los 55 pasos de [quickstart.md](./quickstart.md) § Validación funcional, anotando el resultado de cada uno. **Es la única cobertura de los ocho criterios que ninguna prueba automática alcanza** —SC-001 y SC-009 (cronómetro), SC-002 (conteo de clics), SC-006 (ausencia de acciones de borrado), SC-011 (recorrido de la tabla de intenciones), SC-019 (ayuda visible sin interacción), SC-025 (llegar a un producto solo con filtros) y SC-029 (texto en español)—
+- [ ] T084 Ejecutar los 56 pasos de [quickstart.md](./quickstart.md) § Validación funcional, anotando el resultado de cada uno. **Es la única cobertura de los ocho criterios que ninguna prueba automática alcanza** —SC-001 y SC-009 (cronómetro), SC-002 (conteo de clics), SC-006 (ausencia de acciones de borrado), SC-011 (recorrido de la tabla de intenciones), SC-019 (ayuda visible sin interacción), SC-025 (llegar a un producto solo con filtros) y SC-029 (texto en español)—
 - [ ] T085 Registrar el resultado de la validación en `specs/002-administracion-menu-productos/verificacion.md`, con el mismo formato que E1, declarando explícitamente los ocho criterios sin cobertura automática y la mitad de SC-023 que espera a E2
 - [ ] T086 Actualizar `CLAUDE.md` y `specs/README.md` con el estado de E3 una vez verificada
 
@@ -322,9 +324,11 @@ integración mientras se implementa el servicio.
 | Fase | Tareas | Historia |
 |---|---|---|
 | 1 · Preparación | T001–T003 (3) | — |
-| 2 · Cimientos | T004–T021 (18) | — |
+| 2 · Cimientos | T004–T021 + T087 (19) | — |
 | 3 · Clasificación | T022–T036 (15) | US1 (P1) |
 | 4 · Administración del menú | T037–T057 (21) | US2 (P2) |
 | 5 · Consulta del menú | T058–T073 (16) | US1 y US2 |
-| 6 · Semilla y cierre | T074–T086 (13) | — |
-| **Total** | **86** | |
+| 6 · Semilla y cierre | T074–T086 + T088 (14) | — |
+| **Total** | **88** | |
+
+**T087 y T088** se añadieron el 2026-08-16, al cerrar los ítems CHK005 y CHK035 del checklist de contenido: la descripción es párrafo plano y en los listados se recorta (D-033). Llevan número al final para no renumerar las 86 tareas ya trazadas, pero se ejecutan en su fase —T087 en Cimientos, junto a `formatearPrecio`; T088 en el cierre, junto a la aplicación del formato de precio—.

@@ -162,7 +162,8 @@ packages/shared/src/
 │   ├── es.ts                         # MODIFICADO · mensajes fijos del catálogo
 │   └── etiquetas.ts                  # MODIFICADO · estados, dimensiones, tramos
 ├── format/
-│   └── precio.ts                     # NUEVO · formatearPrecio() → "$4.990"
+│   ├── precio.ts                     # NUEVO · formatearPrecio() → "$4.990"
+│   └── texto.ts                      # NUEVO · recortarDescripcion() para los listados
 ├── types/
 │   └── api.ts                        # MODIFICADO · CategoryDto, ProductDto
 └── index.ts                          # MODIFICADO · superficie pública

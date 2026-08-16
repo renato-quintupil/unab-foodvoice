@@ -1,4 +1,4 @@
-// Esquema de datos de FoodVoice · E1 (data-model.md)
+// Esquema de datos de FoodVoice · E1 y E3 (data-model.md)
 //
 // Los nombres de tabla y de columna van en snake_case singular; los del cliente
 // TypeScript, en camelCase. La correspondencia se declara con @map/@@map para
@@ -33,6 +33,16 @@ enum AdminAction {
   DESACTIVAR
   REACTIVAR
   RESTABLECER_PASSWORD
+}
+
+/// Las dos preguntas fijas de clasificación (E3, FR-001, D-020).
+///
+/// Es un enum y no una tabla: no se crean, editan, desactivan ni reordenan desde
+/// la aplicación. Una tabla permitiría que existieran cero o tres dimensiones,
+/// estados que FR-001 prohíbe.
+enum Dimension {
+  TIPO_COMIDA
+  PERFIL_SALUD
 }
 
 /// Persona que accede a la plataforma. No hay borrado físico (RN-002):
@@ -122,4 +132,94 @@ model AdminAuditLog {
   target User @relation("target", fields: [targetUserId], references: [id], onDelete: Restrict)
 
   @@map("admin_audit_log")
+}
+
+// ---------------------------------------------------------------------------
+// E3 · Administración de menú (data-model.md de 002-administracion-menu-productos)
+//
+// Dos entidades nuevas. **Ninguna tabla de E1 cambia**: no se añade ninguna
+// columna a `user`, `session`, `login_attempt_control` ni `admin_audit_log`.
+//
+// `price_tier` (Económico · Medio · Caro) **NO ESTÁ AQUÍ**: se deriva en cada
+// consulta (FR-032, D-023); no hay columna ni tabla. Que no sea una entidad es
+// la decisión de diseño central de HU-14 y no un detalle: un tramo persistido
+// envejece con la inflación y obliga a recalcular todo el catálogo cada vez que
+// cambia un precio.
+// ---------------------------------------------------------------------------
+
+/// Valor administrable de una dimensión (HU-14). No hay borrado físico
+/// (RN-004): `active = false` la retira del uso conservando su contenido.
+model Category {
+  id String @id @default(uuid()) @db.Uuid
+  /// No editable tras la creación (FR-006): cambiarla movería de golpe todos
+  /// los productos clasificados con ella a otra pregunta distinta.
+  dimension Dimension
+  name      String
+  /// Derivada de `normalizarBusqueda(name)` (D-021).
+  /// ⚠️ Cambiar esa función exige una migración que repueble esta columna.
+  nameNormalized String @map("name_normalized")
+  /// El dato que hará funcionar la búsqueda por voz de E6 (FR-003, FR-039).
+  description String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  productsAsFoodType      Product[] @relation("foodType")
+  productsAsHealthProfile Product[] @relation("healthProfile")
+
+  /// La unicidad es **por dimensión**, no global (FR-004, RN-014): expresa en
+  /// una sola línea que «Saludable» pueda existir a la vez como tipo de comida
+  /// y como perfil de salud (HU14-E05) y no dos veces dentro de la misma
+  /// (HU14-E04). Alcanza también a las desactivadas.
+  @@unique([dimension, nameNormalized], map: "category_dimension_name_normalized_key")
+  /// Sirve al desplegable del alta y al filtro del cliente, que siempre piden
+  /// las categorías activas de una dimensión.
+  @@index([dimension, active], map: "category_dimension_active_idx")
+  @@map("category")
+}
+
+/// Elemento del catálogo (HU-02). Nunca se borra (RN-004): un producto que
+/// estuvo en un pedido debe seguir siendo legible en ese pedido para siempre.
+model Product {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  /// Única en todo el catálogo, incluidos los dados de baja (RN-005), para que
+  /// su reactivación sea siempre posible.
+  nameNormalized String @unique(map: "product_name_normalized_key") @map("name_normalized")
+  description    String
+  /// Informativo, nunca una declaración de alérgenos (RN-019, FR-017).
+  /// Su ausencia **no** significa que el producto no contenga el ingrediente.
+  ingredients String?
+  /// Entero en pesos chilenos. La restricción de rango se añade con SQL en la
+  /// migración; Prisma no la expresa en el esquema (D-026).
+  price Int
+
+  /// Exactamente una categoría por dimensión, **obligatoria** (RN-011, D-024).
+  /// Que sean columnas y no una tabla de unión hace irrepresentable el estado
+  /// que la regla prohíbe. Que cada una apunte a su propia dimensión lo
+  /// comprueba el servicio: la clave foránea no puede expresarlo.
+  foodTypeCategoryId      String   @map("food_type_category_id") @db.Uuid
+  healthProfileCategoryId String   @map("health_profile_category_id") @db.Uuid
+  foodTypeCategory        Category @relation("foodType", fields: [foodTypeCategoryId], references: [id], onDelete: Restrict)
+  healthProfileCategory   Category @relation("healthProfile", fields: [healthProfileCategoryId], references: [id], onDelete: Restrict)
+
+  /// Está en el menú.
+  active Boolean @default(true)
+  /// Se puede preparar ahora. Si es `false`, el producto **sigue visible**,
+  /// marcado «Agotado», y no se puede pedir (FR-029).
+  available Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// Toda consulta del menú filtra por ahí.
+  @@index([active, available], map: "product_active_available_idx")
+  /// Sirve a las dos consultas de corte de precio de D-023.
+  @@index([price], map: "product_price_idx")
+  /// Orden del listado de administración, que debe ser estable para que la
+  /// paginación sea determinista (FR-023). El desempate por `id` lo hace total.
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "product_created_at_id_idx")
+  /// El filtro por categoría y el conteo de bloqueadores de FR-007.
+  @@index([foodTypeCategoryId], map: "product_food_type_category_id_idx")
+  @@index([healthProfileCategoryId], map: "product_health_profile_category_id_idx")
+  @@map("product")
 }

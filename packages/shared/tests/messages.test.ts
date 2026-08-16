@@ -30,8 +30,36 @@ const LOS_DOCE = [
   'MSG_SIN_DATOS_PEDIDOS',
 ] as const;
 
+/**
+ * Los del catálogo (E3, `contracts/shared.md` § Mensajes fijos). Se enumeran
+ * aparte para que la guarda de abajo siga cumpliendo su función —detectar que
+ * una constante se borró o que apareció una sin declarar— ahora que el archivo
+ * sirve a dos épicas. Los cinco últimos y `MSG_CATEGORIA_EN_USO`,
+ * `MSG_CATEGORIA_INACTIVA` y `MSG_DIMENSION_SIN_CATEGORIAS` son **funciones**,
+ * porque su texto incorpora un dato variable.
+ */
+const LOS_DEL_CATALOGO = [
+  'MSG_CATEGORIA_YA_EXISTE',
+  'MSG_PRODUCTO_YA_EXISTE',
+  'MSG_MENU_VACIO',
+  'MSG_SIN_RESULTADOS_CATALOGO',
+  'MSG_INGREDIENTES_REFERENCIALES',
+  'MSG_PRODUCTO_NO_ENCONTRADO',
+  'MSG_CATEGORIA_EN_USO',
+  'MSG_CATEGORIA_INACTIVA',
+  'MSG_DIMENSION_SIN_CATEGORIAS',
+  'MSG_DESCRIPCION_AUSENTE',
+  'MSG_DESCRIPCION_DEMASIADO_CORTA',
+  'MSG_DESCRIPCION_DEMASIADO_LARGA',
+  'MSG_DESCRIPCION_POCAS_PALABRAS',
+  'MSG_DESCRIPCION_PALABRAS_REPETIDAS',
+  'MSG_DESCRIPCION_REPITE_EL_NOMBRE',
+  'AYUDA_DESCRIPCION_PRODUCTO',
+  'AYUDA_DESCRIPCION_CATEGORIA',
+] as const;
+
 describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
-  it('los doce existen y no están vacíos', () => {
+  it('los doce de E1 existen y no están vacíos', () => {
     for (const nombre of LOS_DOCE) {
       const texto = mensajes[nombre];
       expect(typeof texto, nombre).toBe('string');
@@ -39,8 +67,25 @@ describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
     }
   });
 
-  it('el archivo declara exactamente esos doce y ninguno más', () => {
-    expect(Object.keys(mensajes).sort()).toEqual([...LOS_DOCE].sort());
+  it('el archivo declara exactamente los conocidos y ninguno más', () => {
+    expect(Object.keys(mensajes).sort()).toEqual(
+      [...LOS_DOCE, ...LOS_DEL_CATALOGO].sort(),
+    );
+  });
+
+  it('los del catálogo existen, y los que llevan un dato variable son funciones', () => {
+    for (const nombre of LOS_DEL_CATALOGO) {
+      expect(mensajes[nombre], nombre).toBeDefined();
+    }
+    for (const nombre of [
+      'MSG_CATEGORIA_EN_USO',
+      'MSG_CATEGORIA_INACTIVA',
+      'MSG_DIMENSION_SIN_CATEGORIAS',
+      'MSG_DESCRIPCION_DEMASIADO_CORTA',
+      'MSG_DESCRIPCION_DEMASIADO_LARGA',
+    ] as const) {
+      expect(typeof mensajes[nombre], nombre).toBe('function');
+    }
   });
 
   it('el mensaje de bloqueo es una sola constante, no dos literales (SC-018)', () => {

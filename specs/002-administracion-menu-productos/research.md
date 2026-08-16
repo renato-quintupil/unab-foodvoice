@@ -278,6 +278,38 @@ revelaría que el identificador existe, que es exactamente lo que la regla evita
 
 ---
 
+## D-033 · La descripción es párrafo plano, y en los listados se recorta
+
+**Decisión**: el esquema de descripción **colapsa** saltos de línea, tabulaciones y espacios
+repetidos a un solo espacio antes de validar y de guardar; en los dos listados, la descripción
+se muestra recortada a **160 caracteres** con `recortarDescripcion` de `packages/shared`, y
+completa en la ficha y en los formularios.
+
+**Razón**: son las dos enmiendas que cerraron los ítems CHK005 y CHK035 del checklist de
+contenido, y cada una evita que la implementación improvise. Colapsar hace que un salto de
+línea separe palabras a efectos de FR-039 —si no, «rica\nrica\nrica\nrica\nrica» podría contarse
+como una sola palabra o como cinco según cómo se parta la cadena— y que lo que E6 lea sea prosa
+continua, no un texto con estructura que nadie declaró. Recortar es necesario porque el menú del
+cliente **no se pagina** (D-029): doce descripciones de 1.000 caracteres seguidas dejarían el
+final del catálogo fuera de alcance con el desplazamiento.
+
+Que el recorte viva en `packages/shared` y no en cada listado es el mismo criterio de D-030 con
+el precio: dos listados que recortan distinto son un defecto visible. Y que sea **solo
+presentación** es lo que mantiene intactos el filtro y la búsqueda, que siguen operando sobre el
+texto completo.
+
+**Alternativas descartadas**:
+
+- **Conservar los saltos**: obligaría a decidir cómo se pinta el texto multilínea en el listado
+  y en la ficha, y abriría el caso de una descripción que cumple 20 caracteres con veinte saltos
+  de línea. Ninguna historia pide formato en la descripción.
+- **Ocultar la descripción del listado**: dejaría al cliente eligiendo solo por nombre y precio,
+  cuando FR-034 declara que la descripción es lo que le permite decidir sin fotografías.
+- **Un control para desplegarla en el listado**: un mecanismo de interfaz más para un catálogo
+  de decenas de productos que ya tiene la ficha para eso (Principio I).
+
+---
+
 ## Trazabilidad de las decisiones
 
 | Decisión | Requisitos que la originan |
@@ -295,6 +327,7 @@ revelaría que el identificador existe, que es exactamente lo que la regla evita
 | D-030 · Formato del precio en `shared` | § Presentación del precio, FR-015 |
 | D-031 · Reparto de las capas de prueba | Principio XI, SC-004, SC-021 |
 | D-032 · `404` para el producto no activo | FR-028, FR-034, SC-005 |
+| D-033 · Párrafo plano y recorte en listados | § Límites de los campos, § Presentación de la descripción en los listados, FR-023, FR-031, FR-039 |
 
 ## Costos asumidos
 
