@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Dimension, PriceTier, ProductStatus } from '../enums/dimension';
 import { OrderStatus } from '../enums/order-status';
 import { Role, UserStatus } from '../enums/role';
 import { MSG_RANGO_FECHAS_INVALIDO } from '../messages/es';
@@ -85,3 +86,74 @@ export const OrdersQuerySchema = z
   });
 
 export type OrdersQuery = z.infer<typeof OrdersQuerySchema>;
+
+// ---------------------------------------------------------------------------
+// E3 · Administración de menú
+// ---------------------------------------------------------------------------
+
+/**
+ * Listado de categorías de la administración (FR-010).
+ *
+ * **No se pagina**: las categorías de un catálogo mono-local son unas pocas
+ * decenas como mucho, y el requisito pide agruparlas o filtrarlas por dimensión,
+ * no recorrerlas por páginas. Añadir paginación aquí sería un mecanismo sin
+ * requisito que lo pida (Principio III).
+ */
+export const ListCategoriesQuerySchema = z.object({
+  dimension: z.nativeEnum(Dimension).optional(),
+  /**
+   * Sin este filtro se devuelven **todas**, activas y desactivadas: en la
+   * administración las desactivadas siguen siendo visibles (FR-010), a
+   * diferencia del menú del cliente, donde no se ofrecen (FR-011).
+   */
+  active: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+});
+
+export type ListCategoriesQuery = z.infer<typeof ListCategoriesQuerySchema>;
+
+/**
+ * Listado de productos de la administración (FR-023).
+ *
+ * Reutiliza el `PAGE_SIZE` compartido y **no expone `pageSize` ni parámetros de
+ * orden**, igual que `ListUsersQuery`: el orden es fijo —`created_at DESC,
+ * id DESC`— para que un mismo conjunto de criterios devuelva siempre los mismos
+ * productos en la misma página (supuesto 14).
+ *
+ * **Sin `status`, el listado muestra solo los productos activos** —disponibles y
+ * agotados—; los dados de baja se recuperan eligiendo ese estado. El trabajo
+ * cotidiano del negocio es sobre el menú vigente y una baja es la excepción
+ * (supuesto 20). Que el valor por omisión viva en el servicio y no aquí es
+ * deliberado: este esquema describe lo que el usuario pidió, y «no pidió nada»
+ * es distinto de «pidió los activos».
+ */
+export const ListProductsQuerySchema = z.object({
+  search: z.string().trim().optional(),
+  status: z.nativeEnum(ProductStatus).optional(),
+  categoryId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
+export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
+
+/**
+ * Consulta del menú, para los cuatro roles autenticados (FR-031, FR-032, D-029).
+ *
+ * **No tiene `page`**: el menú no se pagina, se muestra completo en una sola
+ * pantalla desplazable. Los tramos de precio se calculan siempre sobre el
+ * catálogo activo completo y nunca sobre lo que se está mostrando, de modo que
+ * la ausencia de paginación no altera FR-032.
+ *
+ * Los tres filtros son **combinables entre sí**, y la combinación es conjuntiva:
+ * devuelve solo lo que cumple todas las condiciones, y **nunca** sustituye el
+ * resultado por productos que cumplan solo parte (FR-035).
+ */
+export const MenuQuerySchema = z.object({
+  foodTypeCategoryId: z.string().uuid().optional(),
+  healthProfileCategoryId: z.string().uuid().optional(),
+  priceTier: z.nativeEnum(PriceTier).optional(),
+});
+
+export type MenuQuery = z.infer<typeof MenuQuerySchema>;

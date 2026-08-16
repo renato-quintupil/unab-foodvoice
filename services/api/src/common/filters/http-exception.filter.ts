@@ -33,6 +33,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
           code: exception.code,
           message: exception.mensaje,
           ...(exception.fields ? { fields: exception.fields } : {}),
+          // `extra` va **después** de `fields` y antes de nada más: hoy solo lo
+          // usa `CATEGORY_IN_USE` con `blockingProducts` (E3). Se difunde en el
+          // filtro y no en cada endpoint para que el formato de error siga
+          // siendo uno solo.
+          ...(exception.extra ?? {}),
         },
       });
       return;

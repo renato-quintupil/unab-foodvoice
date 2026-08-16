@@ -20,8 +20,23 @@
 import { execSync } from 'node:child_process';
 import { PrismaClient } from '@prisma/client';
 
-/** Tablas en el orden en que se truncan. `CASCADE` resuelve las dependencias. */
-const TABLAS = ['admin_audit_log', 'session', 'login_attempt_control', '"user"'] as const;
+/**
+ * Tablas en el orden en que se truncan. `CASCADE` resuelve las dependencias.
+ *
+ * `product` va **antes** que `category` porque la referencia: aunque `CASCADE` lo
+ * resolvería en cualquier orden, escribirlo así deja legible qué depende de qué.
+ * Omitir aquí una tabla nueva no rompe ninguna prueba de inmediato —las hace
+ * fallar más tarde, cuando una batería encuentra el catálogo que dejó otra—, y
+ * por eso se enumeran todas y no se filtran por épica.
+ */
+const TABLAS = [
+  'admin_audit_log',
+  'session',
+  'login_attempt_control',
+  '"user"',
+  'product',
+  'category',
+] as const;
 
 /**
  * La base de la batería la fija **este archivo**, no el entorno heredado (T132).

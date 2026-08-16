@@ -2,7 +2,6 @@
 docs/epicas-hu/specificaciones/
 docs/epicas-hu/presentacion/
 
-
 # Variables de entorno y secretos
 .env
 .env.*

@@ -24,6 +24,7 @@ import { AdminAction, PrismaClient, Role, UserStatus } from '@prisma/client';
 import { normalizarBusqueda } from '@foodvoice/shared';
 import * as bcrypt from 'bcrypt';
 import { validarEntornoSemilla } from '../src/config/env.validation';
+import { sembrarCatalogo } from './seed/catalogo';
 
 const COSTE_BCRYPT = 12;
 
@@ -39,9 +40,17 @@ async function main(): Promise<void> {
   const existente = await prisma.user.findUnique({ where: { email: correo } });
 
   if (recuperar) {
+    // La recuperación de acceso **no** carga el catálogo: es una operación de
+    // emergencia sobre una cuenta, y mezclarle la carga de datos de demostración
+    // la haría menos predecible justo cuando más falta hace que lo sea.
     await recuperarAcceso(correo, password, existente?.id);
     return;
   }
+
+  // El catálogo de E3 se carga en la **misma** ejecución que el administrador de
+  // E1 (T076, FR-036): una sola orden deja el entorno listo, y quien arranca el
+  // proyecto no tiene que saber que son dos semillas.
+  await sembrarCatalogo(prisma);
 
   if (existente) {
     if (existente.role !== Role.ADMINISTRADOR || existente.status !== UserStatus.ACTIVO) {

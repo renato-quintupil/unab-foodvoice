@@ -36,3 +36,37 @@ export async function pedirALaApi<T>(ruta: string): Promise<T> {
 
   return (await respuesta.json()) as T;
 }
+
+/**
+ * Igual que `pedirALaApi`, pero un `404` devuelve `null` en lugar de lanzar.
+ *
+ * Existe por la ficha de producto de E3: allí el `404` **no es un fallo**, sino
+ * la respuesta correcta a un identificador que no existe o a un producto que ya
+ * no está en el menú, y la pantalla tiene que distinguirlo de una caída de la API
+ * para mostrar «no encontrado» en lugar de un error (FR-034, D-032).
+ *
+ * Cualquier otro estado se comporta exactamente igual que en `pedirALaApi`: no
+ * fabrica contenido ante un fallo que sí lo es.
+ */
+export async function pedirALaApiOpcional<T>(ruta: string): Promise<T | null> {
+  const base = process.env.API_INTERNAL_URL;
+  if (!base) throw new Error('API_INTERNAL_URL no está definida.');
+
+  const cookie = (await cookies()).get('fv_session');
+
+  const respuesta = await fetch(`${base.replace(/\/$/, '')}/api/v1${ruta}`, {
+    headers: cookie ? { cookie: `fv_session=${cookie.value}` } : {},
+    cache: 'no-store',
+  });
+
+  if (respuesta.status === 404) return null;
+  if (respuesta.status === 401) {
+    redirect(`/login?aviso=${encodeURIComponent(MSG_SESION_EXPIRADA)}`);
+  }
+  if (respuesta.status === 403) redirect('/sin-permiso');
+  if (!respuesta.ok) {
+    throw new Error(`La API respondió ${respuesta.status} a ${ruta}`);
+  }
+
+  return (await respuesta.json()) as T;
+}
