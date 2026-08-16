@@ -105,7 +105,7 @@ que HU-02 esté construida. Corresponde a los pasos **V-01 a V-12** de quickstar
 - [X] T022 [P] [US1] Batería de integración de creación y validación de categorías en `services/api/test/categories-create.integration-spec.ts`, cubriendo HU14-E01, E02 y E03, y comprobando que ninguna categoría llega a guardarse con descripción de menos de 30 caracteres (SC-008)
 - [X] T023 [P] [US1] Batería de integración de unicidad en `services/api/test/categories-unique.integration-spec.ts`: duplicado en la misma dimensión con acentos y mayúsculas distintas, mismo nombre en la otra dimensión, y colisión con una categoría **desactivada** (HU14-E04, E05, SC-014)
 - [X] T024 [P] [US1] Batería de integración de desactivación y reactivación en `services/api/test/categories-status.integration-spec.ts`, incluido el rechazo con conteo de bloqueadores y el envío simultáneo de dos peticiones idénticas (HU14-E08, E09, E18, SC-015, SC-027)
-- [ ] T025 [P] [US1] Batería de integración del **efecto** de la desactivación en `services/api/test/categories-visibility.integration-spec.ts`: una categoría desactivada desaparece de `GET /menu/categories` y de las que ofrece el alta de productos, y los productos que ya la tenían **la conservan** (FR-011, RN-009, HU14-E08)
+- [X] T025 [P] [US1] Batería de integración del **efecto** de la desactivación en `services/api/test/categories-visibility.integration-spec.ts`: una categoría desactivada desaparece de `GET /menu/categories` y de las que ofrece el alta de productos, y los productos que ya la tenían **la conservan** (FR-011, RN-009, HU14-E08)
 - [X] T026 [P] [US1] Batería de integración de autorización en `services/api/test/categories-roles.integration-spec.ts`: cada endpoint de `/business/categories` invocado con sesión de cliente, repartidor y administrador devuelve `403` (FR-027, SC-021)
 
 ### Implementación de la Historia 1
@@ -141,30 +141,30 @@ en la spec.
 
 ### Pruebas de la Historia 2
 
-- [ ] T037 [P] [US2] Batería de integración de alta de producto en `services/api/test/products-create.integration-spec.ts`: alta completa que queda activa y disponible, y rechazo de la descripción que cumple longitud pero no sustancia (HU02-E01, E04, SC-007, SC-013, SC-031)
-- [ ] T038 [P] [US2] Batería de integración de unicidad de nombre de producto en `services/api/test/products-unique.integration-spec.ts`, incluida la colisión con un producto **dado de baja** y el doble envío simultáneo (HU02-E02, RN-005, SC-027)
-- [ ] T039 [P] [US2] Batería de integración de clasificación en `services/api/test/products-classification.integration-spec.ts`: alta sin categoría, con una categoría desactivada, y con una categoría de la **dimensión equivocada** (HU14-E06, FR-012, SC-007, D-024)
-- [ ] T040 [P] [US2] Batería de integración de los dos interruptores en `services/api/test/products-switches.integration-spec.ts`: agotar, reponer, dar de baja conservando `available`, y reactivar volviendo a disponible, comprobando que el cambio rige para la consulta siguiente sin ningún paso de publicación (HU02-E07, E08, E09, SC-003)
-- [ ] T041 [P] [US2] Batería de integración del cambio de precio en `services/api/test/products-price-forward.integration-spec.ts`: tras cambiar el precio de un producto, el catálogo devuelve el nuevo y **ninguna otra fila del producto ni de ninguna otra tabla ha cambiado** —se compara el estado completo antes y después, salvo `price` y `updated_at`—; comprobar además que no existe ninguna tabla ni columna de histórico de precios que E3 escriba (HU02-E13, FR-024, RN-010, SC-023)
-- [ ] T042 [P] [US2] Batería de integración de la reactivación bloqueada por categoría desactivada en `services/api/test/products-reactivate.integration-spec.ts` (HU02-E15, FR-021, SC-010)
-- [ ] T043 [P] [US2] Batería de integración del listado en `services/api/test/products-list.integration-spec.ts`: 20 por página con total, orden estable, filtros combinados, búsqueda parcial sin acentos, y que **sin filtros no aparezcan los dados de baja** (HU02-E14, FR-023, SC-024)
-- [ ] T044 [P] [US2] Batería de integración de autorización de `/business/products` con los otros tres roles en `services/api/test/products-roles.integration-spec.ts` (FR-027, SC-021)
+- [X] T037 [P] [US2] Batería de integración de alta de producto en `services/api/test/products-create.integration-spec.ts`: alta completa que queda activa y disponible, y rechazo de la descripción que cumple longitud pero no sustancia (HU02-E01, E04, SC-007, SC-013, SC-031)
+- [X] T038 [P] [US2] Batería de integración de unicidad de nombre de producto en `services/api/test/products-unique.integration-spec.ts`, incluida la colisión con un producto **dado de baja** y el doble envío simultáneo (HU02-E02, RN-005, SC-027)
+- [X] T039 [P] [US2] Batería de integración de clasificación en `services/api/test/products-classification.integration-spec.ts`: alta sin categoría, con una categoría desactivada, y con una categoría de la **dimensión equivocada** (HU14-E06, FR-012, SC-007, D-024)
+- [X] T040 [P] [US2] Batería de integración de los dos interruptores en `services/api/test/products-switches.integration-spec.ts`: agotar, reponer, dar de baja conservando `available`, y reactivar volviendo a disponible, comprobando que el cambio rige para la consulta siguiente sin ningún paso de publicación (HU02-E07, E08, E09, SC-003)
+- [X] T041 [P] [US2] Batería de integración del cambio de precio en `services/api/test/products-price-forward.integration-spec.ts`: tras cambiar el precio de un producto, el catálogo devuelve el nuevo y **ninguna otra fila del producto ni de ninguna otra tabla ha cambiado** —se compara el estado completo antes y después, salvo `price` y `updated_at`—; comprobar además que no existe ninguna tabla ni columna de histórico de precios que E3 escriba (HU02-E13, FR-024, RN-010, SC-023)
+- [X] T042 [P] [US2] Batería de integración de la reactivación bloqueada por categoría desactivada en `services/api/test/products-reactivate.integration-spec.ts` (HU02-E15, FR-021, SC-010)
+- [X] T043 [P] [US2] Batería de integración del listado en `services/api/test/products-list.integration-spec.ts`: 20 por página con total, orden estable, filtros combinados, búsqueda parcial sin acentos, y que **sin filtros no aparezcan los dados de baja** (HU02-E14, FR-023, SC-024)
+- [X] T044 [P] [US2] Batería de integración de autorización de `/business/products` con los otros tres roles en `services/api/test/products-roles.integration-spec.ts` (FR-027, SC-021)
 
 ### Implementación de la Historia 2
 
-- [ ] T045 [US2] Implementar en `ProductsService` el alta y la edición, derivando `nameNormalized` con `normalizarBusqueda`, **traduciendo la violación del índice único a `PRODUCT_NAME_ALREADY_EXISTS`** —la unicidad la garantiza la base, no una consulta previa (D-021)— y comprobando dentro de la transacción que ambas categorías existen, son de su dimensión y están activas, en `services/api/src/products/products.service.ts` (FR-012, FR-014, FR-018, FR-022)
-- [ ] T046 [US2] Implementar en `ProductsService` el cambio de disponibilidad y el de estado, con la comprobación de categorías activas solo en la reactivación y tratando como sin efecto la petición que no cambia nada, en `services/api/src/products/products.service.ts` (FR-019, FR-020, FR-021, FR-026)
-- [ ] T047 [US2] Implementar en `ProductsService` el listado paginado con búsqueda por `LIKE` sobre `nameNormalized`, orden `created_at DESC, id DESC` y el valor por defecto que oculta los dados de baja, en `services/api/src/products/products.service.ts` (FR-023, D-022)
-- [ ] T048 [US2] Implementar `ProductsController` con los cinco endpoints de contracts/api.md y `@Roles(NEGOCIO)` en la clase, en `services/api/src/products/products.controller.ts` (FR-027)
-- [ ] T049 [US2] Registrar `ProductsModule` en `services/api/src/app.module.ts` y crear `services/api/src/products/products.module.ts`
-- [ ] T050 [P] [US2] Construir el formulario de producto con un desplegable **de selección única por dimensión**, poblado **solo con categorías activas** (FR-011), y la ayuda contextual de la descripción, en `apps/web/src/app/negocio/productos/_components/formulario-producto.tsx` (FR-011, FR-012, FR-016, SC-019)
-- [ ] T051 [US2] Resolver en el formulario el caso de una dimensión sin ninguna categoría activa: explicarlo en español, ofrecer ir a crearla e impedir guardar, en lugar de mostrar un desplegable vacío, en `apps/web/src/app/negocio/productos/_components/formulario-producto.tsx` (HU14-E19, FR-012, SC-010)
-- [ ] T052 [US2] Construir las pantallas de alta y edición en `apps/web/src/app/negocio/productos/nuevo/page.tsx` y `apps/web/src/app/negocio/productos/[id]/editar/page.tsx` (FR-012, FR-018)
-- [ ] T053 [US2] Construir el listado con paginación, total de resultados, filtros por estado y categoría, y búsqueda por nombre, en `apps/web/src/app/negocio/productos/page.tsx` (FR-023)
-- [ ] T054 [US2] Añadir al listado las acciones de agotar y reponer **en dos clics o menos, sin diálogo de confirmación**, en `apps/web/src/app/negocio/productos/_components/acciones-fila.tsx` (FR-019, SC-002)
-- [ ] T055 [US2] Añadir las acciones de dar de baja y reactivar **con confirmación explícita y cancelable**, operable con teclado, en `apps/web/src/app/negocio/productos/_components/dialogo-confirmacion.tsx` (FR-020, FR-037)
-- [ ] T056 [US2] Deshabilitar cada control mientras espera respuesta, en las tres pantallas de `apps/web/src/app/negocio/productos/`, para que un doble clic no dispare dos veces (FR-026, SC-027)
-- [ ] T057 [US2] Presentar el rechazo por categoría desactivada nombrando la dimensión y ofreciendo reclasificar, en `apps/web/src/app/negocio/productos/page.tsx` (FR-021, SC-010)
+- [X] T045 [US2] Implementar en `ProductsService` el alta y la edición, derivando `nameNormalized` con `normalizarBusqueda`, **traduciendo la violación del índice único a `PRODUCT_NAME_ALREADY_EXISTS`** —la unicidad la garantiza la base, no una consulta previa (D-021)— y comprobando dentro de la transacción que ambas categorías existen, son de su dimensión y están activas, en `services/api/src/products/products.service.ts` (FR-012, FR-014, FR-018, FR-022)
+- [X] T046 [US2] Implementar en `ProductsService` el cambio de disponibilidad y el de estado, con la comprobación de categorías activas solo en la reactivación y tratando como sin efecto la petición que no cambia nada, en `services/api/src/products/products.service.ts` (FR-019, FR-020, FR-021, FR-026)
+- [X] T047 [US2] Implementar en `ProductsService` el listado paginado con búsqueda por `LIKE` sobre `nameNormalized`, orden `created_at DESC, id DESC` y el valor por defecto que oculta los dados de baja, en `services/api/src/products/products.service.ts` (FR-023, D-022)
+- [X] T048 [US2] Implementar `ProductsController` con los cinco endpoints de contracts/api.md y `@Roles(NEGOCIO)` en la clase, en `services/api/src/products/products.controller.ts` (FR-027)
+- [X] T049 [US2] Registrar `ProductsModule` en `services/api/src/app.module.ts` y crear `services/api/src/products/products.module.ts`
+- [X] T050 [P] [US2] Construir el formulario de producto con un desplegable **de selección única por dimensión**, poblado **solo con categorías activas** (FR-011), y la ayuda contextual de la descripción, en `apps/web/src/app/negocio/productos/_components/formulario-producto.tsx` (FR-011, FR-012, FR-016, SC-019)
+- [X] T051 [US2] Resolver en el formulario el caso de una dimensión sin ninguna categoría activa: explicarlo en español, ofrecer ir a crearla e impedir guardar, en lugar de mostrar un desplegable vacío, en `apps/web/src/app/negocio/productos/_components/formulario-producto.tsx` (HU14-E19, FR-012, SC-010)
+- [X] T052 [US2] Construir las pantallas de alta y edición en `apps/web/src/app/negocio/productos/nuevo/page.tsx` y `apps/web/src/app/negocio/productos/[id]/editar/page.tsx` (FR-012, FR-018)
+- [X] T053 [US2] Construir el listado con paginación, total de resultados, filtros por estado y categoría, y búsqueda por nombre, en `apps/web/src/app/negocio/productos/page.tsx` (FR-023)
+- [X] T054 [US2] Añadir al listado las acciones de agotar y reponer **en dos clics o menos, sin diálogo de confirmación**, en `apps/web/src/app/negocio/productos/_components/acciones-fila.tsx` (FR-019, SC-002)
+- [X] T055 [US2] Añadir las acciones de dar de baja y reactivar **con confirmación explícita y cancelable**, operable con teclado, en `apps/web/src/app/negocio/productos/_components/dialogo-confirmacion.tsx` (FR-020, FR-037)
+- [X] T056 [US2] Deshabilitar cada control mientras espera respuesta, en las tres pantallas de `apps/web/src/app/negocio/productos/`, para que un doble clic no dispare dos veces (FR-026, SC-027)
+- [X] T057 [US2] Presentar el rechazo por categoría desactivada nombrando la dimensión y ofreciendo reclasificar, en `apps/web/src/app/negocio/productos/page.tsx` (FR-021, SC-010)
 
 **Punto de control**: las dos historias funcionan y el negocio administra su catálogo entero.
 
@@ -180,25 +180,25 @@ V-42**.
 
 ### Pruebas de la consulta
 
-- [ ] T058 [P] [US1] Batería de integración de los tramos de precio en `services/api/test/menu-price-tiers.integration-spec.ts`: catálogos de 0, 1, 2 y 3 productos, todos al mismo precio, empate en el borde del tercio, y recálculo automático al abaratar el catálogo (HU14-E12, E13, E14, SC-016, SC-017)
-- [ ] T059 [P] [US1] Batería de integración de filtros combinados en `services/api/test/menu-filters.integration-spec.ts`, comprobando que la combinación es conjuntiva y **nunca** sustituye por productos que cumplan solo una condición (HU14-E17, FR-035, SC-018)
-- [ ] T060 [P] [US2] Batería de integración de productos no ofrecibles en `services/api/test/menu-visibility.integration-spec.ts`: ningún producto dado de baja sale por ninguna vía —listado, filtro, tramo o ficha directa— y los agotados salen marcados (HU02-E10, HU14-E16, RN-018, SC-004, SC-005)
-- [ ] T061 [P] [US2] Batería de integración de la ficha en `services/api/test/menu-detail.integration-spec.ts`: `404` idéntico para un producto dado de baja y para un identificador inexistente (FR-034, D-032)
+- [X] T058 [P] [US1] Batería de integración de los tramos de precio en `services/api/test/menu-price-tiers.integration-spec.ts`: catálogos de 0, 1, 2 y 3 productos, todos al mismo precio, empate en el borde del tercio, y recálculo automático al abaratar el catálogo (HU14-E12, E13, E14, SC-016, SC-017)
+- [X] T059 [P] [US1] Batería de integración de filtros combinados en `services/api/test/menu-filters.integration-spec.ts`, comprobando que la combinación es conjuntiva y **nunca** sustituye por productos que cumplan solo una condición (HU14-E17, FR-035, SC-018)
+- [X] T060 [P] [US2] Batería de integración de productos no ofrecibles en `services/api/test/menu-visibility.integration-spec.ts`: ningún producto dado de baja sale por ninguna vía —listado, filtro, tramo o ficha directa— y los agotados salen marcados (HU02-E10, HU14-E16, RN-018, SC-004, SC-005)
+- [X] T061 [P] [US2] Batería de integración de la ficha en `services/api/test/menu-detail.integration-spec.ts`: `404` idéntico para un producto dado de baja y para un identificador inexistente (FR-034, D-032)
 
 ### Implementación de la consulta
 
-- [ ] T062 [US1] Implementar en `MenuService` la derivación de los dos precios de corte con las dos consultas de `OFFSET` sobre los productos activos, devolviendo `null` cuando hay menos de tres o todos valen lo mismo, en `services/api/src/menu/menu.service.ts` (FR-032, RN-016, D-023)
-- [ ] T063 [US1] Implementar en `MenuService` la consulta del menú con los tres filtros combinables, excluyendo siempre los productos no activos, en `services/api/src/menu/menu.service.ts` (FR-028, FR-031, RN-018)
-- [ ] T064 [US2] Implementar en `MenuService` la ficha por identificador, devolviendo `404` cuando el producto no existe o no está activo, en `services/api/src/menu/menu.service.ts` (FR-034, D-032)
-- [ ] T065 [US1] Implementar `MenuController` con los tres endpoints, protegido solo por `SessionGuard` y **sin** restricción de rol, devolviendo en `GET /menu/categories` **únicamente las categorías activas** (FR-011), en `services/api/src/menu/menu.controller.ts` (FR-011, supuesto 12)
-- [ ] T066 [US1] Registrar `MenuModule` en `services/api/src/app.module.ts` y crear `services/api/src/menu/menu.module.ts`
-- [ ] T067 [US1] Construir la pantalla del menú **sin paginación**, con los filtros por las dos dimensiones y por tramo de precio, combinables, en `apps/web/src/app/menu/page.tsx` (FR-031, FR-033, D-029)
-- [ ] T068 [US2] Marcar los productos agotados con la etiqueta «Agotado» visible sin interacción y sin ninguna acción para seleccionarlos, en `apps/web/src/app/menu/page.tsx` (FR-029, SC-004)
-- [ ] T069 [US2] Construir la ficha de producto con nombre, descripción, precio, estado e ingredientes con su advertencia obligatoria, en `apps/web/src/app/menu/[id]/page.tsx` (FR-034, FR-017, SC-020)
-- [ ] T070 [US2] Mostrar la página de «no encontrado» en español cuando la ficha corresponde a un producto no activo, en `apps/web/src/app/menu/[id]/page.tsx` (FR-028, D-032)
-- [ ] T071 [US2] Mostrar el mensaje de catálogo vacío cuando no hay ningún producto activo, sin error ni pantalla en blanco ni carga permanente, en `apps/web/src/app/menu/page.tsx` (FR-030, SC-022)
-- [ ] T072 [US1] Mostrar el mensaje de «sin resultados» cuando una combinación de filtros no devuelve nada, sin sustituirlo por resultados parciales, en `apps/web/src/app/menu/page.tsx` (FR-035, SC-018)
-- [ ] T073 [US1] Enlazar el menú desde la vista de los cuatro roles en `apps/web/src/app/cliente/`, `apps/web/src/app/negocio/`, `apps/web/src/app/repartidor/` y `apps/web/src/app/admin/`, y comprobar que administrador y repartidor lo consultan igual que el cliente y no ven la administración del catálogo (§ Roles de usuario, supuesto 13, paso V-42)
+- [X] T062 [US1] Implementar en `MenuService` la derivación de los dos precios de corte con las dos consultas de `OFFSET` sobre los productos activos, devolviendo `null` cuando hay menos de tres o todos valen lo mismo, en `services/api/src/menu/menu.service.ts` (FR-032, RN-016, D-023)
+- [X] T063 [US1] Implementar en `MenuService` la consulta del menú con los tres filtros combinables, excluyendo siempre los productos no activos, en `services/api/src/menu/menu.service.ts` (FR-028, FR-031, RN-018)
+- [X] T064 [US2] Implementar en `MenuService` la ficha por identificador, devolviendo `404` cuando el producto no existe o no está activo, en `services/api/src/menu/menu.service.ts` (FR-034, D-032)
+- [X] T065 [US1] Implementar `MenuController` con los tres endpoints, protegido solo por `SessionGuard` y **sin** restricción de rol, devolviendo en `GET /menu/categories` **únicamente las categorías activas** (FR-011), en `services/api/src/menu/menu.controller.ts` (FR-011, supuesto 12)
+- [X] T066 [US1] Registrar `MenuModule` en `services/api/src/app.module.ts` y crear `services/api/src/menu/menu.module.ts`
+- [X] T067 [US1] Construir la pantalla del menú **sin paginación**, con los filtros por las dos dimensiones y por tramo de precio, combinables, en `apps/web/src/app/menu/page.tsx` (FR-031, FR-033, D-029)
+- [X] T068 [US2] Marcar los productos agotados con la etiqueta «Agotado» visible sin interacción y sin ninguna acción para seleccionarlos, en `apps/web/src/app/menu/page.tsx` (FR-029, SC-004)
+- [X] T069 [US2] Construir la ficha de producto con nombre, descripción, precio, estado e ingredientes con su advertencia obligatoria, en `apps/web/src/app/menu/[id]/page.tsx` (FR-034, FR-017, SC-020)
+- [X] T070 [US2] Mostrar la página de «no encontrado» en español cuando la ficha corresponde a un producto no activo, en `apps/web/src/app/menu/[id]/page.tsx` (FR-028, D-032)
+- [X] T071 [US2] Mostrar el mensaje de catálogo vacío cuando no hay ningún producto activo, sin error ni pantalla en blanco ni carga permanente, en `apps/web/src/app/menu/page.tsx` (FR-030, SC-022)
+- [X] T072 [US1] Mostrar el mensaje de «sin resultados» cuando una combinación de filtros no devuelve nada, sin sustituirlo por resultados parciales, en `apps/web/src/app/menu/page.tsx` (FR-035, SC-018)
+- [X] T073 [US1] Enlazar el menú desde la vista de los cuatro roles en `apps/web/src/app/cliente/`, `apps/web/src/app/negocio/`, `apps/web/src/app/repartidor/` y `apps/web/src/app/admin/`, y comprobar que administrador y repartidor lo consultan igual que el cliente y no ven la administración del catálogo (§ Roles de usuario, supuesto 13, paso V-42)
 
 **Punto de control**: la paridad manual del Principio VI queda cumplida: todo lo que E6
 resolverá por voz se alcanza aquí con filtros.
@@ -211,20 +211,20 @@ resolverá por voz se alcanza aquí con filtros.
 dos de los criterios sin cobertura automática no se cumplían cuando solo se había auditado el
 código.
 
-- [ ] T074 Escribir la semilla del catálogo con sus mínimos exigibles —las dos dimensiones, tres categorías activas por dimensión, doce productos con ingredientes y los tres tramos cubiertos— reconociendo los registros existentes por nombre normalizado, en `services/api/prisma/seed/catalogo.ts` (FR-036, D-028)
-- [ ] T075 Redactar el contenido real de la semilla en `services/api/prisma/seed/catalogo.ts` y revisarlo leyéndolo entero, aplicando los dos criterios operativos de SC-032: **cada descripción menciona algo que su nombre no dice** y ninguna se limita a cumplir el mínimo mecánico de FR-039; y **cada campo de ingredientes enumera al menos tres componentes reconocibles**, no adjetivos ni frases (SC-032, paso V-49)
-- [ ] T076 Enlazar la semilla del catálogo con la de E1 en el comando `db:seed` de `services/api/package.json`, de forma que una sola ejecución cargue ambas
-- [ ] T077 [P] Batería de integración de la semilla en `services/api/test/catalog-seed.integration-spec.ts`: sobre base vacía carga los mínimos y cubre los tres tramos; ejecutada dos veces no duplica ni modifica nada (SC-026)
-- [ ] T088 [P] Aplicar `recortarDescripcion` en los dos listados —`apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`— y comprobar que la ficha y los formularios muestran la descripción íntegra (§ Presentación de la descripción en los listados, D-033, paso V-56)
-- [ ] T078 [P] Aplicar `formatearPrecio` en las cuatro superficies que muestran precios —`apps/web/src/app/menu/page.tsx`, `apps/web/src/app/menu/[id]/page.tsx`, `apps/web/src/app/negocio/productos/page.tsx` y el formulario de producto— y comprobar que ninguna lo compone a mano (§ Presentación del precio, paso V-44)
-- [ ] T079 Recorrer las ocho pantallas nuevas de `apps/web/src/app/negocio/` y `apps/web/src/app/menu/` comprobando el vocabulario de § Vocabulario visible del catálogo y que ningún sinónimo prohibido aparece en pantalla (SC-029, paso V-43)
-- [ ] T080 Recorrer y operar las ocho pantallas **solo con teclado**, incluidos los diálogos de confirmación de `apps/web/src/app/negocio/productos/_components/dialogo-confirmacion.tsx`, verificando foco visible y etiqueta asociada en cada campo (FR-037, SC-028, pasos V-46 y V-47)
-- [ ] T081 Comprobar las ocho pantallas a 360 píxeles de ancho, en particular `apps/web/src/app/negocio/productos/page.tsx`, que tiene más columnas que el listado de usuarios de E1 (FR-038, paso V-48)
-- [ ] T082 Ejecutar desde la raíz del repositorio `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`, y dejarlas en verde ([quickstart.md](./quickstart.md) § Comprobaciones automáticas)
-- [ ] T083 Cargar el catálogo hasta 50 productos activos y cronometrar `apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`, con y sin filtros (SC-030, paso V-55)
-- [ ] T084 Ejecutar los 56 pasos de [quickstart.md](./quickstart.md) § Validación funcional, anotando el resultado de cada uno. **Es la única cobertura de los ocho criterios que ninguna prueba automática alcanza** —SC-001 y SC-009 (cronómetro), SC-002 (conteo de clics), SC-006 (ausencia de acciones de borrado), SC-011 (recorrido de la tabla de intenciones), SC-019 (ayuda visible sin interacción), SC-025 (llegar a un producto solo con filtros) y SC-029 (texto en español)—
-- [ ] T085 Registrar el resultado de la validación en `specs/002-administracion-menu-productos/verificacion.md`, con el mismo formato que E1, declarando explícitamente los ocho criterios sin cobertura automática y la mitad de SC-023 que espera a E2
-- [ ] T086 Actualizar `CLAUDE.md` y `specs/README.md` con el estado de E3 una vez verificada
+- [X] T074 Escribir la semilla del catálogo con sus mínimos exigibles —las dos dimensiones, tres categorías activas por dimensión, doce productos con ingredientes y los tres tramos cubiertos— reconociendo los registros existentes por nombre normalizado, en `services/api/prisma/seed/catalogo.ts` (FR-036, D-028)
+- [X] T075 Redactar el contenido real de la semilla en `services/api/prisma/seed/catalogo.ts` y revisarlo leyéndolo entero, aplicando los dos criterios operativos de SC-032: **cada descripción menciona algo que su nombre no dice** y ninguna se limita a cumplir el mínimo mecánico de FR-039; y **cada campo de ingredientes enumera al menos tres componentes reconocibles**, no adjetivos ni frases (SC-032, paso V-49)
+- [X] T076 Enlazar la semilla del catálogo con la de E1 en el comando `db:seed` de `services/api/package.json`, de forma que una sola ejecución cargue ambas
+- [X] T077 [P] Batería de integración de la semilla en `services/api/test/catalog-seed.integration-spec.ts`: sobre base vacía carga los mínimos y cubre los tres tramos; ejecutada dos veces no duplica ni modifica nada (SC-026)
+- [X] T088 [P] Aplicar `recortarDescripcion` en los dos listados —`apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`— y comprobar que la ficha y los formularios muestran la descripción íntegra (§ Presentación de la descripción en los listados, D-033, paso V-56)
+- [X] T078 [P] Aplicar `formatearPrecio` en las cuatro superficies que muestran precios —`apps/web/src/app/menu/page.tsx`, `apps/web/src/app/menu/[id]/page.tsx`, `apps/web/src/app/negocio/productos/page.tsx` y el formulario de producto— y comprobar que ninguna lo compone a mano (§ Presentación del precio, paso V-44)
+- [X] T079 Recorrer las ocho pantallas nuevas de `apps/web/src/app/negocio/` y `apps/web/src/app/menu/` comprobando el vocabulario de § Vocabulario visible del catálogo y que ningún sinónimo prohibido aparece en pantalla (SC-029, paso V-43)
+- [X] T080 Recorrer y operar las ocho pantallas **solo con teclado**, incluidos los diálogos de confirmación de `apps/web/src/app/negocio/productos/_components/dialogo-confirmacion.tsx`, verificando foco visible y etiqueta asociada en cada campo (FR-037, SC-028, pasos V-46 y V-47)
+- [X] T081 Comprobar las ocho pantallas a 360 píxeles de ancho, en particular `apps/web/src/app/negocio/productos/page.tsx`, que tiene más columnas que el listado de usuarios de E1 (FR-038, paso V-48)
+- [X] T082 Ejecutar desde la raíz del repositorio `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`, y dejarlas en verde ([quickstart.md](./quickstart.md) § Comprobaciones automáticas)
+- [X] T083 Cargar el catálogo hasta 50 productos activos y cronometrar `apps/web/src/app/menu/page.tsx` y `apps/web/src/app/negocio/productos/page.tsx`, con y sin filtros (SC-030, paso V-55)
+- [X] T084 Ejecutar los 56 pasos de [quickstart.md](./quickstart.md) § Validación funcional, anotando el resultado de cada uno. **Es la única cobertura de los ocho criterios que ninguna prueba automática alcanza** —SC-001 y SC-009 (cronómetro), SC-002 (conteo de clics), SC-006 (ausencia de acciones de borrado), SC-011 (recorrido de la tabla de intenciones), SC-019 (ayuda visible sin interacción), SC-025 (llegar a un producto solo con filtros) y SC-029 (texto en español)—
+- [X] T085 Registrar el resultado de la validación en `specs/002-administracion-menu-productos/verificacion.md`, con el mismo formato que E1, declarando explícitamente los ocho criterios sin cobertura automática y la mitad de SC-023 que espera a E2
+- [X] T086 Actualizar `CLAUDE.md` y `specs/README.md` con el estado de E3 una vez verificada
 
 ---
 
@@ -329,6 +329,14 @@ integración mientras se implementa el servicio.
 | 4 · Administración del menú | T037–T057 (21) | US2 (P2) |
 | 5 · Consulta del menú | T058–T073 (16) | US1 y US2 |
 | 6 · Semilla y cierre | T074–T086 + T088 (14) | — |
-| **Total** | **88** | |
+| 7 · Convergencia | T089–T090 (2) | US1 y US2 |
+| **Total** | **90** | |
 
 **T087 y T088** se añadieron el 2026-08-16, al cerrar los ítems CHK005 y CHK035 del checklist de contenido: la descripción es párrafo plano y en los listados se recorta (D-033). Llevan número al final para no renumerar las 86 tareas ya trazadas, pero se ejecutan en su fase —T087 en Cimientos, junto a `formatearPrecio`; T088 en el cierre, junto a la aplicación del formato de precio—.
+
+---
+
+## Fase 7: Convergencia
+
+- [X] T089 Añadir al listado de categorías el **filtro por estado** (activa/desactivada) que FR-010 exige, leyendo `searchParams` y reenviándolo como `active` a `GET /business/categories` —el endpoint ya lo acepta vía `ListCategoriesQuerySchema`—, en `apps/web/src/app/negocio/categorias/page.tsx` y un componente de filtros propio, con la misma forma que `apps/web/src/app/negocio/productos/_components/filtros-productos.tsx` per FR-010 (partial)
+- [X] T090 Ocultar la sección de ingredientes **y su advertencia** cuando el producto no los declara, en `apps/web/src/app/menu/[id]/page.tsx`, según el caso límite «Producto sin ingredientes declarados» de spec.md, que exige que la ficha no muestre ninguna de las dos cosas per FR-017 · § Casos Límite (contradicts)

@@ -3,6 +3,7 @@ import {
   Dimension,
   ETIQUETA_DIMENSION,
   ETIQUETA_ESTADO_CATEGORIA,
+  MSG_SIN_RESULTADOS_CATALOGO,
   Role,
   recortarDescripcion,
   type CategoryDto,
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
 import { AccionesCategoria } from './_components/acciones-categoria';
+import { FiltrosCategorias } from './_components/filtros-categorias';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,14 +27,31 @@ export const dynamic = 'force-dynamic';
  * siguen siendo visibles en la administración, marcadas, y solo desaparecen de
  * los filtros del cliente y del alta de productos. Es distinto del listado de
  * productos, que oculta las bajas por defecto, y responde a que aquí no hay
- * paginación que ensuciar.
+ * paginación que ensuciar. El **filtro por estado** (T089) es la otra mitad que
+ * FR-010 pide: no cambia lo que se ve por omisión, permite estrecharlo.
  *
  * **No existe ninguna acción de borrado en esta pantalla** ni en ninguna otra
  * (FR-009, SC-006, HU14-E10). Recorrerla buscándola es el paso V-08.
  */
-export default async function PaginaCategorias() {
+export default async function PaginaCategorias({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await exigirSesion([Role.NEGOCIO]);
-  const { items } = await pedirALaApi<{ items: CategoryDto[] }>('/business/categories');
+  const parametros = await searchParams;
+
+  const consulta = new URLSearchParams();
+  // Solo se reenvía lo que el endpoint acepta, y solo con los dos valores que
+  // `ListCategoriesQuerySchema` admite: un `active=cualquiera` inventado a mano
+  // en la barra de direcciones no llega a la API como filtro.
+  const estado = parametros.active;
+  if (estado === 'true' || estado === 'false') consulta.set('active', estado);
+  const hayFiltros = consulta.toString() !== '';
+
+  const { items } = await pedirALaApi<{ items: CategoryDto[] }>(
+    `/business/categories?${consulta.toString()}`,
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
@@ -48,10 +67,17 @@ export default async function PaginaCategorias() {
         </Button>
       </header>
 
+      <FiltrosCategorias />
+
       {items.length === 0 ? (
         <p className="rounded-md border border-[var(--color-borde)] px-4 py-6 text-sm">
-          Todavía no hay categorías. Crea la primera de cada clasificación para poder dar de alta
-          productos.
+          {/* Con un filtro puesto, un listado vacío significa que no hay
+              categorías **de ese estado**, no que falte crear la primera.
+              Confundirlos mandaría al negocio a crear una categoría que ya
+              tiene, solo por haber filtrado por «Desactivada» (FR-035). */}
+          {hayFiltros
+            ? MSG_SIN_RESULTADOS_CATALOGO
+            : 'Todavía no hay categorías. Crea la primera de cada clasificación para poder dar de alta productos.'}
         </p>
       ) : (
         Object.values(Dimension).map((dimension) => {
@@ -63,8 +89,12 @@ export default async function PaginaCategorias() {
 
               {deLaDimension.length === 0 ? (
                 <p className="text-sm text-[var(--color-tenue)]">
-                  Sin categorías en esta clasificación. No podrás dar de alta productos hasta crear
-                  la primera.
+                  {/* La advertencia de que no se podrán dar de alta productos
+                      solo es cierta cuando se están viendo **todas**: filtrando
+                      por «Desactivada», que no haya ninguna es lo normal. */}
+                  {hayFiltros
+                    ? MSG_SIN_RESULTADOS_CATALOGO
+                    : 'Sin categorías en esta clasificación. No podrás dar de alta productos hasta crear la primera.'}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-3">

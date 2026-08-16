@@ -3,29 +3,48 @@
 Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
-**Estado del código**: E1 · Acceso y usuarios está **construida y verificada**
-en las cuatro fases del plan (`specs/001-acceso-y-usuarios/plan.md`). Los tres
-espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
-poblados, y las dos capas automáticas pasan en verde: unitarios con sus umbrales
-de cobertura, e integración con 19 baterías y 180 pruebas contra PostgreSQL real.
+**Estado del código**: **E1 · Acceso y usuarios** y **E3 · Administración de
+menú** están **construidas y verificadas**. Los tres espacios de trabajo
+—`apps/web`, `services/api` y `packages/shared`— están poblados, y las dos capas
+automáticas pasan en verde: **439 pruebas unitarias** con sus umbrales de
+cobertura y **434 de integración en 38 baterías** contra PostgreSQL real.
 
-La **validación funcional se ejecutó el 2026-08-15**, con las esperas reales de
-15 y 30 minutos, junto con el recorrido por teclado y desde 360 píxeles. Los 39
-criterios de éxito quedan verificados, incluidos los cuatro que no tienen
-cobertura automática (SC-001, SC-007, SC-036 y SC-038). El detalle, paso por
-paso, en `specs/001-acceso-y-usuarios/verificacion.md`.
+Las dos validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con las
+esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos— y su detalle
+está en el `verificacion.md` de cada spec.
 
-Esa validación **no fue un trámite**: dos de esos cuatro criterios no se cumplían
-cuando solo se había auditado el código —el error de formulario no quedaba
-asociado a su campo, y cuatro pantallas usaban un mensaje recortado en lugar del
-compartido—, y se corrigieron en T133 y T134. Vale la pena tenerlo presente al
-cerrar las épicas siguientes.
+**Ninguna de las dos fue un trámite, y esa es la lección que conviene llevarse a
+las épicas siguientes**: cada una encontró **dos defectos** que ninguna prueba
+automática detectaba, siempre del mismo tipo —cada pieza funcionaba aislada y aun
+así el usuario no veía lo que la spec le promete—.
+
+- En E1: el error de formulario no quedaba asociado a su campo, y cuatro
+  pantallas usaban un mensaje recortado en lugar del compartido (T133, T134).
+- En E3: dar de baja un producto **no confirmaba nada**, porque el aviso vivía en
+  la fila que desaparecía en ese mismo instante; y el rechazo de la reactivación
+  se anunciaba **dos veces**, con dos `role="alert"` idénticos.
 
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039), y la verificación funcional de las métricas de
-pedidos, que espera a E2/E4. La siguiente épica del orden sugerido es **E3**
-(el orden se reordenó a E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8, porque E4 registra
-el historial sobre pedidos que E2 crea).
+pedidos, que espera a E2/E4. La siguiente épica del orden sugerido es **E2**
+(el orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8, porque E4 registra el
+historial sobre pedidos que E2 crea).
+
+### Lo que E3 añadió al código
+
+- **`packages/shared`**: enums `Dimension`, `PriceTier` y `ProductStatus`;
+  `validarDescripcion` con las tres condiciones de sustancia de FR-039;
+  `formatearPrecio` (`$4.990`) y `recortarDescripcion` (160 caracteres, sin
+  partir palabras); los esquemas de categoría, producto y consulta del menú.
+- **`services/api`**: los módulos `categories`, `products` y `menu`. Los dos
+  primeros son exclusivos del rol negocio; `menu` está abierto a los cuatro roles
+  y **su ausencia de `@Roles` es deliberada**, por eso vive en su propio módulo.
+- **Tramos de precio derivados, sin columna** (`products/price-tier.ts`): se
+  calculan en cada consulta sobre los productos activos, y `null` significa que
+  **no hay tramos**, no que falló el cálculo.
+- **`apps/web`**: `/negocio/categorias`, `/negocio/productos` y `/menu` con su
+  ficha. La semilla del catálogo (`prisma/seed/catalogo.ts`) carga 6 categorías y
+  12 productos y se encadena con la de E1 en un solo `db:seed`.
 
 ## Stack y decisiones vigentes
 

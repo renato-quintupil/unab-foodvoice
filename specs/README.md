@@ -13,7 +13,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | Épica | HU | Spec | Estado |
 | --- | --- | --- | --- |
 | **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | **Terminada** · 138 / 138 tareas · construida y verificada, incluida la validación funcional a mano |
-| E3 · Administración de menú | HU-02, HU-14 | — | Borrador listo para `/speckit-specify`: [`E3-borrador-specify.md`](../docs/epicas-hu/E3-borrador-specify.md). Detalle ampliado en [HU-02](../docs/epicas-hu/HU-02-administracion-de-menu.md), [HU-14](../docs/epicas-hu/HU-14-metadata-y-clasificacion-de-productos.md) y el [modelo de datos](../docs/epicas-hu/E3-modelo-de-datos-borrador.md) |
+| **E3 · Administración de menú** | HU-02, HU-14 | [`002-administracion-menu-productos/`](./002-administracion-menu-productos/) | **Terminada** · 88 / 88 tareas · construida y verificada, incluidos los 56 pasos de validación funcional |
 | E2 · Gestión de pedidos | HU-01, HU-11, HU-12 | — | Sin especificar |
 | E4 · Trazabilidad del pedido | HU-03 | — | Borrador de HU en [`docs/epicas-hu/HU-03-trazabilidad-del-pedido.md`](../docs/epicas-hu/HU-03-trazabilidad-del-pedido.md) |
 | E6 · Búsqueda por voz | HU-06, HU-13 | — | Sin especificar |
@@ -62,6 +62,43 @@ de accesibilidad y las pruebas con lectores de pantalla reales (FR-039), y la
 verificación funcional de las **métricas y reportes de pedidos**, que necesitan
 que existan pedidos y por tanto esperan a E4/E2. Su superficie está construida y
 responde vacía por diseño.
+
+## E3 · Administración de menú
+
+Rama de trabajo: `002-administracion-menu-productos`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./002-administracion-menu-productos/spec.md) | Requisitos, reglas de negocio y criterios de éxito |
+| [`plan.md`](./002-administracion-menu-productos/plan.md) | Decisiones técnicas, estructura y fases de entrega |
+| [`research.md`](./002-administracion-menu-productos/research.md) | Las decisiones D-020 a D-033 con su fundamento |
+| [`data-model.md`](./002-administracion-menu-productos/data-model.md) | Categoría, Producto, índices y esquema Prisma |
+| [`contracts/`](./002-administracion-menu-productos/contracts/) | Los doce endpoints y los contratos compartidos |
+| [`quickstart.md`](./002-administracion-menu-productos/quickstart.md) | Puesta en marcha y los 56 pasos de validación funcional |
+| [`tasks.md`](./002-administracion-menu-productos/tasks.md) | 88 tareas ordenadas por dependencia |
+| [`verificacion.md`](./002-administracion-menu-productos/verificacion.md) | Resultado de la validación, con los dos defectos que encontró |
+| [`checklists/`](./002-administracion-menu-productos/checklists/) | Calidad de requisitos y del contenido del catálogo |
+
+Fases de entrega: **cimientos** (contratos compartidos y esquema) → **HU-14**
+clasificación, que es el MVP y se demuestra sola → **HU-02** administración del
+menú → **consulta del menú**, que cierra los escenarios de las dos historias →
+**semilla y cierre**.
+
+**Por qué se da por terminada.** Las cinco fases están construidas, las dos capas
+automáticas pasan en verde —439 pruebas unitarias y 434 de integración en 38
+baterías contra PostgreSQL real— y la **validación funcional se ejecutó el
+2026-08-16**, los 56 pasos, de modo que los ocho criterios sin cobertura
+automática quedan verificados. **Encontró dos defectos reales** que ninguna
+prueba automática detectaba —la baja de un producto no llegaba a confirmar nada,
+y el rechazo de la reactivación se anunciaba dos veces—, ambos corregidos y ahora
+cubiertos por pruebas. El detalle está en
+[`verificacion.md`](./002-administracion-menu-productos/verificacion.md).
+
+Sigue fuera de v1: la auditoría formal de accesibilidad (heredada de E1) y la
+mitad de SC-023 que mira pedidos ya emitidos, que espera a E2. La apuesta central
+de la épica —que una descripción en prosa bien escrita baste para la búsqueda por
+voz, sin diccionario de sinónimos— **la confirma o la refuta E6**, no E3: aquí no
+hay modelo al que preguntar, y así está declarado en el supuesto 27 de la spec.
 
 ## Alcance de v1
 

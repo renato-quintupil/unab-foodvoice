@@ -16,14 +16,17 @@ import {
 } from '@foodvoice/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccionesCategoria } from '@/app/negocio/categorias/_components/acciones-categoria';
+import { FiltrosCategorias } from '@/app/negocio/categorias/_components/filtros-categorias';
 import { FormularioCategoria } from '@/app/negocio/categorias/_components/formulario-categoria';
 import { AyudaDescripcion } from '@/components/ayuda-descripcion';
 
 const refresh = vi.fn();
+const push = vi.fn();
+let parametros = new URLSearchParams();
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), refresh }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push, refresh }),
+  useSearchParams: () => parametros,
 }));
 
 const CATEGORIA: CategoryDto = {
@@ -42,6 +45,8 @@ let fetchSimulado: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   refresh.mockClear();
+  push.mockClear();
+  parametros = new URLSearchParams();
   fetchSimulado = vi.fn();
   vi.stubGlobal('fetch', fetchSimulado);
 });
@@ -228,7 +233,7 @@ describe('Formulario de categoría · edición (FR-006)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     await waitFor(() => expect(fetchSimulado).toHaveBeenCalled());
-    const [ruta, opciones] = fetchSimulado.mock.calls[0];
+    const [ruta, opciones] = fetchSimulado.mock.calls[0]!;
     expect(ruta).toBe(`/api/business/categories/${CATEGORIA.id}`);
     expect(opciones.method).toBe('PATCH');
     const cuerpo = JSON.parse(opciones.body as string);
@@ -329,5 +334,50 @@ describe('Acciones de la categoría (FR-007, FR-008, FR-009, SC-015)', () => {
     // intentaba hacer.
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.queryByTestId('aviso-exito')).not.toBeInTheDocument();
+  });
+});
+
+describe('Filtro por estado del listado de categorías (T089, FR-010)', () => {
+  it('ofrece los dos estados con su etiqueta visible, y «Todas» por omisión', () => {
+    render(<FiltrosCategorias />);
+
+    const estado = screen.getByLabelText('Estado');
+    expect(within(estado).getByRole('option', { name: 'Todas' })).toBeInTheDocument();
+    expect(within(estado).getByRole('option', { name: 'Activa' })).toBeInTheDocument();
+    expect(within(estado).getByRole('option', { name: 'Desactivada' })).toBeInTheDocument();
+    // Sin filtro se ven activas y desactivadas: es lo que FR-010 pide de esta
+    // vista, y lo contrario del listado de productos.
+    expect(estado).toHaveValue('');
+  });
+
+  it('elegir un estado lo lleva a la dirección, no a estado local', async () => {
+    render(<FiltrosCategorias />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), 'false');
+
+    expect(push).toHaveBeenCalledWith('/negocio/categorias?active=false');
+  });
+
+  it('volver a «Todas» quita el filtro de la dirección', async () => {
+    parametros = new URLSearchParams({ active: 'true' });
+    render(<FiltrosCategorias />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), '');
+
+    expect(push).toHaveBeenCalledWith('/negocio/categorias?');
+  });
+
+  it('refleja el filtro de la dirección al cargar: recargar no lo pierde', () => {
+    parametros = new URLSearchParams({ active: 'true' });
+    render(<FiltrosCategorias />);
+
+    expect(screen.getByLabelText('Estado')).toHaveValue('true');
+  });
+
+  it('tiene su etiqueta asociada y se opera con teclado (FR-037)', async () => {
+    render(<FiltrosCategorias />);
+
+    await userEvent.tab();
+    expect(screen.getByLabelText('Estado')).toHaveFocus();
   });
 });

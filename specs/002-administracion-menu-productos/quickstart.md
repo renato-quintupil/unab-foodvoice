@@ -68,6 +68,7 @@ Con la sesión del **negocio**, en `/negocio/categorias`.
 | **V-10** | Desactivar una categoría sin productos activos que dependan solo de ella | Desaparece de los filtros del cliente y del alta; sigue visible en la administración, marcada |
 | **V-11** | Reactivarla | Vuelve a ofrecerse, con su nombre y su descripción intactos |
 | **V-12** | Editar una categoría e intentar cambiarle la dimensión | La dimensión no es editable: no hay control para hacerlo |
+| **V-57** | Filtrar el listado por «Desactivada», luego por «Activa» y volver a «Todas»; recargar con el filtro puesto | Cada filtro estrecha el listado y viaja en la dirección, de modo que recargar no lo pierde. Sin filtro se siguen viendo activas y desactivadas. Si un filtro no devuelve nada, aparece el mensaje de «sin resultados» y **no** la invitación a crear la primera categoría (FR-010) |
 
 ### B · Productos (HU-02)
 
@@ -110,6 +111,7 @@ Con la sesión del **cliente** salvo que se indique otra cosa.
 | **V-40** | Dar de baja **todos** los productos y abrir el menú | Mensaje en español explicando que todavía no hay productos; ni error, ni pantalla en blanco, ni carga permanente |
 | **V-41** | Elegir tres productos de la semilla con el criterio de SC-025 —uno de cada tramo de precio, los tres de categorías de tipo de comida distintas— y alcanzar cada uno **solo con filtros**. Anotar cuáles fueron | Se llega a los tres sin micrófono ni búsqueda por voz |
 | **V-42** | Con la sesión del **administrador** y la del **repartidor**, abrir el menú | Lo consultan igual que el cliente; ninguno tiene acceso a la administración del catálogo |
+| **V-58** | Dar de alta un producto **sin ingredientes** —el campo es opcional— y abrir su ficha | No aparece la sección «Ingredientes» ni su advertencia: sin dato al que acompañar, la advertencia hablaría de una lista que no existe. En un producto que sí los declara (V-38), ambas siguen apareciendo (FR-017, § Casos Límite) |
 
 ### D · Mensajes, presentación y accesibilidad
 
@@ -162,7 +164,7 @@ indicado.
 | SC-017 | V-36 | Sí (integración) |
 | SC-018 | V-33, V-37 | Sí (integración) |
 | SC-019 | V-05 | No — se mira la pantalla |
-| SC-020 | V-38 | Parcial |
+| SC-020 | V-38, V-58 | Parcial |
 | SC-021 | V-50 | Sí (integración) |
 | SC-022 | V-40 | Parcial |
 | SC-023 | V-53 | Parcial — la mitad de E2 espera |
@@ -176,6 +178,11 @@ indicado.
 | SC-031 | V-04 | Sí (unitaria) |
 | SC-032 | V-49 | **No — revisión humana, por definición** |
 
+**V-57 no aparece en esta tabla y no es un olvido**: FR-010 es uno de los requisitos que la
+spec no traza a ningún criterio de éxito propio —no tiene escenario Gherkin ni fila en
+§ Trazabilidad—, de modo que su paso responde al requisito directamente. Su mitad de interfaz sí
+tiene cobertura automática, en `apps/web/tests/categorias.test.tsx`.
+
 **Los ocho criterios sin ninguna cobertura automática** —SC-001, SC-002, SC-009, SC-019,
 SC-025, SC-028, SC-029, SC-030 y SC-032— son la razón por la que esta guía existe. En E1, dos
 de los cuatro equivalentes **no se cumplían** cuando solo se había auditado el código: el error
@@ -187,9 +194,17 @@ lugar del compartido. Conviene recorrerlos con esa expectativa, no como un trám
 E3 se da por terminada cuando:
 
 1. `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
-2. Los 56 pasos de esta guía se han ejecutado y anotado.
+2. Los 58 pasos de esta guía se han ejecutado y anotado.
 3. Los 32 criterios de éxito están verificados, **salvo la mitad de SC-023 que depende de E2**,
    declarada en § Entrega por fases de la spec.
 4. El contenido de la semilla ha sido leído por una persona, no solo contado por una prueba.
 
 El resultado se registra en `verificacion.md`, con el mismo formato que E1.
+
+**V-57 y V-58** se añadieron el 2026-08-16, con las tareas T089 y T090 de la fase de
+convergencia: el filtro por estado del listado de categorías (FR-010) y la ficha de un producto
+sin ingredientes declarados (FR-017, § Casos Límite). Llevan número al final para no renumerar
+los 56 pasos ya anotados en `verificacion.md`, pero **se ejecutan en su sección** —V-57 en A ·
+Clasificación, junto a las demás acciones sobre categorías; V-58 en C · Consulta del menú, justo
+después de V-38, que es su caso contrario—. Es el mismo criterio con que V-56 se numeró al
+final y se ejecuta en D.
