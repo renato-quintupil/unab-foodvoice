@@ -1,4 +1,20 @@
 <!--
+Sync Impact Report · enmienda 2026-08-17
+- Versión: 1.1.0 → 2.0.0
+- Tipo de cambio: MAJOR (redefinición incompatible de la máquina de estados del Principio XII)
+- Principios modificados: XII · Trazabilidad del pedido de punta a punta
+  La secuencia estrictamente lineal se reemplaza por una máquina única con dos ramas desde
+  `creado`: aceptación hacia `en_preparacion` y rechazo hacia `rechazado`. El nuevo estado
+  es terminal, solo puede alcanzarlo el negocio desde `creado` y exige un motivo no vacío,
+  inmutable y visible para el cliente.
+- Motivo: E2 · Gestión de pedidos necesita representar de forma trazable que el negocio no
+  puede cumplir un pedido, en lugar de dejarlo pendiente indefinidamente o forzar una
+  transición falsa hacia preparación.
+- Secciones añadidas: ninguna.
+- Secciones eliminadas: ninguna.
+- Plantillas dependientes: sin cambios; leen la constitución vigente en tiempo de ejecución.
+- TODOs diferidos: ninguno.
+
 Sync Impact Report · enmienda 2026-08-16
 - Versión: 1.0.0 → 1.1.0
 - Tipo de cambio: MINOR (ampliación material de la guía del Principio VIII)
@@ -182,13 +198,27 @@ retrabajo y funcionalidades que no coinciden con la intención original del nego
 
 ### XII. Trazabilidad del pedido de punta a punta
 
-Todo pedido sigue una máquina de estados única: creado → en preparación → asignado a
-repartidor → entregado → cerrado. Cada cambio de estado se registra en un historial que solo
-permite agregar entradas nuevas; el historial nunca se edita ni se borra. El pedido se cierra
+Todo pedido DEBE seguir una máquina de estados única con exactamente estas transiciones:
+
+- `creado → en_preparacion`
+- `creado → rechazado`
+- `en_preparacion → asignado_repartidor`
+- `asignado_repartidor → entregado`
+- `entregado → cerrado`
+
+No se permite ninguna otra transición. `rechazado` y `cerrado` son estados terminales. El
+negocio solo puede rechazar un pedido desde `creado`; el rechazo DEBE incluir un motivo de
+texto no vacío, que queda inmutable y visible para el cliente. Un pedido rechazado no se
+acepta, no se reabre y no pasa por `cerrado`. Un pedido de la rama aceptada se cierra
 únicamente cuando el repartidor marca la entrega como realizada.
+
+Cada cambio de estado DEBE registrarse en un historial que solo permite agregar entradas
+nuevas; el historial nunca se edita ni se borra.
 
 **Razón**: una trazabilidad íntegra y no editable es indispensable para resolver disputas,
 auditar el servicio y dar visibilidad honesta del estado del pedido al cliente y al local.
+Registrar el rechazo con su causa evita que un pedido imposible de cumplir quede pendiente
+indefinidamente o aparente haber entrado en preparación.
 
 ## Flujo de Trabajo y Puertas de Calidad
 
@@ -219,4 +249,4 @@ inicio de este archivo, y se refleja en un incremento de versión según semver:
 verifica su alineación con los principios de esta constitución, en particular los marcados
 como NO NEGOCIABLE.
 
-**Versión**: 1.1.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-16
+**Versión**: 2.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-17
