@@ -6,7 +6,7 @@ trazabilidad del pedido de punta a punta.
 **Estado del código**: **E1 · Acceso y usuarios** y **E3 · Administración de
 menú** están **construidas y verificadas**. Los tres espacios de trabajo
 —`apps/web`, `services/api` y `packages/shared`— están poblados, y las dos capas
-automáticas pasan en verde: **439 pruebas unitarias** con sus umbrales de
+automáticas pasan en verde: **445 pruebas unitarias** con sus umbrales de
 cobertura y **434 de integración en 38 baterías** contra PostgreSQL real.
 
 Las dos validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con las
@@ -23,6 +23,17 @@ así el usuario no veía lo que la spec le promete—.
 - En E3: dar de baja un producto **no confirmaba nada**, porque el aviso vivía en
   la fila que desaparecía en ese mismo instante; y el rechazo de la reactivación
   se anunciaba **dos veces**, con dos `role="alert"` idénticos.
+
+A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
+contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
+pruebas automáticas no dicen nada sobre si la aplicación arranca**. Allí
+apareció que `docker-entrypoint.sh` con finales CRLF —lo que Git deja por
+omisión en Windows— rompía el arranque de `api` con un error que no menciona los
+finales de línea; de ahí el `.gitattributes` de la raíz, que **no se debe
+borrar**. Las otras dos: la ficha de un producto inexistente respondía 200 en
+lugar de 404, y el aviso de éxito sobrevivía al cambio de filtros —o sea, la
+corrección del primer defecto de E3 creó otro de su misma familia—. El detalle
+está en el `verificacion.md` de E3.
 
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039), y la verificación funcional de las métricas de
