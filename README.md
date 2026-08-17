@@ -3,10 +3,11 @@
 Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
-**Estado**: E1 · Acceso y usuarios, implementada. Entrega el cimiento de
-identidad del producto —padrón de usuarios con rol, autenticación con sesión, y
-panel de solo lectura del administrador—. Las épicas siguientes construyen sobre
-ella.
+**Estado**: **E1 · Acceso y usuarios** y **E3 · Administración de menú**,
+construidas y verificadas (`v0.2.0`). E1 entrega el cimiento de identidad
+—padrón de usuarios con rol, autenticación con sesión y panel de solo lectura
+del administrador—; E3 añade el catálogo —categorías, productos y el menú que
+consultan los cuatro roles—. Las épicas siguientes construyen sobre ellas.
 
 ## Estructura
 
@@ -15,26 +16,120 @@ apps/web/          Next.js 15 · App Router. Actúa además como BFF: el navegad
                    solo habla con Next.js, que reenvía a la API por la red
                    interna de Docker.
 services/api/      NestJS 11 · monolito con módulos internos (auth, users,
-                   dashboard, audit, health).
+                   dashboard, audit, health, categories, products, menu).
 packages/shared/   Contratos de dominio: enums, esquemas Zod, mensajes en
                    español y máquina de estados del pedido. Única fuente de
                    verdad de los tres, y no puede depender de los otros dos.
 ```
 
-## Puesta en marcha
+## Cómo iniciar el proyecto
 
-Las instrucciones completas —variables de entorno, arranque, comprobaciones y
-validación funcional— están en
-[`specs/001-acceso-y-usuarios/quickstart.md`](./specs/001-acceso-y-usuarios/quickstart.md).
-No se repiten aquí: una segunda copia es una copia que puede divergir.
+### Requisitos previos
 
-En resumen, y solo como orientación:
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Node.js | 22 LTS (`>=22 <23`) | Ejecutar los tres espacios de trabajo |
+| pnpm | 9 (`9.15.4`, fijada en `packageManager`) | Gestor del monorepo; `corepack enable` la instala |
+| Docker | con Compose v2 | PostgreSQL 16, y el modo íntegro en contenedores |
+
+### 1. Variables de entorno
 
 ```bash
-cp .env.example .env    # sin las variables obligatorias, el arranque falla
+cp .env.example .env
+```
+
+Hay que completar las cinco obligatorias: `POSTGRES_PASSWORD`, `DATABASE_URL`,
+`API_INTERNAL_URL`, `ADMIN_SEED_EMAIL` y `ADMIN_SEED_PASSWORD` (de 8 a 72
+caracteres; **nunca** tiene valor por defecto). Si falta alguna, el arranque
+falla nombrándola y termina con código distinto de cero: no hay arranque
+degradado ni valor de reserva.
+
+Para desarrollo local, con los servicios fuera de Docker:
+
+```dotenv
+DATABASE_URL=postgresql://foodvoice:<POSTGRES_PASSWORD>@localhost:5432/foodvoice
+API_INTERNAL_URL=http://localhost:3001
+```
+
+Dentro de contenedores, los mismos valores apuntan a `postgres:5432` y
+`http://api:3001`. `.env` está en `.gitignore` y no se versiona nunca.
+
+### 2. Instalar, migrar y sembrar
+
+```bash
 pnpm install
+docker compose up -d postgres      # solo la base de datos
+pnpm --filter api db:migrate       # aplica las migraciones de Prisma
+pnpm --filter api db:seed          # administrador (E1) + catálogo (E3), idempotente
+```
+
+La semilla es idempotente: repetirla no cambia nada. Deja el administrador de
+`ADMIN_SEED_EMAIL`, las dos dimensiones de clasificación, 6 categorías y 12
+productos activos.
+
+### 3. Levantar la aplicación
+
+```bash
+pnpm dev                           # api :3001 · web :3000
+```
+
+Se entra por **http://localhost:3000** con las credenciales del administrador
+semilla. Los usuarios de rol **negocio** y **cliente** se crean desde el panel de
+administración, ya con la sesión abierta.
+
+### Alternativa: todo en contenedores
+
+```bash
 docker compose up --build
 ```
+
+Levanta `postgres`, `api` y `web`; **solo `web` publica puerto** hacia el
+anfitrión, de modo que el navegador solo habla con Next.js y la cookie de sesión
+queda same-origin.
+
+## Cómo ejecutar las pruebas
+
+```bash
+pnpm test              # unitarias (439); fallan si no se cumplen los umbrales de cobertura
+pnpm test:integration  # 434 de integración en 38 baterías, contra PostgreSQL real
+pnpm lint
+pnpm typecheck
+pnpm build
+```
+
+`test:integration` levanta por sí sola una PostgreSQL efímera en Docker
+(`docker-compose.test.yml`, proyecto `foodvoice-test`) mediante su
+`pretest:integration`; **Docker tiene que estar corriendo**. No toca la base de
+desarrollo.
+
+Para acotar el alcance mientras se trabaja en un solo espacio:
+
+```bash
+pnpm --filter api test
+pnpm --filter web test
+pnpm --filter @foodvoice/shared test
+```
+
+Las cuatro comprobaciones en verde **no bastan** para dar una épica por
+terminada: la verificación funcional es manual y es la que dispara el release.
+Ambas épicas cerradas encontraron ahí dos defectos cada una que ninguna prueba
+automática detectaba. Los guiones paso a paso están en el `quickstart.md` de cada
+spec.
+
+### Comandos de base de datos
+
+```bash
+pnpm --filter api db:migrate    # crear/aplicar migraciones en desarrollo
+pnpm --filter api db:deploy     # aplicarlas sin generarlas (producción)
+pnpm --filter api db:generate   # regenerar el cliente de Prisma
+pnpm --filter api db:seed       # volver a sembrar (idempotente)
+```
+
+El detalle completo —variables una por una, umbrales de cobertura y validación
+funcional— vive en los quickstart de cada épica:
+[E1](./specs/001-acceso-y-usuarios/quickstart.md) y
+[E3](./specs/002-administracion-menu-productos/quickstart.md). Lo de arriba es la
+ruta corta, no su reemplazo.
 
 ## Documentación del producto
 
@@ -45,6 +140,8 @@ docker compose up --build
 | [`specs/001-acceso-y-usuarios/spec.md`](./specs/001-acceso-y-usuarios/spec.md) | Qué hace E1 y por qué |
 | [`specs/001-acceso-y-usuarios/plan.md`](./specs/001-acceso-y-usuarios/plan.md) | Cómo se construye, con sus decisiones y sus desviaciones declaradas |
 | [`specs/001-acceso-y-usuarios/contracts/`](./specs/001-acceso-y-usuarios/contracts/) | Los doce endpoints y la superficie de `packages/shared` |
+| [`specs/002-administracion-menu-productos/spec.md`](./specs/002-administracion-menu-productos/spec.md) | Qué hace E3 y por qué |
+| [`docs/despliegue-produccion.md`](./docs/despliegue-produccion.md) | Despliegue a producción: lo dispara un tag `v*` |
 | [`CLAUDE.md`](./CLAUDE.md) | Convenciones del repositorio |
 
 ## Convenciones
