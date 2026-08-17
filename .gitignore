@@ -1,5 +1,9 @@
-.claude/
-.agents/
+# Configuración de Claude Code / Codex: se versiona solo la definición de skills;
+# el resto (settings locales, cachés, credenciales de MCP) se ignora
+.claude/*
+!.claude/skills/
+.agents/*
+!.agents/skills/
 
 docs/epicas-hu/specificaciones/
 docs/epicas-hu/presentacion/
