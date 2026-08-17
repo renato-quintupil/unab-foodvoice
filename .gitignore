@@ -1,7 +1,7 @@
 .agents/
 docs/epicas-hu/specificaciones/
 docs/epicas-hu/presentacion/
-dist-seed/
+
 
 # Variables de entorno y secretos
 .env
