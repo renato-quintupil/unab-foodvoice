@@ -133,7 +133,7 @@ normalizada, edición, predeterminada, desactivación, reactivación y eliminaci
 - [ ] T046 [P] [US2] Crear `services/api/test/addresses-unique.integration-spec.ts` para colisiones normalizadas entre activas y desactivadas (HU11-E03, FR-014)
 - [ ] T047 [P] [US2] Crear `services/api/test/addresses-default.integration-spec.ts` para cambiar la predeterminada atómicamente y conservar exactamente una (HU11-E05, FR-015)
 - [ ] T048 [P] [US2] Crear `services/api/test/addresses-concurrency.integration-spec.ts` para dos primeras altas y dos reactivaciones simultáneas: ambas solicitudes válidas terminan con exactamente una predeterminada activa
-- [ ] T049 [P] [US2] Crear `services/api/test/addresses-edit.integration-spec.ts` para editar etiqueta/texto sin alterar flags ni snapshots de pedidos sembrados (HU11-E06, E09, FR-016)
+- [ ] T049 [P] [US2] Crear `services/api/test/addresses-edit.integration-spec.ts` para editar etiqueta/texto sin alterar flags ni snapshots de pedidos sembrados, y para rechazar la edición cuando la nueva etiqueta colisiona normalizada con otra existente del mismo cliente (HU11-E06, E09, FR-016, `409 ADDRESS_LABEL_ALREADY_EXISTS`)
 - [ ] T050 [P] [US2] Crear `services/api/test/addresses-deactivate.integration-spec.ts` para impedir retirar la predeterminada si hay otra activa y permitir desactivar la última activa (HU11-E11–E12, FR-018, FR-020)
 - [ ] T051 [P] [US2] Crear `services/api/test/addresses-reactivate.integration-spec.ts` para reactivar como predeterminada solo cuando no existe otra activa (HU11-E13–E14)
 - [ ] T052 [P] [US2] Crear `services/api/test/addresses-delete.integration-spec.ts` para borrar solo una nunca usada, impedir borrar una usada y no dejar sin predeterminada si quedan activas (FR-019, D-039, D-049)

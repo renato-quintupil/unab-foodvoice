@@ -56,13 +56,13 @@
 
 Revisión hecha a mano contra `spec.md` el 2026-08-17: 12/32 pasan, 20 abiertos.
 
-**Actualización 2026-08-17 (post `/speckit-clarify`)**: se resolvieron los 5 ítems de mayor riesgo mediante una sesión de clarificación (ver `## Clarifications` en `spec.md`, sesión "checklist logica-negocio"). Ahora **17/32 pasan**:
+**Actualización 2026-08-17 (post `/speckit-clarify` + `/speckit-analyze`)**: se resolvieron los 5 ítems de mayor riesgo mediante una sesión de clarificación (ver `## Clarifications` en `spec.md`). Un `/speckit-analyze` posterior detectó que dos de las cinco respuestas contradecían el diseño ya construido en `plan.md`/`data-model.md`/`tasks.md`/`contracts/api.md`/`quickstart.md`; se corrigieron para alinearse con ese diseño existente en vez de reabrirlo. Ahora **17/32 pasan**:
 
-- **CHK026** (resuelto): FR-038 y FR-041 ahora distinguen explícitamente dos listas — `creado` paginado de a 20, `en_preparacion` aparte sin paginar.
-- **CHK029** (resuelto): SC-005 ("2 clics o menos") ahora se acota explícitamente a "aceptar"; el rechazo se mide con SC-007/SC-010.
-- **CHK004** (resuelto): FR-044 ahora incluye el vaciado del carrito dentro de la misma operación atómica que la creación del pedido y su historial.
-- **CHK008** (resuelto): FR-028 ahora aclara que el precio de referencia es el recalculado en el mismo paso de confirmación, no uno de una carga anterior.
-- **CHK017** (resuelto): FR-016 ahora exige revalidar unicidad de etiqueta (FR-014) también al editar, no solo al crear.
+- **CHK026** (resuelto): FR-038 y FR-041 quedan alineados con D-043 — la bandeja pagina de a 20 sobre `creado` y `en_preparacion` combinados, con filtro opcional por estado (no dos listas separadas, corregido tras detectar la contradicción con `data-model.md`/`tasks.md`).
+- **CHK029** (resuelto): SC-005 ("2 clics o menos") aplica a aceptar y a rechazar por igual, sin contar la escritura del motivo como clic (alineado con quickstart.md V-26 y tasks.md T097, corregido tras detectar la contradicción).
+- **CHK004** (resuelto): FR-044 ahora incluye el vaciado del carrito dentro de la misma operación atómica que la creación del pedido y su historial — coincide con el paso 8 de `contracts/api.md`.
+- **CHK008** (resuelto): FR-028 aclara que el precio de referencia es el que el carrito mostró en su última carga (alineado con D-036), revalidado igualmente contra el precio vigente dentro de la transacción.
+- **CHK017** (resuelto): FR-016 ahora exige revalidar unicidad de etiqueta (FR-014) también al editar, no solo al crear — coincide con `409 ADDRESS_LABEL_ALREADY_EXISTS` ya documentado en `contracts/api.md` para `PATCH /addresses/:id`; se agregó el caso correspondiente a T049 en `tasks.md`.
 
 Los 15 ítems que siguen abiertos son de menor impacto y quedan diferidos (no bloquean `/speckit-plan`):
 
