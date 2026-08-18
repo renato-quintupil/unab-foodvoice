@@ -1,8 +1,9 @@
 # Fase 1 · Modelo de Datos: E2 · Gestión de pedidos
 
-Cinco tablas nuevas. **Ninguna tabla de E1 ni de E3 cambia de forma**; `product` y `category`
-solo ganan relaciones entrantes (`CartLine.product`, `OrderLine.product`). El enum `OrderStatus`
-de `packages/shared` y de Prisma se **amplía**, no se reemplaza (D-035).
+Seis tablas nuevas. **Ninguna tabla de E1 ni de E3 cambia de forma**; `user` y `product`
+solo ganan relaciones entrantes. El enum `OrderStatus` de `packages/shared` y de Prisma se
+**amplía**, no se reemplaza (D-035). `OrderStatusEvent` inicia la trazabilidad append-only que
+E4 continuará y expondrá más adelante (D-047).
 
 ## Diagrama de entidades
 
@@ -11,7 +12,9 @@ User (E1) ──1:1── Cart ──1:N── CartLine ──N:1── Product 
   │
   ├──1:N── Address
   │
-  └──1:N── Order ──1:N── OrderLine ──N:1── Product (E3)
+  ├──1:N── Order ──1:N── OrderLine ──N:1── Product (E3)
+  │              └──1:N── OrderStatusEvent
+  └──1:N─────────────────┘ actor
 ```
 
 ## `OrderStatus` (enum, ampliado)
@@ -78,14 +81,16 @@ es la única relación del producto con borrado físico en cascada, y es intenci
 `@@unique([userId, labelNormalized])` — alcanza a las desactivadas (D-040).
 `@@index([userId, active])` — la consulta de "direcciones activas para elegir al confirmar".
 
-**Invariantes que el servicio garantiza, no la tabla** (mismo criterio que
-`exigirCategoriasUsables` de E3 — lo que una clave foránea no puede expresar, lo comprueba el
-servicio dentro de una transacción):
+**Invariantes compartidas entre tabla y servicio** (D-049):
 
-- **A lo sumo una fila con `is_default = true` y `active = true` por `user_id`** (FR-015). No es
-  una restricción `UNIQUE` parcial porque cambiar la predeterminada es "quitarle la marca a una y
-  dársela a otra" en la misma transacción, no una operación que una restricción de fila pueda
-  arbitrar sola.
+- `CHECK (NOT is_default OR active)` impide que una dirección inactiva siga predeterminada.
+- Un índice único parcial sobre `user_id WHERE active AND is_default` garantiza **a lo sumo una**
+  predeterminada activa por cliente, incluso ante escrituras concurrentes.
+- Crear, reactivar, desactivar, eliminar o cambiar la predeterminada bloquea primero la fila
+  `User` del cliente dentro de la transacción. Tras el bloqueo, el servicio relee las direcciones;
+  así garantiza **al menos una** predeterminada cuando existe alguna activa (FR-015).
+- La confirmación con dirección guardada toma el mismo bloqueo antes de marcar
+  `used_in_order = true`, por lo que no compite con una eliminación basada en "nunca usada".
 - **`used_in_order` nunca vuelve a `false`.**
 - **Eliminar (DELETE físico) exige `used_in_order = false`** (FR-019); si es `true`, la única
   operación disponible es desactivar (`active = false`), que conserva la fila (FR-018).
@@ -119,6 +124,29 @@ servicio (RN-009: un pedido confirmado nunca se edita por ningún camino).
 **Nunca se edita tras confirmarse** (FR-035, RN-009), salvo las dos transiciones de estado que
 `NEGOCIO` dispara (`aceptar`/`rechazar`) y que también son las únicas dos escrituras posibles
 sobre una fila de `Order` en toda la vida del producto hasta E5.
+
+## `OrderStatusEvent`
+
+Entrada append-only del historial (D-047). E2 la escribe, pero no la expone mediante API ni DTO.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `order_id` | `uuid` | FK → `order.id`, `onDelete: Restrict` |
+| `previous_status` | `OrderStatus?` | `NULL` únicamente en el evento inicial |
+| `resulting_status` | `OrderStatus` | `creado` en el evento inicial; luego el estado ganado |
+| `actor_user_id` | `uuid` | FK → `user.id`, `onDelete: Restrict` |
+| `actor_role` | `Role` | Copia del rol efectivo de la sesión |
+| `occurred_at` | `timestamptz(3)` | Fecha inmutable del evento |
+
+La creación registra `NULL → creado`; aceptar registra `creado → en_preparacion`; rechazar
+registra `creado → rechazado`. No duplica `rejection_reason`, que ya es parte inmutable del
+pedido. El índice `(order_id, occurred_at, id)` deja preparado el orden estable de consulta de
+E4 sin exponerla en E2.
+
+Un `CHECK` impide formas imposibles, un índice único parcial permite una sola entrada inicial
+por pedido y un trigger `BEFORE UPDATE OR DELETE` rechaza cualquier mutación. La inserción ocurre
+en la misma transacción que crea o cambia el pedido (D-048, FR-042–FR-044).
 
 ## `OrderLine`
 
@@ -207,12 +235,29 @@ model Order {
   createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user  User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  lines OrderLine[]
+  user         User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lines        OrderLine[]
+  statusEvents OrderStatusEvent[]
 
   @@index([status, createdAt, id], map: "order_status_created_at_id_idx")
   @@index([userId, createdAt], map: "order_user_id_created_at_idx")
   @@map("order")
+}
+
+model OrderStatusEvent {
+  id              String       @id @default(uuid()) @db.Uuid
+  orderId         String       @map("order_id") @db.Uuid
+  previousStatus  OrderStatus? @map("previous_status")
+  resultingStatus OrderStatus  @map("resulting_status")
+  actorUserId     String       @map("actor_user_id") @db.Uuid
+  actorRole       Role         @map("actor_role")
+  occurredAt      DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  actor User  @relation("orderStatusActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, occurredAt, id], map: "order_status_event_order_id_occurred_at_id_idx")
+  @@map("order_status_event")
 }
 
 model OrderLine {
@@ -231,8 +276,10 @@ model OrderLine {
 }
 ```
 
-`User` gana `cart Cart?`, `addresses Address[]` y `orders Order[]`; `Product` gana `cartLines
-CartLine[]` y `orderLines OrderLine[]`. Ninguna columna existente de esas dos tablas cambia.
+`User` gana `cart Cart?`, `addresses Address[]`, `orders Order[]` y
+`orderStatusEventsActed OrderStatusEvent[] @relation("orderStatusActor")`; `Product` gana
+`cartLines CartLine[]` y `orderLines OrderLine[]`. `Order` gana
+`statusEvents OrderStatusEvent[]`. Ninguna columna existente cambia.
 
 ## Restricciones SQL añadidas en la migración (fuera del esquema Prisma)
 
@@ -241,7 +288,46 @@ Mismo patrón que E3 (D-026: el rango de precio no se expresa en `schema.prisma`
 ```sql
 ALTER TABLE cart_line ADD CONSTRAINT cart_line_quantity_check CHECK (quantity >= 1);
 ALTER TABLE order_line ADD CONSTRAINT order_line_quantity_check CHECK (quantity >= 1);
+
+ALTER TABLE address
+  ADD CONSTRAINT address_default_must_be_active_check
+  CHECK (NOT is_default OR active);
+
+CREATE UNIQUE INDEX address_one_active_default_per_user_key
+  ON address (user_id)
+  WHERE active AND is_default;
+
+ALTER TABLE order_status_event
+  ADD CONSTRAINT order_status_event_shape_check
+  CHECK (
+    (previous_status IS NULL AND resulting_status = 'CREADO')
+    OR
+    (
+      previous_status IS NOT NULL
+      AND previous_status <> resulting_status
+      AND resulting_status <> 'CREADO'
+    )
+  );
+
+CREATE UNIQUE INDEX order_status_event_one_initial_per_order_key
+  ON order_status_event (order_id)
+  WHERE previous_status IS NULL;
+
+CREATE FUNCTION prevent_order_status_event_mutation()
+RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'order_status_event is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER order_status_event_append_only
+BEFORE UPDATE OR DELETE ON order_status_event
+FOR EACH ROW EXECUTE FUNCTION prevent_order_status_event_mutation();
 ```
+
+Prisma no representa índices parciales, `CHECK` ni triggers en `schema.prisma`; la migración se
+genera con `--create-only`, se completa con este SQL y después se aplica. El patrón append-only
+reutiliza la protección ya empleada por `AdminAuditLog` en E1.
 
 ## Tipos de `packages/shared/src/types/api.ts` (delta)
 

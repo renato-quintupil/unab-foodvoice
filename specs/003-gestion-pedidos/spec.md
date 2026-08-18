@@ -25,9 +25,9 @@ creado ─┬─→ en_preparacion → asignado_repartidor → entregado → cer
         └─→ rechazado   (terminal, sin transiciones salientes)
 ```
 
-Esto modifica un contrato ya construido en E1 y el **Principio XII** de la constitución, que hoy describe la máquina como única y sin ramificarse. No es una ambigüedad para `/speckit-clarify`: es un cambio de diseño decidido que **debe** enmendarse en `.specify/memory/constitution.md` (vía `/speckit-constitution`, con su propio Sync Impact Report, como enmienda **MAJOR** — ver § Dependencias) **antes de `/speckit-plan`**, y reflejarse luego en `packages/shared` durante la implementación.
+Esto modifica un contrato ya construido en E1. El **Principio XII** de la constitución ya fue enmendado a la versión 2.0.0 para declarar esta rama, su motivo obligatorio y el historial inmutable de cada cambio de estado. E2 debe cumplir esa versión vigente tanto al crear el pedido como al ejecutar las dos transiciones que le corresponden.
 
-**Qué entra en E2 y qué no**: E2 crea el `Pedido` (nace en `creado`) y permite al negocio disparar exactamente dos transiciones desde `creado`: aceptar (`→ en_preparacion`) o rechazar (`→ rechazado`, con motivo obligatorio). Las transiciones siguientes —`en_preparacion → asignado_repartidor` (E5), `asignado_repartidor → entregado` y `entregado → cerrado` (E7)— no se construyen aquí. "Estado visible" en HU-01 significa que el cliente puede ver el estado actual del pedido sea cual sea, no que E2 construya las pantallas de esas épicas futuras. El **historial** de todas las transiciones (quién, cuándo) es HU-03 (E4); E2 solo expone el estado **actual** y, cuando corresponde, el motivo de rechazo.
+**Qué entra en E2 y qué no**: E2 crea el `Pedido` (nace en `creado`) y permite al negocio disparar exactamente dos transiciones desde `creado`: aceptar (`→ en_preparacion`) o rechazar (`→ rechazado`, con motivo obligatorio). E2 registra en un historial de solo-agregar la creación y cada una de esas transiciones, con sus estados, actor y fecha, en la misma operación indivisible que produce el cambio. Las transiciones siguientes —`en_preparacion → asignado_repartidor` (E5), `asignado_repartidor → entregado` y `entregado → cerrado` (E7)— no se construyen aquí. "Estado visible" en HU-01 significa que el cliente puede ver el estado actual del pedido sea cual sea, no que E2 construya las pantallas de esas épicas futuras. Consultar o mostrar el historial sigue siendo HU-03 (E4); E2 solo expone el estado **actual** y, cuando corresponde, el motivo de rechazo.
 
 ## Clarifications
 
@@ -38,6 +38,7 @@ Esto modifica un contrato ya construido en E1 y el **Principio XII** de la const
 - Q: ¿Cómo debe ordenarse y dividirse la bandeja del negocio cuando haya muchos pedidos pendientes? → A: En páginas de 20 pedidos, del más antiguo al más reciente, con orden estable.
 - Q: ¿El clic manual en “Agregar” sobre un producto conocido cuenta como la confirmación previa exigida por el Principio IX? → A: Sí; el clic confirma la acción y no se exige un segundo paso.
 - Q: ¿Qué debe ocurrir si el precio de un producto cambia después de que el cliente revisó el carrito pero antes de confirmar el pedido? → A: Se bloquea ese intento, se actualiza el carrito y el cliente debe revisar y confirmar nuevamente.
+- Q: ¿Qué parte del historial de estados pertenece a E2 y cuál permanece en E4? → A: E2 registra de forma inmutable y atómica la creación y las transiciones `creado → en_preparacion` y `creado → rechazado`; E4 incorpora la consulta del historial y las transiciones de épicas posteriores.
 
 ## Roles de usuario en esta épica
 
@@ -136,6 +137,9 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 14. **Dado** que el negocio no tiene pedidos pendientes, **Cuando** revisa su bandeja de pedidos, **Entonces** ve un mensaje en español explicando que no hay pedidos por ahora.
 15. **Dado** que el negocio tiene 21 pedidos pendientes, **Cuando** recorre las dos páginas de su bandeja, **Entonces** ve 20 pedidos en la primera y 1 en la segunda, del más antiguo al más reciente, sin pedidos repetidos ni omitidos.
 16. **Dado** que revisé mi carrito y el negocio cambió después el precio de un producto, **Cuando** intento confirmar con el precio anterior, **Entonces** no se crea ningún pedido ni se vacía el carrito, veo el precio actualizado y debo revisarlo antes de confirmar nuevamente.
+17. **Dado** un carrito y una dirección válidos, **Cuando** el cliente confirma el pedido, **Entonces** el pedido nace en `creado` y queda una única entrada inmutable que registra su creación, el cliente que la realizó y la fecha.
+18. **Dado** un pedido en `creado`, **Cuando** el negocio lo acepta o lo rechaza correctamente, **Entonces** el nuevo estado y una única entrada de historial con el estado anterior, el nuevo, el negocio que actuó y la fecha quedan registrados juntos.
+19. **Dado** un intento de creación o transición que falla, incluida una acción que pierde una carrera concurrente, **Cuando** termina el intento, **Entonces** no queda ningún pedido, cambio de estado ni entrada de historial parcial correspondiente a ese intento.
 
 ---
 
@@ -145,6 +149,8 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - Confirmar el pedido justo cuando cambia el precio de un producto: ese intento no crea el pedido ni vacía el carrito; muestra el precio actualizado y exige una nueva confirmación (FR-028–FR-029).
 - Dos confirmaciones del mismo carrito desde dos pestañas a la vez: solo una produce un pedido (FR-036).
 - El negocio intenta aceptar y rechazar el mismo pedido casi al mismo tiempo desde dos pestañas: gana solo una acción; la otra falla con un mensaje claro, sin duplicar el efecto (FR-036).
+- La creación o una transición cambia el pedido pero no logra registrar su historial, o registra el historial pero no logra cambiar el pedido: ambos resultados se revierten; nunca queda uno sin el otro (FR-044).
+- Un intento rechazado o que pierde una carrera concurrente no agrega una entrada al historial (FR-044).
 - Cliente con productos en el carrito pero sin ninguna dirección guardada ni puntual: no llega a un botón de confirmar habilitado (FR-022).
 - Carrito con el mismo producto agregado varias veces: suma cantidad en la misma línea, no crea líneas duplicadas (FR-004).
 - Dirección con caracteres largos, saltos de línea o solo espacios en blanco: el texto en blanco se rechaza igual que uno vacío (FR-013).
@@ -206,6 +212,9 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **FR-039**: El sistema DEBE permitir al negocio consultar los pedidos que él mismo rechazó, con su motivo, como registro propio.
 - **FR-040**: El sistema DEBE mostrar un mensaje en español cuando el negocio no tiene pedidos pendientes, en lugar de una lista vacía sin explicación.
 - **FR-041**: El sistema DEBE paginar la bandeja de pedidos pendientes del negocio en páginas de 20, ordenadas de forma estable del pedido más antiguo al más reciente, sin repetir ni omitir pedidos al cambiar de página.
+- **FR-042**: Al crear exitosamente un pedido, el sistema DEBE agregar exactamente una entrada inmutable a su historial que identifique el estado inicial `creado`, el cliente que confirmó y la fecha de creación.
+- **FR-043**: Al aceptar o rechazar exitosamente un pedido, el sistema DEBE agregar exactamente una entrada inmutable a su historial que identifique el estado anterior, el nuevo estado, el negocio que actuó y la fecha de la transición.
+- **FR-044**: La creación o transición del pedido y su entrada de historial DEBEN producirse como un único resultado indivisible: ambas quedan registradas o ninguna queda registrada. Un intento fallido o que pierde una carrera concurrente NO DEBE agregar entradas al historial. El historial NO DEBE permitir editar ni eliminar entradas existentes.
 
 ### Reglas de Negocio
 
@@ -219,6 +228,7 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **RN-008 · `rechazado` es terminal**: no se puede aceptar después ni el cliente puede reabrirlo o editarlo; para reintentar, arma un pedido nuevo. Es la única rama del contrato de estados: en el resto, la máquina sigue siendo estrictamente lineal.
 - **RN-009 · Un pedido confirmado no se edita, en ningún estado, por ningún rol**: si algo está mal antes de aceptarlo, el camino es que el negocio lo rechace con su motivo (o, cuando exista HU-07 en E8, una intervención administrativa; eso es de otra épica).
 - **RN-010 · El negocio solo actúa desde `creado`**: aceptar o rechazar un pedido que ya salió de `creado` (aceptado o rechazado) se impide, sin excepción.
+- **RN-011 · El historial se escribe, pero todavía no se consulta**: E2 deja trazada la creación y las transiciones que ejecuta porque el Principio XII lo exige desde el primer pedido. E4 añadirá la forma de consultar esa trazabilidad y continuará registrando las transiciones que incorporen otras épicas.
 
 ### Entidades Clave
 
@@ -228,23 +238,24 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **Pedido**: nace del carrito de un cliente. Atributos: cliente, estado (`OrderStatus`, ahora con seis valores), dirección de entrega (texto congelado al confirmar), motivo de rechazo (solo presente cuando el estado es `rechazado`) y fecha de creación. Nunca se edita después de confirmado (FR-035).
 - **Línea de pedido**: producto de referencia, nombre y precio **congelados** al confirmar (snapshot, FR-027), y cantidad. A diferencia de la línea de carrito, no cambia aunque el catálogo cambie.
 - **Estado del pedido (`OrderStatus`)**: enum de `packages/shared/src/order-state/machine.ts`, ampliado en esta épica de cinco a seis valores. `rechazado` es el sexto: alcanzable únicamente desde `creado`, terminal, sin transiciones salientes — la única rama del contrato, que en el resto sigue siendo lineal.
+- **Entrada de historial del pedido**: registro inmutable asociado a un pedido. Identifica el estado resultante, el estado anterior cuando existe, el usuario y rol que produjo el evento, y la fecha. La primera entrada representa la creación en `creado`; las siguientes representan cambios de estado. Solo se agregan entradas y E2 no ofrece todavía una forma de consultarlas.
 
 ## Criterios de Éxito *(obligatorio)*
 
 ### Resultados Medibles
 
 - **SC-001**: El cliente arma un carrito, le agrega una dirección y confirma un pedido en **menos de 2 minutos**, sin ayuda técnica.
-- **SC-002**: El **100 %** de los pedidos confirmados conserva el precio y el nombre que tenían al confirmarse, aunque el catálogo cambie después.
-- **SC-003**: El **100 %** de los pedidos confirmados conserva la dirección de entrega que tenían al confirmarse, aunque el perfil cambie después.
-- **SC-004**: El negocio ve un pedido entrante **en la siguiente carga de pantalla** después de que el cliente lo confirma.
+- **SC-002**: En una validación con al menos **3 pedidos** cuyos productos cambian de nombre o precio después de confirmarse, los **3 conservan** los datos que tenían al confirmar.
+- **SC-003**: En una validación con al menos **3 pedidos** cuyas direcciones guardadas se editan o desactivan después de confirmarse, los **3 conservan** el texto de entrega original.
+- **SC-004**: Después de que el cliente confirma un pedido, el negocio lo ve al **abrir la bandeja o recargarla una vez**, sin repetir la confirmación ni realizar otra acción de sincronización.
 - **SC-005**: Aceptar o rechazar un pedido se hace en **2 clics o menos** desde la bandeja del negocio.
-- **SC-006**: El **0 %** de los productos agotados o dados de baja logra confirmarse dentro de un pedido.
-- **SC-007**: El **100 %** de los pedidos rechazados queda visible para el cliente con la etiqueta "Rechazado" y el motivo escrito por el negocio, sin que el negocio tenga que avisar por otro medio.
-- **SC-008**: Ningún pedido confirmado puede editarse después de creado, por ningún rol.
+- **SC-006**: En una validación con un producto agotado y otro dado de baja, **ninguno de los 2** puede confirmarse dentro de un pedido.
+- **SC-007**: En una validación con al menos **3 pedidos rechazados** por motivos distintos, los **3 aparecen** al cliente con la etiqueta "Rechazado" y el motivo correcto, sin aviso por otro medio.
+- **SC-008**: Al revisar pedidos en `creado`, `en_preparacion` y `rechazado` con los cuatro roles existentes, **ningún rol encuentra una acción** para editar productos, cantidades o dirección después de la confirmación.
 - **SC-009**: El cliente sin voz completa el flujo completo —armar carrito, elegir dirección, confirmar— usando solo clics y formularios (Principio VI).
-- **SC-010**: El **0 %** de los rechazos queda registrado sin motivo: el negocio no puede rechazar sin escribirlo.
+- **SC-010**: Los intentos de rechazo con motivo vacío y con motivo compuesto solo por espacios muestran un mensaje en español y son rechazados; en **2 de 2 casos** el pedido continúa visible como "Pendiente".
 - **SC-011**: El cliente con más de una dirección guardada elige la que corresponde a un pedido en **1 clic**, sin tener que reescribirla.
-- **SC-012**: El **0 %** de los pedidos se confirma con un precio distinto del último que el cliente revisó; ante un cambio, el intento conserva el carrito y exige una nueva confirmación.
+- **SC-012**: En una validación donde cambia el precio de una línea entre varias después de que el cliente la revisa, el primer intento **no crea ningún pedido**, conserva todas las líneas del carrito y exige una nueva confirmación con el precio actualizado.
 
 ### Qué se guarda, y qué frase o acción habilita cada dato
 
@@ -258,12 +269,13 @@ Ningún campo entra al modelo sin una necesidad concreta de esta épica (Princip
 | Estado del pedido (`OrderStatus`, ahora con `rechazado`) | contrato de E1, ampliado en esta épica para poder decir "no" con causa (FR-030) |
 | Motivo del rechazo | el cliente necesita saber por qué, porque detrás hay un imprevisto real de cocina (FR-033) |
 | Carrito: producto, cantidad | lo que el cliente está decidiendo, antes de comprometerse (FR-001) |
+| Historial del pedido: estado anterior, estado resultante, actor y fecha | demostrar de forma inmutable quién creó o cambió el pedido y cuándo, como exige el Principio XII (FR-042–FR-044) |
 
 ## Supuestos
 
 Decisiones tomadas al redactar esta especificación, con la alternativa descartada cuando la hubo. Se declaran como decisiones, no como preguntas abiertas.
 
-1. **La enmienda a la constitución (Principio XII) es un requisito previo declarado, no parte de esta spec**: `RECHAZADO` como sexto estado exige correr `/speckit-constitution` antes de `/speckit-plan`, como enmienda **MAJOR** (redefinición incompatible de una garantía ya ratificada, no una aclaración). Se declara aquí como dependencia bloqueante y se detalla en § Dependencias, en vez de tratarla como una ambigüedad de esta spec.
+1. **La enmienda constitucional ya está vigente**: la versión 2.0.0 del Principio XII declara `rechazado` como sexto estado y exige un historial inmutable para cada cambio. E2 registra desde el inicio los eventos que produce; no aplaza esa obligación a E4.
 2. **Longitud máxima de campos**: motivo de rechazo 10–500 caracteres, etiqueta de dirección 2–60 (mismo rango que el nombre de categoría en E3), texto de dirección 10–500 caracteres, con saltos de línea permitidos (para indicaciones adicionales tipo "tocar el segundo timbre"). Los mínimos evitan textos vacíos disfrazados de contenido; los máximos son valores de sentido común, igual criterio que E3 aplicó a sus propios campos de texto.
 3. **Sin tope explícito de direcciones por cliente en v1**: no hay ninguna historia que lo pida (Principio I, Principio III); si el listado llegara a crecer lo suficiente para necesitar paginación, sería un requisito propio con su propio criterio.
 4. **El motivo de rechazo no se puede editar después de escrito**: mismo criterio de inmutabilidad que el resto del pedido (RN-009, FR-035) — aunque el motivo nace después de la confirmación, se trata como parte del registro fijo del pedido, no como un campo del negocio.
@@ -273,6 +285,8 @@ Decisiones tomadas al redactar esta especificación, con la alternativa descarta
 8. **Mono-local**: v1 no contempla múltiples locales, de acuerdo con la decisión de alcance de `docs/epicas-hu/EPICS.md`; un pedido pertenece implícitamente al único local existente.
 9. **Sin voz ni pago en E2**: ambos son decisiones de alcance ya tomadas (§ Contexto y motivación) y no se reabren aquí.
 10. **Quién confirma y quién gestiona**: los cuatro roles de E1 se reutilizan sin cambios; `CLIENTE` confirma, `NEGOCIO` decide, `REPARTIDOR` y `ADMINISTRADOR` no actúan en esta épica.
+11. **El evento inicial forma parte de la trazabilidad mínima**: aunque crear un pedido en `creado` no sea una transición entre dos estados existentes, se registra como primera entrada sin estado anterior para identificar quién inició el pedido y cuándo.
+12. **E4 consulta y amplía; no repara el pasado**: E4 podrá mostrar el historial y añadirá los eventos de transiciones futuras, pero parte de las entradas ya creadas correctamente por E2.
 
 ## Fuera de Alcance (v1)
 
@@ -285,7 +299,7 @@ Decisiones tomadas al redactar esta especificación, con la alternativa descarta
 - **Notificaciones push, SMS o email** al cambiar el estado o al rechazar un pedido: el cliente consulta el estado y el motivo en la aplicación (Principio VI, paridad manual); avisar por otro canal es una historia aparte, no declarada.
 - **Asignación a repartidor** (`en_preparacion → asignado_repartidor`): E5.
 - **Entrega y cierre** (`asignado_repartidor → entregado → cerrado`): E7.
-- **Historial de transiciones y su consulta**: HU-03 (E4).
+- **Consulta o visualización del historial de transiciones**: HU-03 (E4). E2 sí registra la creación y sus propias transiciones; solo queda fuera de alcance exponerlas a usuarios.
 - **Múltiples locales**: v1 es mono-local.
 
 ## Dependencias
@@ -293,9 +307,9 @@ Decisiones tomadas al redactar esta especificación, con la alternativa descarta
 - **Hacia atrás**:
   - **E1 · Acceso y usuarios**, ya construida y verificada. E2 consume de ella los cuatro roles, el mecanismo de autenticación y sesión, y el `OrderStatus`/máquina de estados original que aquí se amplía.
   - **E3 · Administración de menú**, ya construida y verificada. E2 consume su catálogo (`activo`, `disponible`, precio vigente) y la función de normalización de `packages/shared` sobre la que se apoya FR-014.
-  - **Enmienda constitucional del Principio XII** (§ Supuesto 1): debe ejecutarse `/speckit-constitution` con su Sync Impact Report **MAJOR** antes de `/speckit-plan`, declarando `rechazado` como sexto estado, su único origen (`creado`) y su carácter terminal.
+  - **Constitución 2.0.0**, ya ratificada: E2 debe cumplir el Principio XII registrando su historial mínimo desde la creación del primer pedido.
 - **Hacia adelante**:
-  - **E4 · Trazabilidad del pedido** (HU-03) necesita que el `Pedido` de E2 ya exista para registrar el historial de transiciones; se especifica después de E2 precisamente por eso.
+  - **E4 · Trazabilidad del pedido** (HU-03) consume el historial iniciado por E2, incorpora su consulta y lo continúa con las transiciones de épicas posteriores.
   - **E5 · Reparto** consume la transición `en_preparacion → asignado_repartidor`, que E2 no construye.
   - **E6 · Búsqueda por voz** (HU-13) se apoya en la API de mutación del carrito que E2 construye de forma manual, sin rediseñarla.
   - **E7 · Cierre del servicio** consume `asignado_repartidor → entregado → cerrado`, que E2 no construye.

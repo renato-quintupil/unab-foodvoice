@@ -207,12 +207,15 @@ Orden de validación dentro de la transacción (D-037, D-036, D-045):
    precios) con el carrito y el catálogo vigente → `409 PRICE_CHANGED`, **no crea nada**.
 5. Si algún producto del carrito no está `active && available` → `409 CART_HAS_UNAVAILABLE_LINES`,
    **no crea nada**.
-6. Crea el `Order` en `creado`, sus `OrderLine` con nombre y precio congelados (FR-027), marca
-   `Address.usedInOrder = true` si se usó una guardada, y vacía el carrito (`DELETE` en cascada de
-   sus líneas).
+6. Crea el `Order` en `creado`, sus `OrderLine` con nombre y precio congelados (FR-027)
+   y exactamente un `OrderStatusEvent` inicial (`NULL → creado`) con el cliente y su rol.
+   Dentro de la misma transacción marca `Address.usedInOrder = true` si se usó una guardada y
+   vacía el carrito.
 
-Solo el paso 6 es una escritura; los pasos 1 a 5 son de solo lectura y cualquiera de ellos que
-falle deja el carrito exactamente como estaba (FR-029).
+Solo el paso 6 escribe, y todas sus escrituras se confirman como una unidad (D-048, FR-042,
+FR-044). Si cualquiera falla —incluido el evento— no quedan pedido, líneas ni historial, la
+dirección conserva su valor anterior y el carrito permanece intacto. Los pasos 1 a 5 son de solo
+lectura y cualquier rechazo también conserva el carrito (FR-029).
 
 Errores: `400 VALIDATION_ERROR`, `409 CART_EMPTY`, `409 ADDRESS_REQUIRED`,
 `409 PRICE_CHANGED`, `409 CART_HAS_UNAVAILABLE_LINES`.
@@ -250,18 +253,29 @@ Respuesta `200`: `{ "items": OrderSummaryDto[] }`, orden `created_at DESC`.
 
 ### `PUT /api/v1/business/orders/:id/accept`
 
-Acepta un pedido en `creado` (FR-031, D-038). Sin cuerpo.
+Acepta un pedido en `creado` (FR-031, D-038). Sin cuerpo. La actualización condicionada
+`creado → en_preparacion` y su `OrderStatusEvent` con actor negocio se confirman en una sola
+transacción (D-048, FR-043–FR-044).
 
-Errores: `404 NOT_FOUND` (no existe), `409 ORDER_NOT_PENDING` (no está en `creado`).
+Errores: `404 NOT_FOUND` (no existe), `409 ORDER_NOT_PENDING` (no está en `creado` o perdió
+la carrera). Ningún error agrega historial ni cambia el estado.
 
 Respuesta `200`: `OrderSummaryDto` con `status: "en_preparacion"`.
 
 ### `PUT /api/v1/business/orders/:id/reject`
 
 Rechaza un pedido en `creado` (FR-031, FR-033, D-038). Cuerpo: `{ "reason": string }`, 10–500
-caracteres no vacíos tras recortar espacios (Supuesto 2, caso límite de motivo en blanco).
+caracteres no vacíos tras recortar espacios. La actualización `creado → rechazado`, el motivo y
+su `OrderStatusEvent` con actor negocio se confirman en una sola transacción (D-048).
 
-Errores: `400 VALIDATION_ERROR` (motivo vacío o solo espacios — no existe ningún camino que lo
-omita, FR-033), `404 NOT_FOUND`, `409 ORDER_NOT_PENDING`.
+Errores: `400 VALIDATION_ERROR` (motivo vacío o solo espacios), `404 NOT_FOUND`,
+`409 ORDER_NOT_PENDING`. Un motivo inválido, una carrera perdida o un fallo técnico no agrega
+historial ni cambia el estado.
 
 Respuesta `200`: `OrderSummaryDto` con `status: "rechazado"` y `rejectionReason` poblado.
+
+### Historial: alcance interno de E2
+
+E2 no expone `GET /orders/:id/history` ni incluye eventos en `OrderSummaryDto`. La creación,
+aceptación y rechazo escriben el historial como garantía interna; E4 publicará su consulta. Por
+eso FR-042–FR-044 no añaden endpoints, cuerpos, respuestas ni códigos de error públicos (D-050).

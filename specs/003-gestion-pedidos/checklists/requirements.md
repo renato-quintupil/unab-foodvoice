@@ -31,5 +31,7 @@
 
 ## Notes
 
-- Todos los ítems pasan en la primera iteración de validación. No quedan marcadores `[NEEDS CLARIFICATION]`: las cinco decisiones que el borrador dejaba abiertas para `/speckit-clarify` se resolvieron con valores por defecto razonables, documentados en § Supuestos del spec (1 a 6), en lugar de bloquear la especificación. Quien quiera revisar esos supuestos puede hacerlo con `/speckit-clarify` antes de `/speckit-plan`.
-- La enmienda MAJOR al Principio XII de la constitución (`RECHAZADO` como sexto estado) queda declarada como dependencia bloqueante en § Dependencias del spec, no como parte de esta spec ni como un `[NEEDS CLARIFICATION]`: es una decisión de diseño ya tomada por el usuario, pendiente de ejecutarse vía `/speckit-constitution` antes de `/speckit-plan`.
+- Todos los ítems pasan después de dos iteraciones de validación. La primera detectó que SC-010 todavía mencionaba una transición interna no visible; se corrigió para comprobar el mensaje en español y que el pedido continúe visible como "Pendiente".
+- No quedan marcadores `[NEEDS CLARIFICATION]`. El alcance del historial queda cerrado: E2 registra de forma inmutable y atómica la creación y sus dos transiciones; E4 incorpora la consulta y continúa el historial con transiciones futuras.
+- SC-002, SC-003, SC-006, SC-007, SC-008, SC-010 y SC-012 usan ahora conjuntos de validación finitos y reproducibles. SC-004 define exactamente que basta abrir o recargar una vez la bandeja.
+- FR-042 a FR-044, los escenarios HU01-E17 a E19, RN-011, la entidad de historial, los casos límite, los supuestos y las dependencias mantienen trazabilidad consistente con el Principio XII.

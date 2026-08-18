@@ -3,16 +3,17 @@
 Continúa la numeración de decisiones de E1 (`D-001`–`D-019`) y E3 (`D-020`–`D-033`).
 Ninguna decisión de las dos épicas anteriores se revierte aquí.
 
-## D-034 · Tres tablas nuevas, no JSON embebido
+## D-034 · Seis tablas relacionales, no JSON embebido
 
-**Decisión**: `Cart`, `CartLine`, `Address`, `Order` y `OrderLine` son tablas relacionales
-propias, no columnas JSON sobre `user`.
+**Decisión**: `Cart`, `CartLine`, `Address`, `Order`, `OrderLine` y
+`OrderStatusEvent` son tablas relacionales propias, no columnas JSON sobre `user` ni sobre
+`order`.
 
 **Razón**: FR-014 exige unicidad de etiqueta por cliente, FR-004 exige sumar cantidades a la
-línea existente y FR-036 exige atomicidad transaccional. Las tres son invariantes que PostgreSQL
-garantiza de forma nativa con índices únicos y transacciones sobre filas, y que un blob JSON
-solo podría replicar con validación de aplicación — exactamente el patrón que E1 y E3 evitaron
-con `search_normalized` y `name_normalized`.
+línea existente, FR-036 exige atomicidad transaccional y FR-042–FR-044 exigen un historial
+inmutable de solo-agregar. Son invariantes que PostgreSQL garantiza con índices, claves foráneas,
+transacciones y restricciones; un blob JSON trasladaría esas garantías a validaciones de
+aplicación y permitiría reescribir el pasado.
 
 **Alternativas consideradas**: carrito en `localStorage` del navegador — descartada explícitamente
 por la spec (FR-011, FR-001: "persistido en el servidor", "conserva… al cerrar sesión").
@@ -56,16 +57,16 @@ cumple el Principio I. `Serializable` a nivel de transacción se descartó por s
 
 ## D-038 · Aceptar/rechazar se resuelve con una escritura condicionada, sin bloqueo explícito
 
-**Decisión**: aceptar y rechazar ejecutan `UPDATE order SET status = $1 WHERE id = $2 AND status
-= 'creado'` (vía `prisma.order.updateMany`) y comprueban `count`. Si es `0`, se lanza
-`409 ORDER_NOT_PENDING` — el mismo código sirve para "el pedido ya no está en `creado`" (FR-032)
-y para "otra petición ganó la carrera" (FR-036): desde el punto de vista de quien pierde, ambas
-situaciones son la misma cosa observada un instante distinto.
+**Decisión**: aceptar y rechazar abren una transacción interactiva, ejecutan
+`UPDATE order SET status = $1 WHERE id = $2 AND status = 'creado'` (vía
+`prisma.order.updateMany`) y comprueban `count`. Si es `0`, lanzan
+`409 ORDER_NOT_PENDING` antes de escribir historial. Si es `1`, insertan la entrada
+`creado → estado_nuevo` dentro de la misma transacción (D-048).
 
-**Razón**: es una escritura atómica por construcción — PostgreSQL nunca deja que dos
-`UPDATE … WHERE status = 'creado'` concurrentes actualicen la misma fila dos veces —, sin
-necesitar bloqueo de fila explícito como D-037. Es más simple porque aceptar/rechazar no
-necesitan leer nada más que la condición misma.
+**Razón**: la escritura condicionada sigue resolviendo la carrera sin un bloqueo explícito:
+PostgreSQL no deja que dos `UPDATE … WHERE status = 'creado'` concurrentes ganen sobre la
+misma fila. Envolverla junto con el insert de historial garantiza que un fallo posterior revierta
+también el cambio de estado (FR-043, FR-044).
 
 ## D-039 · `Address.usedInOrder` existe porque el pedido no referencia la dirección
 
@@ -157,3 +158,64 @@ interruptor, no un contador que pudiera agotarse durante la transacción.
 **Razón**: Principio I y RN-001 — un cliente que nunca agregó nada no necesita una fila de
 carrito vacía esperándolo; FR-008 (mostrar mensaje de carrito vacío) se cumple igual devolviendo
 una lista vacía cuando no existe fila.
+
+## D-047 · El historial es una entidad interna y append-only
+
+**Decisión**: se añade `OrderStatusEvent` con `orderId`, `previousStatus` nullable solo
+para el evento inicial, `resultingStatus`, `actorUserId`, `actorRole` y `occurredAt`.
+No tiene `updatedAt`. Sus claves foráneas usan `Restrict`, se ordena de forma estable por
+`occurredAt, id` y una función con trigger `BEFORE UPDATE OR DELETE` rechaza cualquier
+mutación. Un `CHECK` valida la forma del evento y un índice único parcial permite una sola
+entrada inicial por pedido.
+
+**Razón**: FR-042–FR-044 y el Principio XII exigen que el registro solo permita agregar y nunca
+reescriba el pasado. La protección en la base cubre también errores futuros fuera del servicio y
+reutiliza el patrón ya existente de `AdminAuditLog`. Guardar el rol efectivo de la sesión junto
+al usuario conserva qué función ejercía el actor aunque su rol cambie.
+
+**Alternativas consideradas**: ampliar `AdminAuditLog` — mezcla auditoría administrativa con
+estados de pedido; JSON en `Order` — obliga a reescribirlo; confiar solo en no exponer métodos
+de edición — no hace cumplir la inmutabilidad; publicar un DTO o endpoint — la consulta es E4.
+
+## D-048 · El evento y el pedido se confirman en una sola transacción
+
+**Decisión**: la confirmación crea `Order`, `OrderLine` y el evento inicial
+`null → creado`, marca la dirección usada y vacía el carrito dentro de la transacción
+interactiva ya bloqueada por D-037. Aceptar/rechazar ejecutan el `updateMany` condicionado de
+D-038 y, solo si `count = 1`, crean el evento correspondiente antes de confirmar. Un helper
+privado de `OrdersService` recibe el cliente transaccional; no existe `HistoryService`.
+
+**Razón**: Prisma 6 revierte una transacción interactiva cuando la función falla y PostgreSQL
+confirma todas sus escrituras como una unidad. No hace falta cola, outbox ni compensación porque
+el historial y el pedido viven en la misma base. La carrera perdedora obtiene `count = 0` y no
+inserta evento.
+
+**Alternativas consideradas**: insertar después del commit — puede dejar estado sin evento;
+evento asíncrono — contradice FR-044; trigger generador — no conoce limpiamente actor y rol.
+
+## D-049 · La dirección predeterminada se serializa por cliente y tiene respaldo SQL
+
+**Decisión**: crear, reactivar, desactivar, eliminar o cambiar la dirección predeterminada bloquea
+primero la fila del usuario del cliente dentro de la transacción. `POST /orders` toma el mismo
+bloqueo cuando usa una dirección guardada, antes de marcar `usedInOrder`. La migración añade
+`CHECK (NOT is_default OR active)` y un índice único parcial sobre
+`address(user_id) WHERE active AND is_default`. Tras el bloqueo, el servicio vuelve a leer el
+estado y aplica FR-015/FR-020.
+
+**Razón**: dos primeras direcciones o reactivaciones concurrentes podrían observar que no hay
+predeterminada y marcarse ambas; también podía competir usar por primera vez una dirección con
+eliminarla como "nunca usada". El bloqueo por usuario serializa solo operaciones del mismo
+cliente y el índice parcial es un respaldo aplicado por PostgreSQL bajo concurrencia.
+
+**Alternativas consideradas**: solo validación de servicio — insuficiente; solo índice parcial y
+reintentos — la petición perdedora fallaría en vez de quedar activa no predeterminada;
+`Serializable` global o advisory locks — más mecanismo que bloquear la fila padre real.
+
+## D-050 · El historial no cambia los contratos públicos de E2
+
+**Decisión**: E2 no añade endpoint de consulta, DTO, esquema compartido ni campo de respuesta para
+el historial. Los **17 endpoints** existentes conservan cuerpos y respuestas; sus escrituras de
+pedido ganan únicamente la garantía interna de FR-042–FR-044. E4 publicará tipos y consulta.
+
+**Razón**: RN-011 y Fuera de Alcance separan escribir la trazabilidad de mostrarla. Exponerla ahora
+sería alcance fantasma y acoplaría consumidores antes de existir una historia de consulta.

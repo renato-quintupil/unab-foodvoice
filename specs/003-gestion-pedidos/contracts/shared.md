@@ -73,7 +73,7 @@ export const ConfirmOrderSchema = z
     addressText: z.string().trim().min(10).max(500).optional(),
     expectedLines: z.array(LineaEsperadaSchema).min(1),
   })
-  .refine((datos) => Boolean(datos.addressId || datos.addressText), {
+  .refine((datos) => Boolean(datos.addressId) !== Boolean(datos.addressText), {
     message: MSG_DIRECCION_REQUERIDA,
     path: ['addressId'],
   });
@@ -86,10 +86,9 @@ export type ConfirmOrderInput = z.infer<typeof ConfirmOrderSchema>;
 export type RejectOrderInput = z.infer<typeof RejectOrderSchema>;
 ```
 
-Se exige que **al menos uno** de los dos —`addressId` o `addressText`— llegue con contenido. Si
-ambos llegaran a la vez, `addressId` tiene precedencia en el servicio: una dirección guardada
-identifica sin ambigüedad cuál marcar `usedInOrder` (D-039), mientras que una puntual nunca lo
-hace.
+Se exige **exactamente uno** de los dos: `addressId` o `addressText`. Enviar ninguno o
+ambos es inválido. La exclusión evita una precedencia implícita y coincide con el contrato HTTP:
+una dirección guardada identifica cuál marcar `usedInOrder`; una puntual nunca lo hace.
 
 ## Extensión de `schemas/query.ts`
 
@@ -129,6 +128,9 @@ nueva, es una modificación de la existente.
 
 Ver `data-model.md` § Tipos de `packages/shared/src/types/api.ts` — `CartLineDto`, `CartDto`,
 `AddressDto`, `OrderLineDto`, `OrderSummaryDto`. `OrderDto` (E1) no cambia.
+
+`OrderStatusEvent` es una entidad interna de persistencia en E2. No se publica
+`OrderStatusEventDto`, esquema ni export: E4 añadirá el contrato cuando exista una consulta.
 
 ## Superficie pública añadida a `index.ts`
 
@@ -187,3 +189,5 @@ export type {
 - `ETIQUETA_ESTADO_PEDIDO` cambia un valor existente (D-041): cualquier prueba que fije el texto
   literal `'Creado'` falla hasta actualizarse a `'Pendiente'`.
 - Ninguna función ni tipo existente de E1/E3 se elimina ni cambia de firma.
+- FR-042–FR-044 refuerzan la atomicidad interna sin cambiar respuestas ni consumidores web o de
+  voz; el historial no forma parte de la superficie pública de E2 (D-050).

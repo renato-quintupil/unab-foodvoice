@@ -7,6 +7,9 @@ Dos documentos, mismo criterio que E1 y E3:
 - **`shared.md`** — la superficie pública nueva de `packages/shared`: esquemas Zod, tipos,
   enums y funciones. Es lo que `apps/web` y `services/api` importan del paquete compartido.
 
+El historial de estados que E2 escribe por FR-042–FR-044 es una garantía interna de persistencia:
+no añade endpoint, DTO ni esquema compartido. Su consulta y contrato público corresponden a E4.
+
 Ambos amplían, sin modificar, los contratos ya publicados de E1
 (`specs/001-acceso-y-usuarios/contracts/`) y de E3
 (`specs/002-administracion-menu-productos/contracts/`).
