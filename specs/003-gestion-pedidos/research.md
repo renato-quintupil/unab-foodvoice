@@ -42,6 +42,16 @@ descartada: exigiría que el cliente conociera y devolviera un número de versi�
 significado visible, mientras que devolver el precio que vio es exactamente el dato que FR-028
 menciona.
 
+**Composición del carrito vs. precio, dos comprobaciones distintas.** `expectedLines` puede
+diferir del carrito real de dos formas con causas distintas: (a) los `productId`/`quantity` no
+coinciden — el carrito cambió de composición entre que el cliente cargó la pantalla y confirmó,
+típicamente porque otra pestaña lo modificó — o (b) coinciden los productos y cantidades pero el
+precio vigente de alguno cambió. Solo (b) es lo que FR-028 describe ("su precio vigente coincide
+con el último precio presentado"); (a) es un error de forma de la petición —el cuerpo no describe
+el carrito que el servidor tiene— y responde `400 VALIDATION_ERROR`, no `409 PRICE_CHANGED`.
+Mezclar ambos bajo el mismo código habría hecho que la interfaz mostrara "el precio cambió" ante
+un caso que no tiene nada que ver con el precio.
+
 ## D-037 · La doble confirmación se resuelve con `SELECT … FOR UPDATE` sobre el carrito
 
 **Decisión**: `POST /orders` abre una transacción que primero bloquea la fila del carrito

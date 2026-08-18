@@ -171,14 +171,22 @@ tablas de línea en lugar de una compartida (§ Entidades Clave de la spec, RN-0
 
 ## Fragmento de `schema.prisma` (delta sobre el existente)
 
+**El enum lleva `@map` en cada valor, a diferencia de `Role` y `Dimension`.** Esos dos enums no
+tienen `@map` porque sus valores en `packages/shared` ya son mayúsculas (`Role.CLIENTE =
+'CLIENTE'`) y coinciden letra por letra con el identificador de Prisma. `OrderStatus` es la
+excepción: quedó fijado en **minúscula** desde E1 (`OrderStatus.CREADO = 'creado'`) y así viaja en
+toda la superficie HTTP —`contracts/api.md`, `quickstart.md`, `?status=creado`—. Sin `@map`,
+Postgres almacenaría la etiqueta `CREADO` y cada comparación `order.status === OrderStatus.CREADO`
+fallaría en tiempo de ejecución.
+
 ```prisma
 enum OrderStatus {
-  CREADO
-  EN_PREPARACION
-  ASIGNADO_REPARTIDOR
-  ENTREGADO
-  CERRADO
-  RECHAZADO
+  CREADO               @map("creado")
+  EN_PREPARACION       @map("en_preparacion")
+  ASIGNADO_REPARTIDOR  @map("asignado_repartidor")
+  ENTREGADO            @map("entregado")
+  CERRADO              @map("cerrado")
+  RECHAZADO            @map("rechazado")
 }
 
 model Cart {
@@ -300,12 +308,12 @@ CREATE UNIQUE INDEX address_one_active_default_per_user_key
 ALTER TABLE order_status_event
   ADD CONSTRAINT order_status_event_shape_check
   CHECK (
-    (previous_status IS NULL AND resulting_status = 'CREADO')
+    (previous_status IS NULL AND resulting_status = 'creado')
     OR
     (
       previous_status IS NOT NULL
       AND previous_status <> resulting_status
-      AND resulting_status <> 'CREADO'
+      AND resulting_status <> 'creado'
     )
   );
 

@@ -27,6 +27,7 @@ cualquiera de estas rutas sin pasar por la interfaz recibe el mismo código que 
 | 409 | `CART_HAS_UNAVAILABLE_LINES` | Al menos una línea del carrito ya no está `active && available` (FR-002, FR-007, D-045) | `POST /cart/lines`, `POST /orders` |
 | 409 | `PRICE_CHANGED` | El precio vigente de al menos un producto no coincide con `expectedLines` (FR-028, D-036) | `POST /orders` |
 | 409 | `ADDRESS_REQUIRED` | No se indicó `addressId` ni `addressText` (FR-022) | `POST /orders` |
+| 404 | `NOT_FOUND` | `addressId` no existe o no pertenece al cliente autenticado | `POST /orders` |
 | 409 | `ADDRESS_LABEL_ALREADY_EXISTS` | Ya existe una dirección con esa etiqueta, activa o desactivada (FR-014) | `POST /addresses`, `PATCH /addresses/:id` |
 | 409 | `ADDRESS_NEEDS_NEW_DEFAULT` | Se intenta retirar la predeterminada mientras existen otras direcciones activas (FR-020) | `PUT /addresses/:id/status` |
 | 409 | `ADDRESS_IN_USE` | Se intenta `DELETE` una dirección con `usedInOrder = true` (FR-019) | `DELETE /addresses/:id` |
@@ -203,21 +204,30 @@ Orden de validación dentro de la transacción (D-037, D-036, D-045):
 1. Bloquea la fila del carrito (`FOR UPDATE`).
 2. Si no tiene líneas → `409 CART_EMPTY`.
 3. Si no se indicó dirección → `409 ADDRESS_REQUIRED`.
-4. Si `expectedLines` no coincide exactamente (mismos productos, mismas cantidades, mismos
-   precios) con el carrito y el catálogo vigente → `409 PRICE_CHANGED`, **no crea nada**.
-5. Si algún producto del carrito no está `active && available` → `409 CART_HAS_UNAVAILABLE_LINES`,
+4. Si se indicó `addressId` y no existe **o** no pertenece al cliente autenticado →
+   `404 NOT_FOUND` (mismo criterio que `noEncontrado()` de E1/E3: no se distingue "no existe" de
+   "es de otro cliente", para no revelar el identificador de nadie). Una dirección
+   **desactivada** sí es válida aquí — desactivar solo deja de *ofrecerla* para elegir en
+   pantallas nuevas, no la invalida para un pedido que ya la tenía elegida (FR-018).
+5. Si `expectedLines` no incluye exactamente los mismos `productId` y `quantity` que el carrito
+   real → `400 VALIDATION_ERROR` (el cuerpo no describe el carrito que el servidor tiene; es un
+   error de forma de la petición, no un conflicto de negocio — típicamente indica que el cliente
+   confirmó con una pantalla desactualizada por otra pestaña).
+6. Si, coincidiendo productos y cantidades, el precio vigente de al menos uno no coincide con el
+   `price` de `expectedLines` → `409 PRICE_CHANGED`, **no crea nada** (FR-028).
+7. Si algún producto del carrito no está `active && available` → `409 CART_HAS_UNAVAILABLE_LINES`,
    **no crea nada**.
-6. Crea el `Order` en `creado`, sus `OrderLine` con nombre y precio congelados (FR-027)
+8. Crea el `Order` en `creado`, sus `OrderLine` con nombre y precio congelados (FR-027)
    y exactamente un `OrderStatusEvent` inicial (`NULL → creado`) con el cliente y su rol.
    Dentro de la misma transacción marca `Address.usedInOrder = true` si se usó una guardada y
    vacía el carrito.
 
-Solo el paso 6 escribe, y todas sus escrituras se confirman como una unidad (D-048, FR-042,
+Solo el paso 8 escribe, y todas sus escrituras se confirman como una unidad (D-048, FR-042,
 FR-044). Si cualquiera falla —incluido el evento— no quedan pedido, líneas ni historial, la
-dirección conserva su valor anterior y el carrito permanece intacto. Los pasos 1 a 5 son de solo
+dirección conserva su valor anterior y el carrito permanece intacto. Los pasos 1 a 7 son de solo
 lectura y cualquier rechazo también conserva el carrito (FR-029).
 
-Errores: `400 VALIDATION_ERROR`, `409 CART_EMPTY`, `409 ADDRESS_REQUIRED`,
+Errores: `400 VALIDATION_ERROR`, `404 NOT_FOUND`, `409 CART_EMPTY`, `409 ADDRESS_REQUIRED`,
 `409 PRICE_CHANGED`, `409 CART_HAS_UNAVAILABLE_LINES`.
 
 Respuesta `201`: `OrderSummaryDto`.

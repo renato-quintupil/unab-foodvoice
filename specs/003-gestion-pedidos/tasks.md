@@ -173,7 +173,7 @@ confirmación, snapshots, bandeja, roles, estados, rechazo, concurrencia e histo
 ### Pruebas de US3
 
 - [ ] T067 [P] [US3] Crear `services/api/test/orders-confirm.integration-spec.ts` para dirección guardada/puntual, snapshots, vaciado de carrito y marca `usedInOrder` (HU01-E01, HU11-E07, E10, FR-025–FR-027)
-- [ ] T068 [P] [US3] Crear `services/api/test/orders-preconditions.integration-spec.ts` para carrito vacío, dirección ausente, ambas fuentes de dirección y pertenencia/actividad de `addressId`, sin efectos parciales
+- [ ] T068 [P] [US3] Crear `services/api/test/orders-preconditions.integration-spec.ts` para carrito vacío, dirección ausente, ambas fuentes de dirección a la vez, `addressId` ajeno o inexistente (`404 NOT_FOUND`), `addressId` desactivado (se acepta), y `expectedLines` con productos/cantidades distintos del carrito real (`400 VALIDATION_ERROR`, distinto de `PRICE_CHANGED`) — sin efectos parciales en ningún caso
 - [ ] T069 [P] [US3] Crear `services/api/test/orders-price-changed.integration-spec.ts` para diferencia de una línea entre varias: `PRICE_CHANGED`, carrito intacto y ningún pedido (HU01-E16, FR-028)
 - [ ] T070 [P] [US3] Crear `services/api/test/orders-unavailable.integration-spec.ts` para producto agotado o dado de baja justo antes de confirmar, sin pedido ni vaciado (FR-028, D-045)
 - [ ] T071 [P] [US3] Crear `services/api/test/orders-concurrency-confirm.integration-spec.ts` para dos confirmaciones simultáneas: un pedido, un evento inicial, un carrito consumido y perdedora `CART_EMPTY` (FR-036, FR-042, D-037)
