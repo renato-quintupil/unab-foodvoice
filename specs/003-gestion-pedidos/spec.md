@@ -40,6 +40,14 @@ Esto modifica un contrato ya construido en E1. El **Principio XII** de la consti
 - Q: ¿Qué debe ocurrir si el precio de un producto cambia después de que el cliente revisó el carrito pero antes de confirmar el pedido? → A: Se bloquea ese intento, se actualiza el carrito y el cliente debe revisar y confirmar nuevamente.
 - Q: ¿Qué parte del historial de estados pertenece a E2 y cuál permanece en E4? → A: E2 registra de forma inmutable y atómica la creación y las transiciones `creado → en_preparacion` y `creado → rechazado`; E4 incorpora la consulta del historial y las transiciones de épicas posteriores.
 
+### Session 2026-08-17 (checklist logica-negocio)
+
+- Q: ¿La paginación de 20 por página de la bandeja del negocio (FR-041) aplica solo a los pedidos en `creado`, o también a los que están en `en_preparacion`? → A: Aplica solo a `creado`; los pedidos en `en_preparacion` se listan aparte, sin paginar.
+- Q: ¿A qué acción aplica el límite de "2 clics o menos" de SC-005, dado que rechazar exige escribir un motivo? → A: Solo a "aceptar"; el flujo de rechazo no tiene límite de clics y se mide con SC-007/SC-010 (que el motivo llegue correcto al cliente).
+- Q: ¿El vaciado del carrito al confirmar forma parte de la misma operación atómica que crea el pedido y su historial (FR-044), o es un paso separado que puede fallar sin revertir el pedido? → A: Es una sola operación atómica: pedido, historial y vaciado del carrito, todo o nada.
+- Q: ¿Contra qué precio se compara al confirmar cuando el cliente no recargó su carrito recientemente (FR-028)? → A: Siempre contra el precio recalculado justo antes de confirmar, en el mismo paso de confirmación; no depende de recargas previas.
+- Q: ¿Editar la etiqueta de una dirección guardada debe revalidar unicidad igual que al crearla? → A: Sí; se rechaza si la etiqueta editada colisiona, normalizada, con otra etiqueta ya existente del mismo cliente.
+
 ## Roles de usuario en esta épica
 
 - **Cliente**: arma su carrito, registra y elige direcciones de entrega, y confirma pedidos. Único rol con carrito y con capacidad de confirmar.
@@ -183,7 +191,7 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **FR-013**: El sistema DEBE rechazar el registro de una dirección con etiqueta o texto vacío (incluido un texto compuesto solo de espacios en blanco), con un mensaje en español asociado al campo.
 - **FR-014**: El sistema DEBE impedir dos direcciones con la misma etiqueta para un mismo cliente, comparando en forma normalizada (mismo criterio que `normalizarBusqueda` de `packages/shared`).
 - **FR-015**: Mientras el cliente tenga al menos una dirección activa, el sistema DEBE mantener exactamente una como predeterminada; la primera dirección que registre o reactive cuando no tenga ninguna activa DEBE quedar predeterminada automáticamente. Si ya existe una predeterminada, reactivar otra dirección NO DEBE cambiarla. Si no tiene direcciones activas, no tiene dirección predeterminada.
-- **FR-016**: El sistema DEBE permitir editar el texto o la etiqueta de una dirección guardada en cualquier momento, sin alterar los pedidos ya confirmados con ella.
+- **FR-016**: El sistema DEBE permitir editar el texto o la etiqueta de una dirección guardada en cualquier momento, sin alterar los pedidos ya confirmados con ella. Editar la etiqueta DEBE revalidar la unicidad del FR-014: si la nueva etiqueta, normalizada, colisiona con otra etiqueta ya existente del mismo cliente, el sistema DEBE rechazar la edición con el mismo mensaje en español asociado al campo que usa FR-014.
 - **FR-017**: El sistema DEBE permitir al cliente escribir, al confirmar un pedido, una dirección puntual sin guardarla en su lista de direcciones.
 - **FR-018**: El sistema DEBE permitir desactivar una dirección para dejar de ofrecerla en pedidos nuevos, conservándola si ya fue usada en algún pedido, incluso cuando sea la última dirección activa del cliente; también DEBE permitir al cliente reactivar una dirección desactivada.
 - **FR-019**: El sistema DEBE permitir eliminar sin dejar rastro una dirección que nunca fue usada en ningún pedido.
@@ -198,7 +206,7 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **FR-025**: El sistema DEBE crear un pedido únicamente a partir del carrito de un cliente con al menos una línea y una dirección de entrega elegida, y únicamente disparado por el rol `CLIENTE`.
 - **FR-026**: El pedido DEBE nacer en el estado `creado`.
 - **FR-027**: Al confirmarse, cada línea del pedido DEBE copiar el nombre y el precio del producto vigentes en ese instante (snapshot); cambios posteriores al catálogo NO DEBEN alterar un pedido ya confirmado.
-- **FR-028**: El sistema DEBE volver a validar, en el instante de la confirmación, que cada producto del carrito sigue activo y disponible y que su precio vigente coincide con el último precio presentado al cliente para confirmar. Si algún precio cambió, ese intento NO DEBE crear un pedido; el sistema DEBE actualizar el carrito, informar el cambio en español y exigir que el cliente lo revise y confirme nuevamente.
+- **FR-028**: El sistema DEBE volver a validar, en el instante de la confirmación, que cada producto del carrito sigue activo y disponible y que su precio vigente coincide con el precio que el propio sistema recalculó y mostró al cliente en ese mismo paso de confirmación (no un precio de una carga anterior). Si algún precio cambió, ese intento NO DEBE crear un pedido; el sistema DEBE actualizar el carrito, informar el cambio en español y exigir que el cliente lo revise y confirme nuevamente.
 - **FR-029**: Solo una confirmación exitosa DEBE vaciar el carrito del cliente que la realizó; cualquier intento rechazado DEBE conservar sus líneas.
 - **FR-030**: El sistema DEBE ampliar la máquina de estados del pedido con un sexto estado `rechazado`, alcanzable únicamente desde `creado` y terminal, sin transiciones salientes.
 - **FR-031**: El sistema DEBE permitir únicamente al rol `NEGOCIO` decidir, sobre un pedido en estado `creado`, aceptarlo (`creado → en_preparacion`) o rechazarlo (`creado → rechazado`).
@@ -208,13 +216,13 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **FR-035**: El sistema NO DEBE ofrecer, en ningún estado, ninguna forma de editar los productos, cantidades, dirección o cualquier otro dato de un pedido ya confirmado.
 - **FR-036**: El sistema DEBE garantizar que, si dos acciones concurrentes compiten sobre el mismo pedido o el mismo carrito (aceptar/rechazar simultáneos, o dos confirmaciones del mismo carrito), solo una tenga efecto y la otra falle con un mensaje en español claro, sin duplicar el efecto.
 - **FR-037**: El sistema DEBE mostrar al cliente el estado actual de cada uno de sus pedidos con una etiqueta en español clara: "Pendiente" (`creado`), "En preparación" (`en_preparacion`), "Rechazado" junto con el motivo, y las etiquetas de los estados de épicas futuras cuando existan.
-- **FR-038**: El sistema DEBE mostrar al negocio sus pedidos pendientes (`creado`) y en preparación (`en_preparacion`), con sus productos, cantidades, precios y dirección de entrega.
+- **FR-038**: El sistema DEBE mostrar al negocio sus pedidos pendientes (`creado`) y en preparación (`en_preparacion`), con sus productos, cantidades, precios y dirección de entrega, en dos listas separadas: la cola paginada de pendientes (FR-041) y un listado aparte, sin paginar, de los que están en preparación.
 - **FR-039**: El sistema DEBE permitir al negocio consultar los pedidos que él mismo rechazó, con su motivo, como registro propio.
 - **FR-040**: El sistema DEBE mostrar un mensaje en español cuando el negocio no tiene pedidos pendientes, en lugar de una lista vacía sin explicación.
-- **FR-041**: El sistema DEBE paginar la bandeja de pedidos pendientes del negocio en páginas de 20, ordenadas de forma estable del pedido más antiguo al más reciente, sin repetir ni omitir pedidos al cambiar de página.
+- **FR-041**: El sistema DEBE paginar la bandeja de pedidos pendientes (`creado`) del negocio en páginas de 20, ordenadas de forma estable del pedido más antiguo al más reciente, sin repetir ni omitir pedidos al cambiar de página. Esta paginación NO se aplica a los pedidos en `en_preparacion`, que se muestran en un listado aparte sin paginar.
 - **FR-042**: Al crear exitosamente un pedido, el sistema DEBE agregar exactamente una entrada inmutable a su historial que identifique el estado inicial `creado`, el cliente que confirmó y la fecha de creación.
 - **FR-043**: Al aceptar o rechazar exitosamente un pedido, el sistema DEBE agregar exactamente una entrada inmutable a su historial que identifique el estado anterior, el nuevo estado, el negocio que actuó y la fecha de la transición.
-- **FR-044**: La creación o transición del pedido y su entrada de historial DEBEN producirse como un único resultado indivisible: ambas quedan registradas o ninguna queda registrada. Un intento fallido o que pierde una carrera concurrente NO DEBE agregar entradas al historial. El historial NO DEBE permitir editar ni eliminar entradas existentes.
+- **FR-044**: La creación o transición del pedido y su entrada de historial DEBEN producirse como un único resultado indivisible: ambas quedan registradas o ninguna queda registrada. Al confirmar un pedido, esa misma operación indivisible DEBE incluir además el vaciado del carrito (FR-029): la creación del pedido, su entrada de historial y el vaciado del carrito quedan todos registrados, o ninguno. Un intento fallido o que pierde una carrera concurrente NO DEBE agregar entradas al historial ni vaciar el carrito. El historial NO DEBE permitir editar ni eliminar entradas existentes.
 
 ### Reglas de Negocio
 
@@ -248,7 +256,7 @@ Confirmar un pedido exige un carrito con al menos una línea (Historia 1) y una 
 - **SC-002**: En una validación con al menos **3 pedidos** cuyos productos cambian de nombre o precio después de confirmarse, los **3 conservan** los datos que tenían al confirmar.
 - **SC-003**: En una validación con al menos **3 pedidos** cuyas direcciones guardadas se editan o desactivan después de confirmarse, los **3 conservan** el texto de entrega original.
 - **SC-004**: Después de que el cliente confirma un pedido, el negocio lo ve al **abrir la bandeja o recargarla una vez**, sin repetir la confirmación ni realizar otra acción de sincronización.
-- **SC-005**: Aceptar o rechazar un pedido se hace en **2 clics o menos** desde la bandeja del negocio.
+- **SC-005**: Aceptar un pedido se hace en **2 clics o menos** desde la bandeja del negocio. Este límite no aplica a rechazar, que exige escribir un motivo (FR-033); ese flujo se mide con SC-007 y SC-010.
 - **SC-006**: En una validación con un producto agotado y otro dado de baja, **ninguno de los 2** puede confirmarse dentro de un pedido.
 - **SC-007**: En una validación con al menos **3 pedidos rechazados** por motivos distintos, los **3 aparecen** al cliente con la etiqueta "Rechazado" y el motivo correcto, sin aviso por otro medio.
 - **SC-008**: Al revisar pedidos en `creado`, `en_preparacion` y `rechazado` con los cuatro roles existentes, **ningún rol encuentra una acción** para editar productos, cantidades o dirección después de la confirmación.
