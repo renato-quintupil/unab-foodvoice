@@ -37,11 +37,13 @@ export {
   ListCategoriesQuerySchema,
   ListProductsQuerySchema,
   MenuQuerySchema,
+  BusinessOrdersQuerySchema,
   type ListUsersQuery,
   type OrdersQuery,
   type ListCategoriesQuery,
   type ListProductsQuery,
   type MenuQuery,
+  type BusinessOrdersQuery,
 } from './schemas/query';
 
 export {
@@ -72,6 +74,27 @@ export {
   type ChangeAvailabilityInput,
   type ChangeProductStatusInput,
 } from './schemas/product';
+
+export {
+  AddCartLineSchema,
+  UpdateCartLineQuantitySchema,
+  type AddCartLineInput,
+  type UpdateCartLineQuantityInput,
+} from './schemas/cart';
+export {
+  CreateAddressSchema,
+  UpdateAddressSchema,
+  ChangeAddressStatusSchema,
+  type CreateAddressInput,
+  type UpdateAddressInput,
+  type ChangeAddressStatusInput,
+} from './schemas/address';
+export {
+  ConfirmOrderSchema,
+  RejectOrderSchema,
+  type ConfirmOrderInput,
+  type RejectOrderInput,
+} from './schemas/order';
 
 export { formatearPrecio, PRECIO_MINIMO, PRECIO_MAXIMO } from './format/precio';
 export { recortarDescripcion, MAX_DESCRIPCION_LISTADO } from './format/texto';
@@ -106,6 +129,21 @@ export {
   MSG_DESCRIPCION_REPITE_EL_NOMBRE,
   AYUDA_DESCRIPCION_PRODUCTO,
   AYUDA_DESCRIPCION_CATEGORIA,
+  MSG_PRODUCTO_NO_DISPONIBLE,
+  MSG_CARRITO_VACIO,
+  MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES,
+  MSG_PRECIO_CAMBIO,
+  MSG_CARRITO_DESACTUALIZADO,
+  MSG_DIRECCION_ETIQUETA_VACIA,
+  MSG_DIRECCION_TEXTO_VACIO,
+  MSG_DIRECCION_ETIQUETA_DUPLICADA,
+  MSG_DIRECCION_REQUERIDA,
+  MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA,
+  MSG_DIRECCION_EN_USO,
+  MSG_MOTIVO_RECHAZO_REQUERIDO,
+  MSG_PEDIDO_NO_PENDIENTE,
+  MSG_SIN_PEDIDOS_PENDIENTES,
+  MSG_SIN_PEDIDOS_RECHAZADOS,
 } from './messages/es';
 export {
   ETIQUETA_ROL,
@@ -135,4 +173,9 @@ export type {
   CategoryRef,
   ProductDto,
   MenuResponse,
+  CartLineDto,
+  CartDto,
+  AddressDto,
+  OrderLineDto,
+  OrderSummaryDto,
 } from './types/api';

@@ -147,9 +147,15 @@ describe('Un cambio de precio no reescribe nada (FR-024, SC-023)', () => {
     expect(nombres.sort()).toEqual(
       [
         '_prisma_migrations',
+        'address',
         'admin_audit_log',
+        'cart',
+        'cart_line',
         'category',
         'login_attempt_control',
+        'order',
+        'order_line',
+        'order_status_event',
         'product',
         'session',
         'user',

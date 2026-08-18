@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
+import { AddressesModule } from './addresses/addresses.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { CartModule } from './cart/cart.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common/common.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { MenuModule } from './menu/menu.module';
+import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
@@ -32,6 +35,9 @@ import { UsersModule } from './users/users.module';
     CategoriesModule,
     ProductsModule,
     MenuModule,
+    CartModule,
+    AddressesModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}

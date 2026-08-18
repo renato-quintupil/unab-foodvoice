@@ -3,27 +3,45 @@
  */
 import {
   MSG_AUTOPROTECCION,
+  MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES,
+  MSG_CARRITO_DESACTUALIZADO,
+  MSG_CARRITO_VACIO,
   MSG_CORREO_YA_EXISTE,
   MSG_CREDENCIALES_INVALIDAS,
   MSG_CUENTA_BLOQUEADA,
+  MSG_DIRECCION_EN_USO,
+  MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA,
+  MSG_DIRECCION_ETIQUETA_DUPLICADA,
+  MSG_DIRECCION_REQUERIDA,
   MSG_ERROR_INESPERADO,
+  MSG_PEDIDO_NO_PENDIENTE,
+  MSG_PRECIO_CAMBIO,
   MSG_SESION_EXPIRADA,
   MSG_SIN_PERMISO,
 } from '@foodvoice/shared';
 import {
   autoproteccion,
+  carritoConLineasNoDisponibles,
+  carritoDesactualizado,
+  carritoVacio,
   correoYaExiste,
   credencialesInvalidas,
   cuentaBloqueada,
   cuerpoDemasiadoGrande,
+  direccionEnUso,
+  direccionNecesitaNuevaPredeterminada,
+  direccionRequerida,
   ErrorCode,
+  etiquetaDireccionYaExiste,
   noEncontrado,
+  pedidoNoPendiente,
+  precioCambio,
   sesionInvalida,
   sinPermiso,
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los quince códigos y ninguno más', () => {
+  it('declara los veintitrés códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -42,6 +60,15 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         'PRODUCT_NAME_ALREADY_EXISTS',
         'CATEGORY_IN_USE',
         'CATEGORY_INACTIVE',
+        // Los ocho que suma E2 (contracts/api.md § Códigos de error que E2 añade).
+        'CART_EMPTY',
+        'CART_HAS_UNAVAILABLE_LINES',
+        'PRICE_CHANGED',
+        'ADDRESS_REQUIRED',
+        'ADDRESS_LABEL_ALREADY_EXISTS',
+        'ADDRESS_NEEDS_NEW_DEFAULT',
+        'ADDRESS_IN_USE',
+        'ORDER_NOT_PENDING',
       ].sort(),
     );
   });
@@ -57,6 +84,35 @@ describe('Cada error lleva su código, su estado y su mensaje en español', () =
     { crear: correoYaExiste, status: 409, code: 'EMAIL_ALREADY_EXISTS', mensaje: MSG_CORREO_YA_EXISTE },
     { crear: autoproteccion, status: 409, code: 'SELF_PROTECTION', mensaje: MSG_AUTOPROTECCION },
     { crear: cuerpoDemasiadoGrande, status: 413, code: 'PAYLOAD_TOO_LARGE', mensaje: MSG_ERROR_INESPERADO },
+    { crear: carritoVacio, status: 409, code: 'CART_EMPTY', mensaje: MSG_CARRITO_VACIO },
+    {
+      crear: carritoConLineasNoDisponibles,
+      status: 409,
+      code: 'CART_HAS_UNAVAILABLE_LINES',
+      mensaje: MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES,
+    },
+    { crear: precioCambio, status: 409, code: 'PRICE_CHANGED', mensaje: MSG_PRECIO_CAMBIO },
+    {
+      crear: carritoDesactualizado,
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      mensaje: MSG_CARRITO_DESACTUALIZADO,
+    },
+    { crear: direccionRequerida, status: 409, code: 'ADDRESS_REQUIRED', mensaje: MSG_DIRECCION_REQUERIDA },
+    {
+      crear: etiquetaDireccionYaExiste,
+      status: 409,
+      code: 'ADDRESS_LABEL_ALREADY_EXISTS',
+      mensaje: MSG_DIRECCION_ETIQUETA_DUPLICADA,
+    },
+    {
+      crear: direccionNecesitaNuevaPredeterminada,
+      status: 409,
+      code: 'ADDRESS_NEEDS_NEW_DEFAULT',
+      mensaje: MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA,
+    },
+    { crear: direccionEnUso, status: 409, code: 'ADDRESS_IN_USE', mensaje: MSG_DIRECCION_EN_USO },
+    { crear: pedidoNoPendiente, status: 409, code: 'ORDER_NOT_PENDING', mensaje: MSG_PEDIDO_NO_PENDIENTE },
   ];
 
   it.each(CASOS)('$code', ({ crear, status, code, mensaje }) => {
@@ -87,5 +143,11 @@ describe('El 423 no revela cuánto falta (api CHK010, SC-018)', () => {
 describe('El 409 de correo duplicado sitúa el mensaje junto al campo', () => {
   it('lleva `fields.email`, para que la interfaz pueda mostrarlo donde toca', () => {
     expect(correoYaExiste().fields).toEqual({ email: MSG_CORREO_YA_EXISTE });
+  });
+});
+
+describe('El 409 de etiqueta de dirección duplicada sitúa el mensaje junto al campo (FR-014)', () => {
+  it('lleva `fields.label`', () => {
+    expect(etiquetaDireccionYaExiste().fields).toEqual({ label: MSG_DIRECCION_ETIQUETA_DUPLICADA });
   });
 });

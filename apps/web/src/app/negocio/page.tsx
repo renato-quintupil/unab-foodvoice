@@ -36,6 +36,9 @@ export default async function PaginaInicioNegocio() {
         <Button asChild variant="outline">
           <Link href="/negocio/productos">Productos</Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link href="/negocio/pedidos">Pedidos</Link>
+        </Button>
         <Button asChild variant="ghost">
           <Link href="/menu">Ver el menú como lo ve el cliente</Link>
         </Button>

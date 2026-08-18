@@ -58,6 +58,25 @@ const LOS_DEL_CATALOGO = [
   'AYUDA_DESCRIPCION_CATEGORIA',
 ] as const;
 
+/** Los de E2 (`003-gestion-pedidos`, `contracts/shared.md` § Mensajes nuevos). */
+const LOS_DE_PEDIDOS = [
+  'MSG_PRODUCTO_NO_DISPONIBLE',
+  'MSG_CARRITO_VACIO',
+  'MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES',
+  'MSG_PRECIO_CAMBIO',
+  'MSG_CARRITO_DESACTUALIZADO',
+  'MSG_DIRECCION_ETIQUETA_VACIA',
+  'MSG_DIRECCION_TEXTO_VACIO',
+  'MSG_DIRECCION_ETIQUETA_DUPLICADA',
+  'MSG_DIRECCION_REQUERIDA',
+  'MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA',
+  'MSG_DIRECCION_EN_USO',
+  'MSG_MOTIVO_RECHAZO_REQUERIDO',
+  'MSG_PEDIDO_NO_PENDIENTE',
+  'MSG_SIN_PEDIDOS_PENDIENTES',
+  'MSG_SIN_PEDIDOS_RECHAZADOS',
+] as const;
+
 describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
   it('los doce de E1 existen y no están vacíos', () => {
     for (const nombre of LOS_DOCE) {
@@ -67,9 +86,17 @@ describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
     }
   });
 
+  it('los catorce de E2 existen y no están vacíos', () => {
+    for (const nombre of LOS_DE_PEDIDOS) {
+      const texto = mensajes[nombre];
+      expect(typeof texto, nombre).toBe('string');
+      expect(texto.trim().length, nombre).toBeGreaterThan(0);
+    }
+  });
+
   it('el archivo declara exactamente los conocidos y ninguno más', () => {
     expect(Object.keys(mensajes).sort()).toEqual(
-      [...LOS_DOCE, ...LOS_DEL_CATALOGO].sort(),
+      [...LOS_DOCE, ...LOS_DEL_CATALOGO, ...LOS_DE_PEDIDOS].sort(),
     );
   });
 
@@ -115,11 +142,16 @@ describe('Etiquetas visibles (FR-037, ux CHK006, ux CHK007)', () => {
     }
   });
 
-  it('los cinco estados de pedido tienen etiqueta', () => {
+  it('los seis estados de pedido tienen etiqueta', () => {
     for (const estado of Object.values(OrderStatus)) {
       expect(ETIQUETA_ESTADO_PEDIDO[estado]).toBeTruthy();
     }
-    expect(Object.keys(ETIQUETA_ESTADO_PEDIDO)).toHaveLength(5);
+    expect(Object.keys(ETIQUETA_ESTADO_PEDIDO)).toHaveLength(6);
+  });
+
+  it('`creado` se muestra como "Pendiente" y `rechazado` como "Rechazado" (D-041, FR-037)', () => {
+    expect(ETIQUETA_ESTADO_PEDIDO[OrderStatus.CREADO]).toBe('Pendiente');
+    expect(ETIQUETA_ESTADO_PEDIDO[OrderStatus.RECHAZADO]).toBe('Rechazado');
   });
 
   it('MSG_EXITO tiene un mensaje por cada una de las seis acciones y nombra al afectado', () => {

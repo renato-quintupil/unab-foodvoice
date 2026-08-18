@@ -42,6 +42,14 @@ module.exports = {
     '!src/products/products.service.ts',
     '!src/products/products.controller.ts',
     '!src/menu/**',
+    // E2 · Gestión de pedidos, mismo criterio (plan.md § Pruebas): la
+    // revalidación, la atomicidad de confirmación, las carreras de aceptar/
+    // rechazar y de dirección predeterminada, la unicidad normalizada de
+    // etiqueta y el append-only del historial son garantías de PostgreSQL,
+    // no de este código. Verificadas enteramente por integración.
+    '!src/cart/**',
+    '!src/addresses/**',
+    '!src/orders/**',
     '!src/dashboard/**',
     '!src/health/**',
     '!src/prisma/**',

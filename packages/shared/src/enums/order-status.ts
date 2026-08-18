@@ -1,10 +1,9 @@
 /**
- * Los cinco estados del pedido del Principio XII (FR-023, D-012).
+ * Los seis estados del pedido del Principio XII, versión 2.0.0 (FR-030, D-035).
  *
- * E1 **solo consume** estos nombres, para los filtros y las métricas de HU-10.
- * No define la entidad `Pedido` ni persiste nada: eso pertenece a E4/E2
- * (Principio III). No hay estado de cancelación ni de rechazo, porque el
- * principio no los contempla y FR-023 prohíbe definir estados propios.
+ * `RECHAZADO` se agregó en E2: alcanzable únicamente desde `CREADO`, terminal,
+ * sin transiciones salientes. Es la única rama del contrato; el resto de la
+ * máquina sigue siendo estrictamente lineal (`order-state/machine.ts`).
  */
 export const OrderStatus = {
   CREADO: 'creado',
@@ -12,6 +11,7 @@ export const OrderStatus = {
   ASIGNADO_REPARTIDOR: 'asignado_repartidor',
   ENTREGADO: 'entregado',
   CERRADO: 'cerrado',
+  RECHAZADO: 'rechazado',
 } as const;
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];

@@ -183,6 +183,65 @@ export const AYUDA_DESCRIPCION_PRODUCTO = {
     'Contundente y para compartir entre dos.',
 } as const;
 
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos (`003-gestion-pedidos`)
+// ---------------------------------------------------------------------------
+
+/** FR-002. Producto agotado o dado de baja: no se puede agregar al carrito. */
+export const MSG_PRODUCTO_NO_DISPONIBLE = 'Este producto no está disponible en este momento.';
+
+/** FR-009, HU12-E08. Carrito vacío: no se puede confirmar. */
+export const MSG_CARRITO_VACIO = 'Tu carrito está vacío. Agrega productos para armar tu pedido.';
+
+/** FR-007. Al menos una línea del carrito dejó de estar activa/disponible. */
+export const MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES =
+  'Hay productos en tu carrito que ya no están disponibles. Quítalos para poder confirmar.';
+
+/** FR-028. El precio de al menos un producto cambió desde la última revisión. */
+export const MSG_PRECIO_CAMBIO =
+  'El precio de uno o más productos cambió. Revisa tu carrito y confirma nuevamente.';
+
+/**
+ * D-036. `expectedLines` no describe el carrito real del servidor —típicamente
+ * porque otra pestaña lo modificó entre que se cargó la pantalla y se
+ * confirmó—. Error de forma de la petición, distinto de un cambio de precio.
+ */
+export const MSG_CARRITO_DESACTUALIZADO =
+  'Tu carrito cambió mientras revisabas el pedido. Actualiza la página y vuelve a confirmar.';
+
+/** FR-013. */
+export const MSG_DIRECCION_ETIQUETA_VACIA = 'La etiqueta de la dirección no puede estar vacía.';
+
+/** FR-013. */
+export const MSG_DIRECCION_TEXTO_VACIO = 'El texto de la dirección no puede estar vacío.';
+
+/** FR-014. Alcanza a las direcciones activas y a las desactivadas (D-040). */
+export const MSG_DIRECCION_ETIQUETA_DUPLICADA = 'Ya tienes una dirección guardada con esa etiqueta.';
+
+/** FR-022. Ninguna dirección —guardada ni puntual— elegida al confirmar. */
+export const MSG_DIRECCION_REQUERIDA = 'Indica una dirección de entrega para confirmar tu pedido.';
+
+/** FR-020. Retirar la predeterminada mientras existen otras direcciones activas. */
+export const MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA =
+  'Elige otra dirección como predeterminada antes de desactivar esta.';
+
+/** FR-019. Solo se puede desactivar una dirección ya usada, no eliminarla. */
+export const MSG_DIRECCION_EN_USO =
+  'Esta dirección ya se usó en un pedido y no se puede eliminar. Puedes desactivarla.';
+
+/** FR-033. Motivo de rechazo vacío o solo espacios. */
+export const MSG_MOTIVO_RECHAZO_REQUERIDO = 'Escribe el motivo del rechazo.';
+
+/** FR-032, D-038. El pedido ya no está en `creado`, o perdió una carrera. */
+export const MSG_PEDIDO_NO_PENDIENTE =
+  'Este pedido ya no está pendiente. Actualiza la página para ver su estado actual.';
+
+/** FR-040. Bandeja del negocio sin pedidos pendientes ni en preparación. */
+export const MSG_SIN_PEDIDOS_PENDIENTES = 'No tienes pedidos pendientes por ahora.';
+
+/** FR-039. El negocio todavía no rechazó ningún pedido. */
+export const MSG_SIN_PEDIDOS_RECHAZADOS = 'Todavía no has rechazado ningún pedido.';
+
 export const AYUDA_DESCRIPCION_CATEGORIA = {
   explicacion:
     'Esta descripción es lo que permitirá encontrar la categoría cuando el cliente pida algo ' +

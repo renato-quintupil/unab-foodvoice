@@ -7,9 +7,11 @@ import {
   Dimension,
   MSG_INGREDIENTES_REFERENCIALES,
   ProductStatus,
+  Role,
   formatearPrecio,
   type ProductDto,
 } from '@foodvoice/shared';
+import { AgregarAlCarrito } from '@/components/agregar-al-carrito';
 import { pedirALaApiOpcional } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
 
@@ -33,7 +35,7 @@ export default async function PaginaFichaProducto({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await exigirSesion();
+  const sesion = await exigirSesion();
   const { id } = await params;
 
   const producto = await pedirALaApiOpcional<ProductDto>(`/menu/products/${id}`);
@@ -72,12 +74,13 @@ export default async function PaginaFichaProducto({
         </div>
       </header>
 
-      {/* Ninguna acción para pedirlo, agotado o no: pedir es de E2. */}
       {agotado && (
         <p data-testid="agotado" className="text-sm">
           Este producto está agotado por ahora.
         </p>
       )}
+
+      {sesion.role === Role.CLIENTE && !agotado && <AgregarAlCarrito productId={producto.id} />}
 
       <section aria-labelledby="descripcion" className="flex flex-col gap-2">
         <h2 id="descripcion" className="text-lg font-medium">

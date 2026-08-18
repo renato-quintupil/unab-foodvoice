@@ -3,18 +3,20 @@
 Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
-**Estado del código**: **E1 · Acceso y usuarios** y **E3 · Administración de
-menú** están **construidas y verificadas**. Los tres espacios de trabajo
-—`apps/web`, `services/api` y `packages/shared`— están poblados, y las dos capas
-automáticas pasan en verde: **445 pruebas unitarias** con sus umbrales de
-cobertura y **434 de integración en 38 baterías** contra PostgreSQL real.
+**Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
+menú** y **E2 · Gestión de pedidos** están **construidas y verificadas**. Los
+tres espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
+poblados, y las dos capas automáticas pasan en verde: **522 pruebas unitarias**
+con sus umbrales de cobertura y **587 de integración en 73 baterías** contra
+PostgreSQL real.
 
-Las dos validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con las
-esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos— y su detalle
-está en el `verificacion.md` de cada spec.
+Las tres validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
+2026-08-18, sus 40 pasos— y su detalle está en el `verificacion.md` de cada
+spec.
 
-**Ninguna de las dos fue un trámite, y esa es la lección que conviene llevarse a
-las épicas siguientes**: cada una encontró **dos defectos** que ninguna prueba
+**Ninguna de las tres fue un trámite, y esa es la lección que conviene llevarse
+a las épicas siguientes**: cada una encontró defectos reales que ninguna prueba
 automática detectaba, siempre del mismo tipo —cada pieza funcionaba aislada y aun
 así el usuario no veía lo que la spec le promete—.
 
@@ -23,6 +25,9 @@ así el usuario no veía lo que la spec le promete—.
 - En E3: dar de baja un producto **no confirmaba nada**, porque el aviso vivía en
   la fila que desaparecía en ese mismo instante; y el rechazo de la reactivación
   se anunciaba **dos veces**, con dos `role="alert"` idénticos.
+- En E2: el error de una dirección puntual demasiado corta al confirmar un
+  pedido se mostraba **en inglés** —el mensaje por omisión de Zod, sin
+  traducir—, mientras el resto de la misma pantalla sí estaba en español.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -37,9 +42,29 @@ está en el `verificacion.md` de E3.
 
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039), y la verificación funcional de las métricas de
-pedidos, que espera a E2/E4. La siguiente épica del orden sugerido es **E2**
-(el orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8, porque E4 registra el
-historial sobre pedidos que E2 crea).
+pedidos, que espera a E4 (registra el historial sobre el que se miden). La
+siguiente épica del orden sugerido es **E4** (el orden es E1 → E3 → E2 → E4 →
+E6 → E5 → E7 → E8).
+
+### Lo que E2 añadió al código
+
+- **`packages/shared`**: `RECHAZADO` en el contrato de estados del pedido;
+  esquemas de carrito, dirección y confirmación/rechazo de pedido; los catorce
+  mensajes fijos de E2 y la etiqueta «Pendiente»/«Rechazado».
+- **`services/api`**: los módulos `cart`, `addresses` y `orders`. `orders`
+  expone dos controladores —cliente (`POST/GET /orders`) y negocio (bandeja,
+  aceptar, rechazar, rechazados)—, ambos con `@Roles`. El historial de estados
+  (`OrderStatusEvent`) se escribe con un helper transaccional privado: **no
+  tiene endpoint ni DTO público** en E2, lo incorpora E4.
+- **Garantías a nivel de base de datos**: índice único parcial para la
+  dirección predeterminada por cliente, trigger `BEFORE UPDATE OR DELETE` que
+  vuelve el historial de estados append-only, y transacciones interactivas con
+  `updateMany` condicionado para que aceptar/rechazar un pedido tenga
+  exactamente un ganador bajo carrera.
+- **`apps/web`**: `/cliente/carrito`, `/cliente/direcciones`,
+  `/cliente/pedidos` (con su confirmación) y `/negocio/pedidos` (con su
+  bandeja paginada y los rechazados). El carrito recalcula precio y
+  disponibilidad en cada lectura, sin congelarlos.
 
 ### Lo que E3 añadió al código
 

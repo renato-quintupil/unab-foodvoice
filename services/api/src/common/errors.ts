@@ -1,13 +1,22 @@
 import { HttpException } from '@nestjs/common';
 import {
   MSG_AUTOPROTECCION,
+  MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES,
+  MSG_CARRITO_DESACTUALIZADO,
+  MSG_CARRITO_VACIO,
   MSG_CATEGORIA_EN_USO,
   MSG_CATEGORIA_INACTIVA,
   MSG_CATEGORIA_YA_EXISTE,
   MSG_CORREO_YA_EXISTE,
   MSG_CREDENCIALES_INVALIDAS,
   MSG_CUENTA_BLOQUEADA,
+  MSG_DIRECCION_EN_USO,
+  MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA,
+  MSG_DIRECCION_ETIQUETA_DUPLICADA,
+  MSG_DIRECCION_REQUERIDA,
   MSG_ERROR_INESPERADO,
+  MSG_PEDIDO_NO_PENDIENTE,
+  MSG_PRECIO_CAMBIO,
   MSG_PRODUCTO_NO_ENCONTRADO,
   MSG_PRODUCTO_YA_EXISTE,
   MSG_SESION_EXPIRADA,
@@ -42,6 +51,17 @@ export const ErrorCode = {
   PRODUCT_NAME_ALREADY_EXISTS: 'PRODUCT_NAME_ALREADY_EXISTS',
   CATEGORY_IN_USE: 'CATEGORY_IN_USE',
   CATEGORY_INACTIVE: 'CATEGORY_INACTIVE',
+  // E2 · Gestión de pedidos. Los ocho son `409`: describen un conflicto con el
+  // estado actual de los datos, nunca un error de forma del cuerpo (eso sigue
+  // siendo `400 VALIDATION_ERROR` de los esquemas Zod).
+  CART_EMPTY: 'CART_EMPTY',
+  CART_HAS_UNAVAILABLE_LINES: 'CART_HAS_UNAVAILABLE_LINES',
+  PRICE_CHANGED: 'PRICE_CHANGED',
+  ADDRESS_REQUIRED: 'ADDRESS_REQUIRED',
+  ADDRESS_LABEL_ALREADY_EXISTS: 'ADDRESS_LABEL_ALREADY_EXISTS',
+  ADDRESS_NEEDS_NEW_DEFAULT: 'ADDRESS_NEEDS_NEW_DEFAULT',
+  ADDRESS_IN_USE: 'ADDRESS_IN_USE',
+  ORDER_NOT_PENDING: 'ORDER_NOT_PENDING',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -180,3 +200,51 @@ export const categoriaInactiva = (
  */
 export const productoNoEncontrado = (): AppError =>
   new AppError(404, ErrorCode.NOT_FOUND, MSG_PRODUCTO_NO_ENCONTRADO);
+
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos (`contracts/api.md` § Códigos de error que E2 añade)
+// ---------------------------------------------------------------------------
+
+/** `409 CART_EMPTY` (FR-009). También la respuesta de una carrera de confirmación perdida (D-037). */
+export const carritoVacio = (): AppError => new AppError(409, ErrorCode.CART_EMPTY, MSG_CARRITO_VACIO);
+
+/**
+ * `400 VALIDATION_ERROR` (D-036, contracts/api.md § `POST /orders`). La
+ * composición de `expectedLines` no coincide con el carrito real: error de
+ * forma de la petición, no un conflicto de negocio como `PRICE_CHANGED`.
+ */
+export const carritoDesactualizado = (): AppError =>
+  new AppError(400, ErrorCode.VALIDATION_ERROR, MSG_CARRITO_DESACTUALIZADO);
+
+/** `409 CART_HAS_UNAVAILABLE_LINES` (FR-002, FR-007, D-045). */
+export const carritoConLineasNoDisponibles = (): AppError =>
+  new AppError(409, ErrorCode.CART_HAS_UNAVAILABLE_LINES, MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES);
+
+/** `409 PRICE_CHANGED` (FR-028, D-036). No lleva el carrito en el cuerpo: `GET /cart` ya lo muestra actualizado. */
+export const precioCambio = (): AppError => new AppError(409, ErrorCode.PRICE_CHANGED, MSG_PRECIO_CAMBIO);
+
+/** `409 ADDRESS_REQUIRED` (FR-022). Ni `addressId` ni `addressText` llegaron con contenido. */
+export const direccionRequerida = (): AppError =>
+  new AppError(409, ErrorCode.ADDRESS_REQUIRED, MSG_DIRECCION_REQUERIDA);
+
+/** `409 ADDRESS_LABEL_ALREADY_EXISTS` (FR-014, FR-016). Alcanza a crear y a editar. */
+export const etiquetaDireccionYaExiste = (): AppError =>
+  new AppError(409, ErrorCode.ADDRESS_LABEL_ALREADY_EXISTS, MSG_DIRECCION_ETIQUETA_DUPLICADA, {
+    label: MSG_DIRECCION_ETIQUETA_DUPLICADA,
+  });
+
+/** `409 ADDRESS_NEEDS_NEW_DEFAULT` (FR-020). Solo cuando existen otras direcciones activas. */
+export const direccionNecesitaNuevaPredeterminada = (): AppError =>
+  new AppError(
+    409,
+    ErrorCode.ADDRESS_NEEDS_NEW_DEFAULT,
+    MSG_DIRECCION_ELIGE_NUEVA_PREDETERMINADA,
+  );
+
+/** `409 ADDRESS_IN_USE` (FR-019). Ya se usó en un pedido; el camino correcto es desactivarla. */
+export const direccionEnUso = (): AppError =>
+  new AppError(409, ErrorCode.ADDRESS_IN_USE, MSG_DIRECCION_EN_USO);
+
+/** `409 ORDER_NOT_PENDING` (FR-032, D-038). El pedido no está en `creado`, o perdió la carrera. */
+export const pedidoNoPendiente = (): AppError =>
+  new AppError(409, ErrorCode.ORDER_NOT_PENDING, MSG_PEDIDO_NO_PENDIENTE);

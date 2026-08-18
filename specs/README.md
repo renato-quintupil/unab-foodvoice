@@ -14,7 +14,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | --- | --- | --- | --- |
 | **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | **Terminada** · 138 / 138 tareas · construida y verificada, incluida la validación funcional a mano |
 | **E3 · Administración de menú** | HU-02, HU-14 | [`002-administracion-menu-productos/`](./002-administracion-menu-productos/) | **Terminada** · 88 / 88 tareas · construida y verificada, incluidos los 56 pasos de validación funcional |
-| E2 · Gestión de pedidos | HU-01, HU-11, HU-12 | — | Sin especificar |
+| **E2 · Gestión de pedidos** | HU-01, HU-11, HU-12 | [`003-gestion-pedidos/`](./003-gestion-pedidos/) | **Terminada** · 108 / 108 tareas · construida y verificada, incluida la validación funcional a mano |
 | E4 · Trazabilidad del pedido | HU-03 | — | Borrador de HU en [`docs/epicas-hu/HU-03-trazabilidad-del-pedido.md`](../docs/epicas-hu/HU-03-trazabilidad-del-pedido.md) |
 | E6 · Búsqueda por voz | HU-06, HU-13 | — | Sin especificar |
 | E5 · Reparto | HU-04 | — | Sin especificar |
@@ -99,6 +99,40 @@ mitad de SC-023 que mira pedidos ya emitidos, que espera a E2. La apuesta centra
 de la épica —que una descripción en prosa bien escrita baste para la búsqueda por
 voz, sin diccionario de sinónimos— **la confirma o la refuta E6**, no E3: aquí no
 hay modelo al que preguntar, y así está declarado en el supuesto 27 de la spec.
+
+## E2 · Gestión de pedidos
+
+Rama de trabajo: `003-gestion-pedidos`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./003-gestion-pedidos/spec.md) | Requisitos, reglas de negocio y criterios de éxito |
+| [`plan.md`](./003-gestion-pedidos/plan.md) | Decisiones técnicas, estructura y fases de entrega |
+| [`data-model.md`](./003-gestion-pedidos/data-model.md) | Carrito, Dirección, Pedido, historial y esquema Prisma |
+| [`contracts/`](./003-gestion-pedidos/contracts/) | Endpoints HTTP y contratos compartidos de E2 |
+| [`quickstart.md`](./003-gestion-pedidos/quickstart.md) | Puesta en marcha y los 40 pasos de validación funcional |
+| [`tasks.md`](./003-gestion-pedidos/tasks.md) | 108 tareas ordenadas por dependencia |
+| [`verificacion.md`](./003-gestion-pedidos/verificacion.md) | Resultado de la validación, con el defecto que encontró |
+| [`checklists/`](./003-gestion-pedidos/checklists/) | Calidad de requisitos y de la lógica de negocio |
+
+Fases de entrega: **cimientos** (contrato de estados, esquema y las seis tablas)
+→ **HU-12** carrito editable, el MVP → **HU-11** direcciones etiquetadas,
+consistentes bajo carrera → **HU-01** pedido con estado visible, que depende de
+carrito y dirección → **cierre**.
+
+**Por qué se da por terminada.** Las tres historias están construidas, las dos
+capas automáticas pasan en verde —301 pruebas unitarias y 587 de integración en
+73 baterías contra PostgreSQL real, con cobertura explícita de concurrencia,
+atomicidad y el historial de estados append-only— y la **validación funcional se
+ejecutó el 2026-08-18**, los 40 pasos de `quickstart.md`. **Encontró un defecto
+real** que ninguna prueba automática detectaba —el error de una dirección
+puntual demasiado corta se mostraba en inglés, no en español—, corregido y
+cubierto por una prueba nueva. El detalle está en
+[`verificacion.md`](./003-gestion-pedidos/verificacion.md).
+
+No hay pantalla ni endpoint de consulta del historial de estados en E2, por
+diseño: lo incorpora E4. Sigue fuera de v1, heredado de E1/E3: la auditoría
+formal de accesibilidad y las pruebas con lectores de pantalla reales.
 
 ## Alcance de v1
 

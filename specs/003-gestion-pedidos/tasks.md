@@ -35,9 +35,9 @@ contra PostgreSQL. No se añade ninguna dependencia ni variable de entorno.
 
 **Propósito**: preparar las rutas nuevas y obtener una línea base verificable sin alterar E1/E3.
 
-- [ ] T001 [P] Crear los módulos vacíos en `services/api/src/cart/`, `services/api/src/addresses/` y `services/api/src/orders/`
-- [ ] T002 [P] Crear las ocho rutas de página en `apps/web/src/app/cliente/carrito/`, `apps/web/src/app/cliente/direcciones/`, `apps/web/src/app/cliente/direcciones/nueva/`, `apps/web/src/app/cliente/direcciones/[id]/editar/`, `apps/web/src/app/cliente/pedidos/`, `apps/web/src/app/cliente/pedidos/confirmar/`, `apps/web/src/app/negocio/pedidos/` y `apps/web/src/app/negocio/pedidos/rechazados/`
-- [ ] T003 Ejecutar la línea base de `specs/003-gestion-pedidos/quickstart.md` —`pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el resultado y detener la implementación si existe un fallo preexistente
+- [X] T001 [P] Crear los módulos vacíos en `services/api/src/cart/`, `services/api/src/addresses/` y `services/api/src/orders/`
+- [X] T002 [P] Crear las ocho rutas de página en `apps/web/src/app/cliente/carrito/`, `apps/web/src/app/cliente/direcciones/`, `apps/web/src/app/cliente/direcciones/nueva/`, `apps/web/src/app/cliente/direcciones/[id]/editar/`, `apps/web/src/app/cliente/pedidos/`, `apps/web/src/app/cliente/pedidos/confirmar/`, `apps/web/src/app/negocio/pedidos/` y `apps/web/src/app/negocio/pedidos/rechazados/`
+- [X] T003 Ejecutar la línea base de `specs/003-gestion-pedidos/quickstart.md` —`pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el resultado y detener la implementación si existe un fallo preexistente
 
 ---
 
@@ -50,30 +50,30 @@ seis entidades, incluidas las garantías SQL de dirección predeterminada e hist
 
 ### Pruebas primero
 
-- [ ] T004 [P] Añadir casos fallidos para `RECHAZADO` en `packages/shared/tests/order-state.test.ts`: solo `CREADO → RECHAZADO` es válida, `RECHAZADO` es terminal y las transiciones anteriores no cambian
-- [ ] T005 [P] Crear pruebas fallidas de `AddCartLineSchema` y `UpdateCartLineQuantitySchema` en `packages/shared/tests/cart-schemas.test.ts`, cubriendo UUID, cero, negativos y no enteros
-- [ ] T006 [P] Crear pruebas fallidas de los esquemas de dirección en `packages/shared/tests/address-schemas.test.ts`, cubriendo límites 2/60 y 10/500, `trim` y texto compuesto solo por espacios o saltos
-- [ ] T007 [P] Crear pruebas fallidas de `ConfirmOrderSchema` y `RejectOrderSchema` en `packages/shared/tests/order-schemas.test.ts`, exigiendo XOR entre `addressId`/`addressText` y rechazando motivo vacío o de solo espacios
-- [ ] T008 [P] Añadir pruebas fallidas de `BusinessOrdersQuerySchema` en `packages/shared/tests/query.test.ts` para estados permitidos, estado ajeno a la bandeja y página mínima
-- [ ] T009 [P] Añadir pruebas fallidas de los catorce mensajes, `Pendiente` y `Rechazado` en `packages/shared/tests/messages.test.ts` y `apps/web/tests/panel.test.tsx`
-- [ ] T010 [P] Añadir pruebas fallidas de los ocho códigos y factories de error de E2 en `services/api/src/common/errors.spec.ts`, verificando HTTP, `code`, mensaje y asociación a campo cuando corresponda
-- [ ] T011 [P] Crear la prueba de esquema fallida en `services/api/test/orders-schema.integration-spec.ts` para seis tablas, enum de seis estados, FKs, índices, checks, único parcial de predeterminada, evento inicial único y trigger append-only
+- [X] T004 [P] Añadir casos fallidos para `RECHAZADO` en `packages/shared/tests/order-state.test.ts`: solo `CREADO → RECHAZADO` es válida, `RECHAZADO` es terminal y las transiciones anteriores no cambian
+- [X] T005 [P] Crear pruebas fallidas de `AddCartLineSchema` y `UpdateCartLineQuantitySchema` en `packages/shared/tests/cart-schemas.test.ts`, cubriendo UUID, cero, negativos y no enteros
+- [X] T006 [P] Crear pruebas fallidas de los esquemas de dirección en `packages/shared/tests/address-schemas.test.ts`, cubriendo límites 2/60 y 10/500, `trim` y texto compuesto solo por espacios o saltos
+- [X] T007 [P] Crear pruebas fallidas de `ConfirmOrderSchema` y `RejectOrderSchema` en `packages/shared/tests/order-schemas.test.ts`, exigiendo XOR entre `addressId`/`addressText` y rechazando motivo vacío o de solo espacios
+- [X] T008 [P] Añadir pruebas fallidas de `BusinessOrdersQuerySchema` en `packages/shared/tests/query.test.ts` para estados permitidos, estado ajeno a la bandeja y página mínima
+- [X] T009 [P] Añadir pruebas fallidas de los catorce mensajes, `Pendiente` y `Rechazado` en `packages/shared/tests/messages.test.ts` y `apps/web/tests/panel.test.tsx`
+- [X] T010 [P] Añadir pruebas fallidas de los ocho códigos y factories de error de E2 en `services/api/src/common/errors.spec.ts`, verificando HTTP, `code`, mensaje y asociación a campo cuando corresponda
+- [X] T011 [P] Crear la prueba de esquema fallida en `services/api/test/orders-schema.integration-spec.ts` para seis tablas, enum de seis estados, FKs, índices, checks, único parcial de predeterminada, evento inicial único y trigger append-only
 
 ### Implementación de cimientos
 
-- [ ] T012 Añadir `RECHAZADO` al contrato compartido en `packages/shared/src/enums/order-status.ts` sin modificar los cinco valores existentes
-- [ ] T013 Añadir `CREADO → RECHAZADO` y la terminalidad de `RECHAZADO` en `packages/shared/src/order-state/machine.ts`
-- [ ] T014 Crear `AddCartLineSchema` y `UpdateCartLineQuantitySchema` con sus tipos inferidos en `packages/shared/src/schemas/cart.ts`
-- [ ] T015 Crear `CreateAddressSchema`, `UpdateAddressSchema` y `ChangeAddressStatusSchema` con sus tipos en `packages/shared/src/schemas/address.ts`
-- [ ] T016 Crear `ConfirmOrderSchema` con XOR de dirección y `RejectOrderSchema` con sus tipos en `packages/shared/src/schemas/order.ts`
-- [ ] T017 Añadir `BusinessOrdersQuerySchema` y `BusinessOrdersQuery` en `packages/shared/src/schemas/query.ts`
-- [ ] T018 Añadir los catorce mensajes fijos de E2 definidos en `specs/003-gestion-pedidos/contracts/shared.md` a `packages/shared/src/messages/es.ts`
-- [ ] T019 Cambiar la etiqueta de `CREADO` a “Pendiente” y añadir “Rechazado” en `packages/shared/src/messages/etiquetas.ts`
-- [ ] T020 Extender `ErrorCode` y sus factories con `CART_EMPTY`, `CART_HAS_UNAVAILABLE_LINES`, `PRICE_CHANGED`, `ADDRESS_REQUIRED`, `ADDRESS_LABEL_ALREADY_EXISTS`, `ADDRESS_NEEDS_NEW_DEFAULT`, `ADDRESS_IN_USE` y `ORDER_NOT_PENDING` en `services/api/src/common/errors.ts`
-- [ ] T021 Añadir `CartLineDto`, `CartDto`, `AddressDto`, `OrderLineDto` y `OrderSummaryDto` —sin DTO de historial— en `packages/shared/src/types/api.ts`
-- [ ] T022 Exportar esquemas, tipos, mensajes y DTO nuevos, sin exportar `OrderStatusEvent`, desde `packages/shared/src/index.ts`
-- [ ] T023 Añadir `OrderStatus` y los modelos `Cart`, `CartLine`, `Address`, `Order`, `OrderLine` y `OrderStatusEvent` con relaciones inversas e índices en `services/api/prisma/schema.prisma`
-- [ ] T024 Generar con `prisma migrate dev --create-only` el archivo `services/api/prisma/migrations/20260817000000_gestion_pedidos/migration.sql` con las seis tablas y agregar manualmente los checks de cantidades y dirección, el índice único parcial de predeterminada, el check/único inicial de eventos y el trigger `BEFORE UPDATE OR DELETE` de solo inserción
+- [X] T012 Añadir `RECHAZADO` al contrato compartido en `packages/shared/src/enums/order-status.ts` sin modificar los cinco valores existentes
+- [X] T013 Añadir `CREADO → RECHAZADO` y la terminalidad de `RECHAZADO` en `packages/shared/src/order-state/machine.ts`
+- [X] T014 Crear `AddCartLineSchema` y `UpdateCartLineQuantitySchema` con sus tipos inferidos en `packages/shared/src/schemas/cart.ts`
+- [X] T015 Crear `CreateAddressSchema`, `UpdateAddressSchema` y `ChangeAddressStatusSchema` con sus tipos en `packages/shared/src/schemas/address.ts`
+- [X] T016 Crear `ConfirmOrderSchema` con XOR de dirección y `RejectOrderSchema` con sus tipos en `packages/shared/src/schemas/order.ts`
+- [X] T017 Añadir `BusinessOrdersQuerySchema` y `BusinessOrdersQuery` en `packages/shared/src/schemas/query.ts`
+- [X] T018 Añadir los catorce mensajes fijos de E2 definidos en `specs/003-gestion-pedidos/contracts/shared.md` a `packages/shared/src/messages/es.ts`
+- [X] T019 Cambiar la etiqueta de `CREADO` a “Pendiente” y añadir “Rechazado” en `packages/shared/src/messages/etiquetas.ts`
+- [X] T020 Extender `ErrorCode` y sus factories con `CART_EMPTY`, `CART_HAS_UNAVAILABLE_LINES`, `PRICE_CHANGED`, `ADDRESS_REQUIRED`, `ADDRESS_LABEL_ALREADY_EXISTS`, `ADDRESS_NEEDS_NEW_DEFAULT`, `ADDRESS_IN_USE` y `ORDER_NOT_PENDING` en `services/api/src/common/errors.ts`
+- [X] T021 Añadir `CartLineDto`, `CartDto`, `AddressDto`, `OrderLineDto` y `OrderSummaryDto` —sin DTO de historial— en `packages/shared/src/types/api.ts`
+- [X] T022 Exportar esquemas, tipos, mensajes y DTO nuevos, sin exportar `OrderStatusEvent`, desde `packages/shared/src/index.ts`
+- [X] T023 Añadir `OrderStatus` y los modelos `Cart`, `CartLine`, `Address`, `Order`, `OrderLine` y `OrderStatusEvent` con relaciones inversas e índices en `services/api/prisma/schema.prisma`
+- [X] T024 Generar con `prisma migrate dev --create-only` el archivo `services/api/prisma/migrations/20260817000000_gestion_pedidos/migration.sql` con las seis tablas y agregar manualmente los checks de cantidades y dirección, el índice único parcial de predeterminada, el check/único inicial de eventos y el trigger `BEFORE UPDATE OR DELETE` de solo inserción
 
 **Punto de control**: contratos compilables, catálogo de errores cerrado y migración limpia con
 seis tablas. Las historias pueden comenzar.
@@ -89,29 +89,29 @@ sumar, cambiar cantidad, retirar, vaciar, persistir sesión y reflejar precio/di
 
 ### Pruebas de US1
 
-- [ ] T025 [P] [US1] Crear `services/api/test/cart-add.integration-spec.ts` para alta, suma sobre una única línea y rechazo de producto agotado, dado de baja o inexistente (HU12-E01–E03, FR-002, FR-004)
-- [ ] T026 [P] [US1] Crear `services/api/test/cart-quantity.integration-spec.ts` para cantidad 3, subtotal actualizado, cero que elimina y rechazo de negativo/no entero (HU12-E04–E05, FR-003)
-- [ ] T027 [P] [US1] Crear `services/api/test/cart-remove.integration-spec.ts` para quitar una línea sin depender de su cantidad (HU12-E06, FR-005)
-- [ ] T028 [P] [US1] Crear `services/api/test/cart-clear.integration-spec.ts` para vaciado con varias líneas e idempotencia sobre carrito vacío (HU12-E11, FR-010)
-- [ ] T029 [P] [US1] Crear `services/api/test/cart-price-live.integration-spec.ts` para recalcular el precio vigente en cada lectura sin congelarlo (HU12-E10, FR-006)
-- [ ] T030 [P] [US1] Crear `services/api/test/cart-unavailable.integration-spec.ts` para conservar y marcar no disponible una línea cuyo producto se agotó o dio de baja (HU12-E09, FR-007–FR-008)
-- [ ] T031 [P] [US1] Crear `services/api/test/cart-persistence.integration-spec.ts` para conservar productos y cantidades tras cerrar y reabrir sesión (HU12-E07, FR-011)
-- [ ] T032 [P] [US1] Crear `services/api/test/cart-roles.integration-spec.ts` para exigir `CLIENTE` en los cinco endpoints y devolver `403` a los otros tres roles (RN-001, D-042)
-- [ ] T033 [P] [US1] Crear `apps/web/tests/carrito.test.tsx` para estado vacío, controles de cantidad, línea no disponible, precio vigente y bloqueo de confirmación
+- [X] T025 [P] [US1] Crear `services/api/test/cart-add.integration-spec.ts` para alta, suma sobre una única línea y rechazo de producto agotado, dado de baja o inexistente (HU12-E01–E03, FR-002, FR-004)
+- [X] T026 [P] [US1] Crear `services/api/test/cart-quantity.integration-spec.ts` para cantidad 3, subtotal actualizado, cero que elimina y rechazo de negativo/no entero (HU12-E04–E05, FR-003)
+- [X] T027 [P] [US1] Crear `services/api/test/cart-remove.integration-spec.ts` para quitar una línea sin depender de su cantidad (HU12-E06, FR-005)
+- [X] T028 [P] [US1] Crear `services/api/test/cart-clear.integration-spec.ts` para vaciado con varias líneas e idempotencia sobre carrito vacío (HU12-E11, FR-010)
+- [X] T029 [P] [US1] Crear `services/api/test/cart-price-live.integration-spec.ts` para recalcular el precio vigente en cada lectura sin congelarlo (HU12-E10, FR-006)
+- [X] T030 [P] [US1] Crear `services/api/test/cart-unavailable.integration-spec.ts` para conservar y marcar no disponible una línea cuyo producto se agotó o dio de baja (HU12-E09, FR-007–FR-008)
+- [X] T031 [P] [US1] Crear `services/api/test/cart-persistence.integration-spec.ts` para conservar productos y cantidades tras cerrar y reabrir sesión (HU12-E07, FR-011)
+- [X] T032 [P] [US1] Crear `services/api/test/cart-roles.integration-spec.ts` para exigir `CLIENTE` en los cinco endpoints y devolver `403` a los otros tres roles (RN-001, D-042)
+- [X] T033 [P] [US1] Crear `apps/web/tests/carrito.test.tsx` para estado vacío, controles de cantidad, línea no disponible, precio vigente y bloqueo de confirmación
 
 ### Implementación de US1
 
-- [ ] T034 [US1] Implementar `CartService.obtener` con carrito inexistente como lista vacía y unión al `Product` vigente en `services/api/src/cart/cart.service.ts`
-- [ ] T035 [US1] Implementar `CartService.agregarLinea` con creación perezosa y upsert por `(cartId, productId)`, validando `active && available` en `services/api/src/cart/cart.service.ts`
-- [ ] T036 [US1] Implementar cambio de cantidad —cero elimina— y eliminación explícita en `services/api/src/cart/cart.service.ts`
-- [ ] T037 [US1] Implementar vaciado idempotente en `services/api/src/cart/cart.service.ts`
-- [ ] T038 [US1] Implementar los cinco endpoints con `@Roles(Role.CLIENTE)` y validación compartida en `services/api/src/cart/cart.controller.ts`
-- [ ] T039 [US1] Crear `CartModule` y registrarlo en `services/api/src/cart/cart.module.ts` y `services/api/src/app.module.ts`
-- [ ] T040 [US1] Añadir la acción “Agregar” y acceso al carrito solo para cliente en `apps/web/src/app/menu/page.tsx`, `apps/web/src/app/menu/[id]/page.tsx` y `apps/web/src/app/cliente/page.tsx`
-- [ ] T041 [US1] Construir lista, subtotales, cantidades, quitar y vaciar en `apps/web/src/app/cliente/carrito/page.tsx`
-- [ ] T042 [US1] Marcar líneas no disponibles y bloquear confirmación mientras exista alguna en `apps/web/src/app/cliente/carrito/page.tsx`
-- [ ] T043 [US1] Mostrar el mensaje de carrito vacío y ocultar/deshabilitar confirmación sin líneas en `apps/web/src/app/cliente/carrito/page.tsx`
-- [ ] T044 [US1] Deshabilitar controles durante cada mutación para impedir doble envío en `apps/web/src/app/cliente/carrito/page.tsx`
+- [X] T034 [US1] Implementar `CartService.obtener` con carrito inexistente como lista vacía y unión al `Product` vigente en `services/api/src/cart/cart.service.ts`
+- [X] T035 [US1] Implementar `CartService.agregarLinea` con creación perezosa y upsert por `(cartId, productId)`, validando `active && available` en `services/api/src/cart/cart.service.ts`
+- [X] T036 [US1] Implementar cambio de cantidad —cero elimina— y eliminación explícita en `services/api/src/cart/cart.service.ts`
+- [X] T037 [US1] Implementar vaciado idempotente en `services/api/src/cart/cart.service.ts`
+- [X] T038 [US1] Implementar los cinco endpoints con `@Roles(Role.CLIENTE)` y validación compartida en `services/api/src/cart/cart.controller.ts`
+- [X] T039 [US1] Crear `CartModule` y registrarlo en `services/api/src/cart/cart.module.ts` y `services/api/src/app.module.ts`
+- [X] T040 [US1] Añadir la acción “Agregar” y acceso al carrito solo para cliente en `apps/web/src/app/menu/page.tsx`, `apps/web/src/app/menu/[id]/page.tsx` y `apps/web/src/app/cliente/page.tsx`
+- [X] T041 [US1] Construir lista, subtotales, cantidades, quitar y vaciar en `apps/web/src/app/cliente/carrito/page.tsx`
+- [X] T042 [US1] Marcar líneas no disponibles y bloquear confirmación mientras exista alguna en `apps/web/src/app/cliente/carrito/page.tsx`
+- [X] T043 [US1] Mostrar el mensaje de carrito vacío y ocultar/deshabilitar confirmación sin líneas en `apps/web/src/app/cliente/carrito/page.tsx`
+- [X] T044 [US1] Deshabilitar controles durante cada mutación para impedir doble envío en `apps/web/src/app/cliente/carrito/page.tsx`
 
 **Punto de control**: HU-12 funciona sola y constituye el MVP.
 
@@ -129,31 +129,31 @@ normalizada, edición, predeterminada, desactivación, reactivación y eliminaci
 
 ### Pruebas de US2
 
-- [ ] T045 [P] [US2] Crear `services/api/test/addresses-create.integration-spec.ts` para primera predeterminada, segunda no predeterminada y validaciones de campos (HU11-E01, E02, E04)
-- [ ] T046 [P] [US2] Crear `services/api/test/addresses-unique.integration-spec.ts` para colisiones normalizadas entre activas y desactivadas (HU11-E03, FR-014)
-- [ ] T047 [P] [US2] Crear `services/api/test/addresses-default.integration-spec.ts` para cambiar la predeterminada atómicamente y conservar exactamente una (HU11-E05, FR-015)
-- [ ] T048 [P] [US2] Crear `services/api/test/addresses-concurrency.integration-spec.ts` para dos primeras altas y dos reactivaciones simultáneas: ambas solicitudes válidas terminan con exactamente una predeterminada activa
-- [ ] T049 [P] [US2] Crear `services/api/test/addresses-edit.integration-spec.ts` para editar etiqueta/texto sin alterar flags ni snapshots de pedidos sembrados, y para rechazar la edición cuando la nueva etiqueta colisiona normalizada con otra existente del mismo cliente (HU11-E06, E09, FR-016, `409 ADDRESS_LABEL_ALREADY_EXISTS`)
-- [ ] T050 [P] [US2] Crear `services/api/test/addresses-deactivate.integration-spec.ts` para impedir retirar la predeterminada si hay otra activa y permitir desactivar la última activa (HU11-E11–E12, FR-018, FR-020)
-- [ ] T051 [P] [US2] Crear `services/api/test/addresses-reactivate.integration-spec.ts` para reactivar como predeterminada solo cuando no existe otra activa (HU11-E13–E14)
-- [ ] T052 [P] [US2] Crear `services/api/test/addresses-delete.integration-spec.ts` para borrar solo una nunca usada, impedir borrar una usada y no dejar sin predeterminada si quedan activas (FR-019, D-039, D-049)
-- [ ] T053 [P] [US2] Crear `services/api/test/addresses-roles.integration-spec.ts` para exigir `CLIENTE` en los seis endpoints (D-042)
-- [ ] T054 [P] [US2] Crear `apps/web/tests/direcciones.test.tsx` para formulario textual, estados activa/desactivada, predeterminada y errores asociados al campo
+- [X] T045 [P] [US2] Crear `services/api/test/addresses-create.integration-spec.ts` para primera predeterminada, segunda no predeterminada y validaciones de campos (HU11-E01, E02, E04)
+- [X] T046 [P] [US2] Crear `services/api/test/addresses-unique.integration-spec.ts` para colisiones normalizadas entre activas y desactivadas (HU11-E03, FR-014)
+- [X] T047 [P] [US2] Crear `services/api/test/addresses-default.integration-spec.ts` para cambiar la predeterminada atómicamente y conservar exactamente una (HU11-E05, FR-015)
+- [X] T048 [P] [US2] Crear `services/api/test/addresses-concurrency.integration-spec.ts` para dos primeras altas y dos reactivaciones simultáneas: ambas solicitudes válidas terminan con exactamente una predeterminada activa
+- [X] T049 [P] [US2] Crear `services/api/test/addresses-edit.integration-spec.ts` para editar etiqueta/texto sin alterar flags ni snapshots de pedidos sembrados, y para rechazar la edición cuando la nueva etiqueta colisiona normalizada con otra existente del mismo cliente (HU11-E06, E09, FR-016, `409 ADDRESS_LABEL_ALREADY_EXISTS`)
+- [X] T050 [P] [US2] Crear `services/api/test/addresses-deactivate.integration-spec.ts` para impedir retirar la predeterminada si hay otra activa y permitir desactivar la última activa (HU11-E11–E12, FR-018, FR-020)
+- [X] T051 [P] [US2] Crear `services/api/test/addresses-reactivate.integration-spec.ts` para reactivar como predeterminada solo cuando no existe otra activa (HU11-E13–E14)
+- [X] T052 [P] [US2] Crear `services/api/test/addresses-delete.integration-spec.ts` para borrar solo una nunca usada, impedir borrar una usada y no dejar sin predeterminada si quedan activas (FR-019, D-039, D-049)
+- [X] T053 [P] [US2] Crear `services/api/test/addresses-roles.integration-spec.ts` para exigir `CLIENTE` en los seis endpoints (D-042)
+- [X] T054 [P] [US2] Crear `apps/web/tests/direcciones.test.tsx` para formulario textual, estados activa/desactivada, predeterminada y errores asociados al campo
 
 ### Implementación de US2
 
-- [ ] T055 [US2] Implementar un helper transaccional que bloquee `User` con `FOR UPDATE` y usarlo en `AddressesService.crear` para serializar primeras altas, normalizar etiqueta y elegir predeterminada en `services/api/src/addresses/addresses.service.ts`
-- [ ] T056 [US2] Implementar edición de etiqueta/texto sin tocar `isDefault`, `active` ni `usedInOrder` en `services/api/src/addresses/addresses.service.ts`
-- [ ] T057 [US2] Implementar cambio de predeterminada bajo el bloqueo de `User`, quitando la anterior y fijando la nueva en una transacción en `services/api/src/addresses/addresses.service.ts`
-- [ ] T058 [US2] Implementar desactivación/reactivación bajo el bloqueo de `User`, releyendo el estado y aplicando FR-015/FR-020 en `services/api/src/addresses/addresses.service.ts`
-- [ ] T059 [US2] Implementar eliminación bajo el bloqueo de `User`: rechazar `usedInOrder` y proteger la predeterminada si quedan activas en `services/api/src/addresses/addresses.service.ts`
-- [ ] T060 [US2] Implementar los seis endpoints con `@Roles(Role.CLIENTE)` y validación compartida en `services/api/src/addresses/addresses.controller.ts`
-- [ ] T061 [US2] Crear `AddressesModule` y registrarlo en `services/api/src/addresses/addresses.module.ts` y `services/api/src/app.module.ts`
-- [ ] T062 [P] [US2] Construir el formulario react-hook-form con solo etiqueta y texto en `apps/web/src/app/cliente/direcciones/_components/formulario-direccion.tsx`
-- [ ] T063 [US2] Construir alta y edición reutilizando el formulario en `apps/web/src/app/cliente/direcciones/nueva/page.tsx` y `apps/web/src/app/cliente/direcciones/[id]/editar/page.tsx`
-- [ ] T064 [US2] Construir el listado, navegación y acciones de predeterminada/estado/eliminación en `apps/web/src/app/cliente/direcciones/page.tsx` y `apps/web/src/app/cliente/page.tsx`
-- [ ] T065 [US2] Asociar `ADDRESS_NEEDS_NEW_DEFAULT`, duplicado y dirección en uso a su control/acción en `apps/web/src/app/cliente/direcciones/page.tsx`
-- [ ] T066 [US2] Deshabilitar controles durante cada mutación en `apps/web/src/app/cliente/direcciones/page.tsx` y `apps/web/src/app/cliente/direcciones/_components/formulario-direccion.tsx`
+- [X] T055 [US2] Implementar un helper transaccional que bloquee `User` con `FOR UPDATE` y usarlo en `AddressesService.crear` para serializar primeras altas, normalizar etiqueta y elegir predeterminada en `services/api/src/addresses/addresses.service.ts`
+- [X] T056 [US2] Implementar edición de etiqueta/texto sin tocar `isDefault`, `active` ni `usedInOrder` en `services/api/src/addresses/addresses.service.ts`
+- [X] T057 [US2] Implementar cambio de predeterminada bajo el bloqueo de `User`, quitando la anterior y fijando la nueva en una transacción en `services/api/src/addresses/addresses.service.ts`
+- [X] T058 [US2] Implementar desactivación/reactivación bajo el bloqueo de `User`, releyendo el estado y aplicando FR-015/FR-020 en `services/api/src/addresses/addresses.service.ts`
+- [X] T059 [US2] Implementar eliminación bajo el bloqueo de `User`: rechazar `usedInOrder` y proteger la predeterminada si quedan activas en `services/api/src/addresses/addresses.service.ts`
+- [X] T060 [US2] Implementar los seis endpoints con `@Roles(Role.CLIENTE)` y validación compartida en `services/api/src/addresses/addresses.controller.ts`
+- [X] T061 [US2] Crear `AddressesModule` y registrarlo en `services/api/src/addresses/addresses.module.ts` y `services/api/src/app.module.ts`
+- [X] T062 [P] [US2] Construir el formulario react-hook-form con solo etiqueta y texto en `apps/web/src/app/cliente/direcciones/_components/formulario-direccion.tsx`
+- [X] T063 [US2] Construir alta y edición reutilizando el formulario en `apps/web/src/app/cliente/direcciones/nueva/page.tsx` y `apps/web/src/app/cliente/direcciones/[id]/editar/page.tsx`
+- [X] T064 [US2] Construir el listado, navegación y acciones de predeterminada/estado/eliminación en `apps/web/src/app/cliente/direcciones/page.tsx` y `apps/web/src/app/cliente/page.tsx`
+- [X] T065 [US2] Asociar `ADDRESS_NEEDS_NEW_DEFAULT`, duplicado y dirección en uso a su control/acción en `apps/web/src/app/cliente/direcciones/page.tsx`
+- [X] T066 [US2] Deshabilitar controles durante cada mutación en `apps/web/src/app/cliente/direcciones/page.tsx` y `apps/web/src/app/cliente/direcciones/_components/formulario-direccion.tsx`
 
 **Punto de control**: HU-11 funciona independientemente y la invariante de predeterminada resiste
 carreras reales.
@@ -172,43 +172,43 @@ confirmación, snapshots, bandeja, roles, estados, rechazo, concurrencia e histo
 
 ### Pruebas de US3
 
-- [ ] T067 [P] [US3] Crear `services/api/test/orders-confirm.integration-spec.ts` para dirección guardada/puntual, snapshots, vaciado de carrito y marca `usedInOrder` (HU01-E01, HU11-E07, E10, FR-025–FR-027)
-- [ ] T068 [P] [US3] Crear `services/api/test/orders-preconditions.integration-spec.ts` para carrito vacío, dirección ausente, ambas fuentes de dirección a la vez, `addressId` ajeno o inexistente (`404 NOT_FOUND`), `addressId` desactivado (se acepta), y `expectedLines` con productos/cantidades distintos del carrito real (`400 VALIDATION_ERROR`, distinto de `PRICE_CHANGED`) — sin efectos parciales en ningún caso
-- [ ] T069 [P] [US3] Crear `services/api/test/orders-price-changed.integration-spec.ts` para diferencia de una línea entre varias: `PRICE_CHANGED`, carrito intacto y ningún pedido (HU01-E16, FR-028)
-- [ ] T070 [P] [US3] Crear `services/api/test/orders-unavailable.integration-spec.ts` para producto agotado o dado de baja justo antes de confirmar, sin pedido ni vaciado (FR-028, D-045)
-- [ ] T071 [P] [US3] Crear `services/api/test/orders-concurrency-confirm.integration-spec.ts` para dos confirmaciones simultáneas: un pedido, un evento inicial, un carrito consumido y perdedora `CART_EMPTY` (FR-036, FR-042, D-037)
-- [ ] T072 [P] [US3] Crear `services/api/test/orders-immutable.integration-spec.ts` para snapshots de tres pedidos y ausencia de operaciones que editen productos, cantidades o dirección (HU01-E12–E13, SC-002, SC-003)
-- [ ] T073 [P] [US3] Crear `services/api/test/orders-accept.integration-spec.ts` para `creado → en_preparacion` y rechazo de estados no pendientes (HU01-E05, E08)
-- [ ] T074 [P] [US3] Crear `services/api/test/orders-reject.integration-spec.ts` para tres motivos distintos, motivo vacío y solo espacios, terminalidad y visibilidad del motivo (HU01-E06–E09, SC-007, SC-010)
-- [ ] T075 [P] [US3] Crear `services/api/test/orders-concurrency-accept-reject.integration-spec.ts` para un único ganador, un único evento nuevo y ningún evento de la perdedora (FR-036, FR-044, D-038)
-- [ ] T076 [P] [US3] Crear `services/api/test/orders-roles.integration-spec.ts` para la matriz de cuatro roles en confirmación, aceptación/rechazo y ausencia de edición (HU01-E10–E11, SC-008)
-- [ ] T077 [P] [US3] Crear `services/api/test/orders-queue-pagination.integration-spec.ts` para bandeja vacía y 21 pedidos intercalados, reparto 20/1 y orden total `createdAt ASC, id ASC` (HU01-E14–E15, FR-041)
-- [ ] T078 [P] [US3] Crear `services/api/test/orders-rejected-list.integration-spec.ts` para listar solo rechazados, con motivo y orden descendente (FR-039)
-- [ ] T079 [P] [US3] Crear `services/api/test/orders-history-create.integration-spec.ts` para exactamente un evento `NULL → CREADO` con actor cliente, rol y fecha (HU01-E17, FR-042)
-- [ ] T080 [P] [US3] Crear `services/api/test/orders-history-transition.integration-spec.ts` para exactamente un evento por aceptación/rechazo con estados, actor negocio, rol y fecha (HU01-E18, FR-043)
-- [ ] T081 [P] [US3] Crear `services/api/test/orders-history-atomicity.integration-spec.ts` con un trigger temporal de fallo de inserción y limpieza en `finally`, verificando rollback completo de creación, aceptación y rechazo (HU01-E19, FR-044)
-- [ ] T082 [P] [US3] Crear `services/api/test/orders-history-append-only.integration-spec.ts` para rechazar `UPDATE`/`DELETE` directos, conservar entradas y rechazar evento inicial duplicado o de forma inválida (FR-044, D-047)
-- [ ] T083 [P] [US3] Crear `services/api/test/orders-address-concurrency.integration-spec.ts` para la carrera confirmar/eliminar: si confirma primero queda usada; si elimina primero no nace pedido y el carrito queda intacto (D-049)
-- [ ] T084 [P] [US3] Crear `apps/web/tests/pedidos.test.tsx` para confirmación, `PRICE_CHANGED`, etiquetas, motivos, bandeja vacía, paginación y controles permitidos por rol
+- [X] T067 [P] [US3] Crear `services/api/test/orders-confirm.integration-spec.ts` para dirección guardada/puntual, snapshots, vaciado de carrito y marca `usedInOrder` (HU01-E01, HU11-E07, E10, FR-025–FR-027)
+- [X] T068 [P] [US3] Crear `services/api/test/orders-preconditions.integration-spec.ts` para carrito vacío, dirección ausente, ambas fuentes de dirección a la vez, `addressId` ajeno o inexistente (`404 NOT_FOUND`), `addressId` desactivado (se acepta), y `expectedLines` con productos/cantidades distintos del carrito real (`400 VALIDATION_ERROR`, distinto de `PRICE_CHANGED`) — sin efectos parciales en ningún caso
+- [X] T069 [P] [US3] Crear `services/api/test/orders-price-changed.integration-spec.ts` para diferencia de una línea entre varias: `PRICE_CHANGED`, carrito intacto y ningún pedido (HU01-E16, FR-028)
+- [X] T070 [P] [US3] Crear `services/api/test/orders-unavailable.integration-spec.ts` para producto agotado o dado de baja justo antes de confirmar, sin pedido ni vaciado (FR-028, D-045)
+- [X] T071 [P] [US3] Crear `services/api/test/orders-concurrency-confirm.integration-spec.ts` para dos confirmaciones simultáneas: un pedido, un evento inicial, un carrito consumido y perdedora `CART_EMPTY` (FR-036, FR-042, D-037)
+- [X] T072 [P] [US3] Crear `services/api/test/orders-immutable.integration-spec.ts` para snapshots de tres pedidos y ausencia de operaciones que editen productos, cantidades o dirección (HU01-E12–E13, SC-002, SC-003)
+- [X] T073 [P] [US3] Crear `services/api/test/orders-accept.integration-spec.ts` para `creado → en_preparacion` y rechazo de estados no pendientes (HU01-E05, E08)
+- [X] T074 [P] [US3] Crear `services/api/test/orders-reject.integration-spec.ts` para tres motivos distintos, motivo vacío y solo espacios, terminalidad y visibilidad del motivo (HU01-E06–E09, SC-007, SC-010)
+- [X] T075 [P] [US3] Crear `services/api/test/orders-concurrency-accept-reject.integration-spec.ts` para un único ganador, un único evento nuevo y ningún evento de la perdedora (FR-036, FR-044, D-038)
+- [X] T076 [P] [US3] Crear `services/api/test/orders-roles.integration-spec.ts` para la matriz de cuatro roles en confirmación, aceptación/rechazo y ausencia de edición (HU01-E10–E11, SC-008)
+- [X] T077 [P] [US3] Crear `services/api/test/orders-queue-pagination.integration-spec.ts` para bandeja vacía y 21 pedidos intercalados, reparto 20/1 y orden total `createdAt ASC, id ASC` (HU01-E14–E15, FR-041)
+- [X] T078 [P] [US3] Crear `services/api/test/orders-rejected-list.integration-spec.ts` para listar solo rechazados, con motivo y orden descendente (FR-039)
+- [X] T079 [P] [US3] Crear `services/api/test/orders-history-create.integration-spec.ts` para exactamente un evento `NULL → CREADO` con actor cliente, rol y fecha (HU01-E17, FR-042)
+- [X] T080 [P] [US3] Crear `services/api/test/orders-history-transition.integration-spec.ts` para exactamente un evento por aceptación/rechazo con estados, actor negocio, rol y fecha (HU01-E18, FR-043)
+- [X] T081 [P] [US3] Crear `services/api/test/orders-history-atomicity.integration-spec.ts` con un trigger temporal de fallo de inserción y limpieza en `finally`, verificando rollback completo de creación, aceptación y rechazo (HU01-E19, FR-044)
+- [X] T082 [P] [US3] Crear `services/api/test/orders-history-append-only.integration-spec.ts` para rechazar `UPDATE`/`DELETE` directos, conservar entradas y rechazar evento inicial duplicado o de forma inválida (FR-044, D-047)
+- [X] T083 [P] [US3] Crear `services/api/test/orders-address-concurrency.integration-spec.ts` para la carrera confirmar/eliminar: si confirma primero queda usada; si elimina primero no nace pedido y el carrito queda intacto (D-049)
+- [X] T084 [P] [US3] Crear `apps/web/tests/pedidos.test.tsx` para confirmación, `PRICE_CHANGED`, etiquetas, motivos, bandeja vacía, paginación y controles permitidos por rol
 
 ### Implementación de US3
 
-- [ ] T085 [US3] Implementar el helper privado de inserción de `OrderStatusEvent` que recibe el cliente transaccional, sin `HistoryService` ni DTO público, en `services/api/src/orders/orders.service.ts`
-- [ ] T086 [US3] Implementar `OrdersService.confirmar` en una transacción: bloquear `Cart`, validar líneas/precios/disponibilidad, bloquear `User` si usa dirección guardada, releerla, crear pedido/líneas/evento inicial, marcar `usedInOrder` y vaciar carrito en `services/api/src/orders/orders.service.ts`
-- [ ] T087 [US3] Implementar listado del cliente con pedidos completos, más reciente primero y sin eventos en la respuesta en `services/api/src/orders/orders.service.ts`
-- [ ] T088 [US3] Implementar bandeja combinada `creado`/`en_preparacion`, filtro opcional, tamaño 20 y orden estable en `services/api/src/orders/orders.service.ts`
-- [ ] T089 [US3] Implementar listado de rechazados con motivo y orden descendente en `services/api/src/orders/orders.service.ts`
-- [ ] T090 [US3] Implementar aceptar/rechazar con transacción interactiva, `updateMany` condicionado, evento solo tras `count = 1` y rollback ante fallo en `services/api/src/orders/orders.service.ts`
-- [ ] T091 [US3] Implementar `POST /orders` y `GET /orders` con `@Roles(Role.CLIENTE)` en `services/api/src/orders/orders.controller.ts`
-- [ ] T092 [US3] Implementar los cuatro endpoints de negocio con `@Roles(Role.NEGOCIO)` en `services/api/src/orders/business-orders.controller.ts`
-- [ ] T093 [US3] Crear `OrdersModule` con ambos controladores y registrarlo en `services/api/src/orders/orders.module.ts` y `services/api/src/app.module.ts`
-- [ ] T094 [US3] Construir resumen, XOR de dirección guardada/puntual y envío de `expectedLines` en `apps/web/src/app/cliente/pedidos/confirmar/page.tsx`
-- [ ] T095 [US3] Manejar `PRICE_CHANGED` recargando el carrito, mostrando el aviso y exigiendo nueva confirmación en `apps/web/src/app/cliente/pedidos/confirmar/page.tsx`
-- [ ] T096 [US3] Construir “mis pedidos” con estados actuales y motivo de rechazo, sin historial ni edición, en `apps/web/src/app/cliente/pedidos/page.tsx`
-- [ ] T097 [US3] Construir bandeja paginada, navegación desde negocio, datos completos y aceptar/rechazar en dos clics en `apps/web/src/app/negocio/pedidos/page.tsx` y `apps/web/src/app/negocio/page.tsx`
-- [ ] T098 [P] [US3] Construir el diálogo que exige motivo antes de rechazar en `apps/web/src/app/negocio/pedidos/_components/dialogo-rechazo.tsx`
-- [ ] T099 [US3] Mostrar bandeja vacía y rechazados propios con motivo en `apps/web/src/app/negocio/pedidos/page.tsx` y `apps/web/src/app/negocio/pedidos/rechazados/page.tsx`
-- [ ] T100 [US3] Deshabilitar controles durante confirmación y transiciones en `apps/web/src/app/cliente/pedidos/` y `apps/web/src/app/negocio/pedidos/`
+- [X] T085 [US3] Implementar el helper privado de inserción de `OrderStatusEvent` que recibe el cliente transaccional, sin `HistoryService` ni DTO público, en `services/api/src/orders/orders.service.ts`
+- [X] T086 [US3] Implementar `OrdersService.confirmar` en una transacción: bloquear `Cart`, validar líneas/precios/disponibilidad, bloquear `User` si usa dirección guardada, releerla, crear pedido/líneas/evento inicial, marcar `usedInOrder` y vaciar carrito en `services/api/src/orders/orders.service.ts`
+- [X] T087 [US3] Implementar listado del cliente con pedidos completos, más reciente primero y sin eventos en la respuesta en `services/api/src/orders/orders.service.ts`
+- [X] T088 [US3] Implementar bandeja combinada `creado`/`en_preparacion`, filtro opcional, tamaño 20 y orden estable en `services/api/src/orders/orders.service.ts`
+- [X] T089 [US3] Implementar listado de rechazados con motivo y orden descendente en `services/api/src/orders/orders.service.ts`
+- [X] T090 [US3] Implementar aceptar/rechazar con transacción interactiva, `updateMany` condicionado, evento solo tras `count = 1` y rollback ante fallo en `services/api/src/orders/orders.service.ts`
+- [X] T091 [US3] Implementar `POST /orders` y `GET /orders` con `@Roles(Role.CLIENTE)` en `services/api/src/orders/orders.controller.ts`
+- [X] T092 [US3] Implementar los cuatro endpoints de negocio con `@Roles(Role.NEGOCIO)` en `services/api/src/orders/business-orders.controller.ts`
+- [X] T093 [US3] Crear `OrdersModule` con ambos controladores y registrarlo en `services/api/src/orders/orders.module.ts` y `services/api/src/app.module.ts`
+- [X] T094 [US3] Construir resumen, XOR de dirección guardada/puntual y envío de `expectedLines` en `apps/web/src/app/cliente/pedidos/confirmar/page.tsx`
+- [X] T095 [US3] Manejar `PRICE_CHANGED` recargando el carrito, mostrando el aviso y exigiendo nueva confirmación en `apps/web/src/app/cliente/pedidos/confirmar/page.tsx`
+- [X] T096 [US3] Construir “mis pedidos” con estados actuales y motivo de rechazo, sin historial ni edición, en `apps/web/src/app/cliente/pedidos/page.tsx`
+- [X] T097 [US3] Construir bandeja paginada, navegación desde negocio, datos completos y aceptar/rechazar en dos clics en `apps/web/src/app/negocio/pedidos/page.tsx` y `apps/web/src/app/negocio/page.tsx`
+- [X] T098 [P] [US3] Construir el diálogo que exige motivo antes de rechazar en `apps/web/src/app/negocio/pedidos/_components/dialogo-rechazo.tsx`
+- [X] T099 [US3] Mostrar bandeja vacía y rechazados propios con motivo en `apps/web/src/app/negocio/pedidos/page.tsx` y `apps/web/src/app/negocio/pedidos/rechazados/page.tsx`
+- [X] T100 [US3] Deshabilitar controles durante confirmación y transiciones en `apps/web/src/app/cliente/pedidos/` y `apps/web/src/app/negocio/pedidos/`
 
 **Punto de control**: las tres historias forman el flujo completo y cada mutación de estado de E2
 tiene exactamente un evento atómico e inmutable.
@@ -220,14 +220,14 @@ tiene exactamente un evento atómico e inmutable.
 **Propósito**: demostrar la experiencia visible y ejecutar las invariantes internas no expuestas
 por E2.
 
-- [ ] T101 [P] Recorrer las ocho páginas de `apps/web/src/app/cliente/carrito/`, `apps/web/src/app/cliente/direcciones/`, `apps/web/src/app/cliente/pedidos/` y `apps/web/src/app/negocio/pedidos/` verificando texto visible íntegramente en español y errores asociados a su campo/acción
-- [ ] T102 [P] Operar con teclado las ocho páginas bajo `apps/web/src/app/cliente/` y `apps/web/src/app/negocio/pedidos/`, verificando foco visible, etiquetas y diálogo de rechazo
-- [ ] T103 [P] Verificar a 360 px las ocho páginas bajo `apps/web/src/app/cliente/` y `apps/web/src/app/negocio/pedidos/`, especialmente carrito, formularios y bandeja
-- [ ] T104 Ejecutar y dejar en verde todos los comandos de la sección «Comprobaciones automáticas» de `specs/003-gestion-pedidos/quickstart.md`
-- [ ] T105 Ejecutar V-01 a V-36 de `specs/003-gestion-pedidos/quickstart.md` con dos sesiones, midiendo SC-001/SC-005/SC-011 y comprobando SC-004 con apertura o una sola recarga
-- [ ] T106 Ejecutar V-37 a V-40 de `specs/003-gestion-pedidos/quickstart.md` mediante las baterías de historial y conservar su salida como evidencia
-- [ ] T107 Registrar los 12 criterios, 45 escenarios y FR-042–FR-044 en `specs/003-gestion-pedidos/verificacion.md`, separando cobertura automática de validación manual
-- [ ] T108 Actualizar el estado verificado de E2 en `CLAUDE.md` y `specs/README.md` sin declarar E4 ni funcionalidades fuera de alcance como implementadas
+- [X] T101 [P] Recorrer las ocho páginas de `apps/web/src/app/cliente/carrito/`, `apps/web/src/app/cliente/direcciones/`, `apps/web/src/app/cliente/pedidos/` y `apps/web/src/app/negocio/pedidos/` verificando texto visible íntegramente en español y errores asociados a su campo/acción
+- [X] T102 [P] Operar con teclado las ocho páginas bajo `apps/web/src/app/cliente/` y `apps/web/src/app/negocio/pedidos/`, verificando foco visible, etiquetas y diálogo de rechazo — completado a mano por el usuario tras la limitación de la automatización de esta sesión
+- [X] T103 [P] Verificar a 360 px las ocho páginas bajo `apps/web/src/app/cliente/` y `apps/web/src/app/negocio/pedidos/`, especialmente carrito, formularios y bandeja — completado a mano por el usuario tras la limitación de la automatización de esta sesión
+- [X] T104 Ejecutar y dejar en verde todos los comandos de la sección «Comprobaciones automáticas» de `specs/003-gestion-pedidos/quickstart.md`
+- [X] T105 Ejecutar V-01 a V-36 de `specs/003-gestion-pedidos/quickstart.md` con dos sesiones, midiendo SC-001/SC-005/SC-011 y comprobando SC-004 con apertura o una sola recarga
+- [X] T106 Ejecutar V-37 a V-40 de `specs/003-gestion-pedidos/quickstart.md` mediante las baterías de historial y conservar su salida como evidencia
+- [X] T107 Registrar los 12 criterios, 45 escenarios y FR-042–FR-044 en `specs/003-gestion-pedidos/verificacion.md`, separando cobertura automática de validación manual
+- [X] T108 Actualizar el estado verificado de E2 en `CLAUDE.md` y `specs/README.md` sin declarar E4 ni funcionalidades fuera de alcance como implementadas
 
 ---
 

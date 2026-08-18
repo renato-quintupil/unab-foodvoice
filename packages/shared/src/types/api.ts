@@ -147,6 +147,72 @@ export type MenuResponse = {
   priceTiers: { c1: number; c2: number } | null;
 };
 
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos
+// ---------------------------------------------------------------------------
+
+/**
+ * Línea del carrito tal como cruza la frontera de la API (HU-12).
+ *
+ * No congela nombre ni precio (FR-006): se construye uniendo contra el
+ * `Product` vigente en cada lectura, igual que `MenuService` deriva
+ * `priceTier` en cada consulta.
+ */
+export type CartLineDto = {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  /** `false` cuando el producto dejó de estar `active && available` desde que se agregó (FR-007). */
+  available: boolean;
+};
+
+export type CartDto = {
+  lines: CartLineDto[];
+};
+
+/**
+ * Dirección guardada (HU-11). No expone `usedInOrder`: es un detalle interno
+ * que solo el servicio necesita para decidir entre desactivar y eliminar
+ * (D-039); la interfaz decide qué acción ofrecer a partir de la respuesta de
+ * cada endpoint, no de este campo.
+ */
+export type AddressDto = {
+  id: string;
+  label: string;
+  text: string;
+  isDefault: boolean;
+  active: boolean;
+  createdAt: string;
+};
+
+/**
+ * Línea de un pedido ya confirmado (HU-01). `productName` y `price` son
+ * **copias inmutables** tomadas al confirmar (FR-027), a diferencia de
+ * `CartLineDto`, que siempre refleja el catálogo vigente.
+ */
+export type OrderLineDto = {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+};
+
+/**
+ * Pedido tal como lo ven cliente y negocio (HU-01). No incluye el historial:
+ * E2 lo escribe internamente (FR-042–FR-044) pero no lo publica (D-050); E4
+ * añadirá su propio tipo cuando exista la consulta.
+ */
+export type OrderSummaryDto = {
+  id: string;
+  status: OrderStatus;
+  addressText: string;
+  /** Solo presente cuando `status === 'rechazado'` (FR-033). */
+  rejectionReason: string | null;
+  lines: OrderLineDto[];
+  createdAt: string;
+};
+
 /** Formato único de respuesta de error de la API (`contracts/api.md`). */
 export type ApiError = {
   error: {

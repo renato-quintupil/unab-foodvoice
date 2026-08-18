@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ETIQUETA_ROL, type SessionUser } from '@foodvoice/shared';
+import { ETIQUETA_ROL, Role, type SessionUser } from '@foodvoice/shared';
 import { CerrarSesion } from '@/components/cerrar-sesion';
 import { Button } from '@/components/ui/button';
 
@@ -24,10 +24,24 @@ export function InicioDeRol({ sesion }: { sesion: SessionUser }) {
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">{sesion.fullName}</h1>
       <p className="text-[var(--color-tenue)]">{ETIQUETA_ROL[sesion.role]}</p>
-      <div>
+      <div className="flex flex-wrap gap-3">
         <Button asChild variant="outline">
           <Link href="/menu">Ver el menú</Link>
         </Button>
+        {/* Solo el cliente tiene carrito y pedidos (RN-001, HU-12, HU-01). */}
+        {sesion.role === Role.CLIENTE && (
+          <>
+            <Button asChild variant="outline">
+              <Link href="/cliente/carrito">Mi carrito</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/cliente/direcciones">Mis direcciones</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/cliente/pedidos">Mis pedidos</Link>
+            </Button>
+          </>
+        )}
       </div>
       <div>
         <CerrarSesion />

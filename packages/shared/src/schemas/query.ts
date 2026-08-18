@@ -157,3 +157,22 @@ export const MenuQuerySchema = z.object({
 });
 
 export type MenuQuery = z.infer<typeof MenuQuerySchema>;
+
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos
+// ---------------------------------------------------------------------------
+
+/**
+ * Bandeja del negocio (FR-038, FR-041, D-043).
+ *
+ * Sin `status`, la bandeja combina `creado` y `en_preparacion` en una sola
+ * paginación de `PAGE_SIZE` (20), del más antiguo al más reciente. El filtro
+ * solo admite esos dos estados: `rechazado` tiene su propia consulta
+ * (`GET /business/orders/rejected`, FR-039), sin paginación.
+ */
+export const BusinessOrdersQuerySchema = z.object({
+  status: z.enum([OrderStatus.CREADO, OrderStatus.EN_PREPARACION]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
+export type BusinessOrdersQuery = z.infer<typeof BusinessOrdersQuerySchema>;

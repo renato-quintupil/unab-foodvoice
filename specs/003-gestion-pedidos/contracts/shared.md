@@ -64,6 +64,7 @@ que E1/E3 usan en todos sus campos de texto obligatorio.
 // schemas/order.ts
 const LineaEsperadaSchema = z.object({
   productId: z.string().uuid(),
+  quantity: z.number().int().min(1),
   price: z.number().int().min(0),
 });
 
@@ -109,6 +110,7 @@ export type BusinessOrdersQuery = z.infer<typeof BusinessOrdersQuerySchema>;
 | `MSG_CARRITO_VACIO` | "Tu carrito está vacío. Agrega productos para armar tu pedido." | FR-009, escenario HU12-E08 |
 | `MSG_CARRITO_CON_PRODUCTOS_NO_DISPONIBLES` | "Hay productos en tu carrito que ya no están disponibles. Quítalos para poder confirmar." | FR-007 |
 | `MSG_PRECIO_CAMBIO` | "El precio de uno o más productos cambió. Revisa tu carrito y confirma nuevamente." | FR-028 |
+| `MSG_CARRITO_DESACTUALIZADO` | "Tu carrito cambió mientras revisabas el pedido. Actualiza la página y vuelve a confirmar." | D-036, `expectedLines` desalineado |
 | `MSG_DIRECCION_ETIQUETA_VACIA` | "La etiqueta de la dirección no puede estar vacía." | FR-013 |
 | `MSG_DIRECCION_TEXTO_VACIO` | "El texto de la dirección no puede estar vacío." | FR-013 |
 | `MSG_DIRECCION_ETIQUETA_DUPLICADA` | "Ya tienes una dirección guardada con esa etiqueta." | FR-014 |

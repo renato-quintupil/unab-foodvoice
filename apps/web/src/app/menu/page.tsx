@@ -5,12 +5,14 @@ import {
   MSG_MENU_VACIO,
   MSG_SIN_RESULTADOS_CATALOGO,
   ProductStatus,
+  Role,
   formatearPrecio,
   recortarDescripcion,
   type CategoryDto,
   type MenuResponse,
   type ProductDto,
 } from '@foodvoice/shared';
+import { AgregarAlCarrito } from '@/components/agregar-al-carrito';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
 import { FiltrosMenu } from './_components/filtros-menu';
@@ -40,7 +42,7 @@ export default async function PaginaMenu({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await exigirSesion();
+  const sesion = await exigirSesion();
   const parametros = await searchParams;
 
   const consulta = new URLSearchParams();
@@ -73,7 +75,7 @@ export default async function PaginaMenu({
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {menu.items.map((producto) => (
             <li key={producto.id}>
-              <TarjetaDeProducto producto={producto} />
+              <TarjetaDeProducto producto={producto} esCliente={sesion.role === Role.CLIENTE} />
             </li>
           ))}
         </ul>
@@ -93,7 +95,13 @@ export default async function PaginaMenu({
  * La descripción va **recortada** (D-033, T088); completa está en la ficha. El
  * precio se compone con `formatearPrecio` y nunca a mano (T078).
  */
-function TarjetaDeProducto({ producto }: { producto: ProductDto }) {
+function TarjetaDeProducto({
+  producto,
+  esCliente,
+}: {
+  producto: ProductDto;
+  esCliente: boolean;
+}) {
   const agotado = producto.status === ProductStatus.AGOTADO;
 
   return (
@@ -123,10 +131,16 @@ function TarjetaDeProducto({ producto }: { producto: ProductDto }) {
         {recortarDescripcion(producto.description)}
       </p>
 
-      <p className="mt-auto text-xs text-[var(--color-tenue)]">
+      <p className="text-xs text-[var(--color-tenue)]">
         {producto.foodTypeCategory.name} · {producto.healthProfileCategory.name}
         {producto.priceTier && ` · ${ETIQUETA_TRAMO[producto.priceTier]}`}
       </p>
+
+      {esCliente && !agotado && (
+        <div className="mt-auto pt-2">
+          <AgregarAlCarrito productId={producto.id} />
+        </div>
+      )}
     </article>
   );
 }

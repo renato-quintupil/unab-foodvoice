@@ -33,6 +33,17 @@ const TABLAS = [
   'admin_audit_log',
   'session',
   'login_attempt_control',
+  // E2 · Gestión de pedidos. `order_status_event` va antes que `order`:
+  // aunque `CASCADE` resolvería el orden de todas formas, escribirlo así deja
+  // legible qué depende de qué (mismo criterio que el resto de la lista).
+  'order_status_event',
+  'order_line',
+  // `order` es palabra reservada en SQL estándar; requiere comillas dobles,
+  // igual que `"user"`.
+  '"order"',
+  'cart_line',
+  'cart',
+  'address',
   '"user"',
   'product',
   'category',

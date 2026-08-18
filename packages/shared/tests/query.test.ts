@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { OrderStatus } from '../src/enums/order-status';
 import { Role, UserStatus } from '../src/enums/role';
 import { MSG_RANGO_FECHAS_INVALIDO } from '../src/messages/es';
-import { ListUsersQuerySchema, OrdersQuerySchema, PAGE_SIZE } from '../src/schemas/query';
+import {
+  BusinessOrdersQuerySchema,
+  ListUsersQuerySchema,
+  OrdersQuerySchema,
+  PAGE_SIZE,
+} from '../src/schemas/query';
 
 function mensajes(resultado: { success: boolean; error?: unknown }): string[] {
   if (resultado.success) return [];
@@ -98,5 +103,35 @@ describe('OrdersQuerySchema (FR-020, api CHK004)', () => {
   it('aplica page = 1 por defecto', () => {
     const resultado = OrdersQuerySchema.safeParse({});
     expect(resultado.success && resultado.data.page).toBe(1);
+  });
+});
+
+describe('BusinessOrdersQuerySchema (FR-038, FR-041, D-043)', () => {
+  it('acepta status creado o en_preparacion', () => {
+    expect(BusinessOrdersQuerySchema.safeParse({ status: OrderStatus.CREADO }).success).toBe(
+      true,
+    );
+    expect(
+      BusinessOrdersQuerySchema.safeParse({ status: OrderStatus.EN_PREPARACION }).success,
+    ).toBe(true);
+  });
+
+  it('rechaza un estado ajeno a la bandeja, como rechazado o cerrado', () => {
+    expect(BusinessOrdersQuerySchema.safeParse({ status: OrderStatus.RECHAZADO }).success).toBe(
+      false,
+    );
+    expect(BusinessOrdersQuerySchema.safeParse({ status: OrderStatus.CERRADO }).success).toBe(
+      false,
+    );
+  });
+
+  it('sin status es válido: la bandeja combina ambos estados', () => {
+    expect(BusinessOrdersQuerySchema.safeParse({}).success).toBe(true);
+  });
+
+  it('aplica page = 1 por defecto y rechaza página menor que 1', () => {
+    const resultado = BusinessOrdersQuerySchema.safeParse({});
+    expect(resultado.success && resultado.data.page).toBe(1);
+    expect(BusinessOrdersQuerySchema.safeParse({ page: '0' }).success).toBe(false);
   });
 });

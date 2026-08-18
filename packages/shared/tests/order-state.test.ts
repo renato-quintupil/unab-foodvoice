@@ -1,5 +1,5 @@
 /**
- * Máquina de estados del pedido (T105, Principio XII, FR-023, D-012).
+ * Máquina de estados del pedido (Principio XII v2.0.0, FR-030, D-035).
  */
 import { describe, expect, it } from 'vitest';
 import { OrderStatus } from '../src/enums/order-status';
@@ -13,25 +13,29 @@ const LINEA: OrderStatus[] = [
   OrderStatus.CERRADO,
 ];
 
-describe('Los cinco estados del Principio XII', () => {
-  it('son exactamente esos cinco, en ese orden, y ninguno más', () => {
-    expect(Object.values(OrderStatus)).toEqual(LINEA);
+describe('Los seis estados del Principio XII v2.0.0', () => {
+  it('son exactamente esos seis, en ese orden, y ninguno más', () => {
+    expect(Object.values(OrderStatus)).toEqual([...LINEA, OrderStatus.RECHAZADO]);
   });
 
-  it('no existe estado de cancelación ni de rechazo (FR-023)', () => {
+  it('no existe ningún estado inventado fuera de los seis', () => {
     const valores = Object.values(OrderStatus) as string[];
-    for (const inventado of ['cancelado', 'rechazado', 'anulado', 'devuelto']) {
+    for (const inventado of ['cancelado', 'anulado', 'devuelto']) {
       expect(valores).not.toContain(inventado);
     }
   });
 });
 
-describe('Transiciones estrictamente lineales', () => {
+describe('Transiciones estrictamente lineales (salvo la rama de `creado`)', () => {
   it('cada estado avanza al siguiente y solo al siguiente', () => {
     for (let i = 0; i < LINEA.length - 1; i += 1) {
       const actual = LINEA[i]!;
       const siguiente = LINEA[i + 1]!;
-      expect(transicionesValidas(actual)).toEqual([siguiente]);
+      // `creado` es la única rama del contrato (RN-008): también puede ir a
+      // `rechazado`, cubierto en su propio describe más abajo.
+      if (actual !== OrderStatus.CREADO) {
+        expect(transicionesValidas(actual)).toEqual([siguiente]);
+      }
       expect(esTransicionValida(actual, siguiente)).toBe(true);
     }
   });
@@ -70,11 +74,41 @@ describe('`cerrado` es terminal', () => {
   });
 });
 
-describe('Cobertura de los cinco estados', () => {
+describe('Cobertura de los seis estados', () => {
   it('todos tienen una entrada declarada, aunque sea vacía', () => {
-    for (const estado of LINEA) {
+    for (const estado of Object.values(OrderStatus)) {
       expect(transicionesValidas(estado)).toBeDefined();
       expect(Array.isArray(transicionesValidas(estado))).toBe(true);
+    }
+  });
+});
+
+describe('`rechazado`, la rama agregada por E2 (FR-030, RN-008, RN-010)', () => {
+  it('es alcanzable únicamente desde `creado`', () => {
+    expect(esTransicionValida(OrderStatus.CREADO, OrderStatus.RECHAZADO)).toBe(true);
+    for (const estado of LINEA) {
+      if (estado === OrderStatus.CREADO) continue;
+      expect(esTransicionValida(estado, OrderStatus.RECHAZADO)).toBe(false);
+    }
+  });
+
+  it('es terminal: no tiene transiciones salientes', () => {
+    expect(transicionesValidas(OrderStatus.RECHAZADO)).toEqual([]);
+    for (const estado of Object.values(OrderStatus)) {
+      expect(esTransicionValida(OrderStatus.RECHAZADO, estado)).toBe(false);
+    }
+  });
+
+  it('`creado` sigue pudiendo ir a `en_preparacion`, sin que la rama nueva lo reemplace', () => {
+    expect(transicionesValidas(OrderStatus.CREADO)).toEqual([
+      OrderStatus.EN_PREPARACION,
+      OrderStatus.RECHAZADO,
+    ]);
+  });
+
+  it('ninguna de las cinco transiciones lineales originales cambió', () => {
+    for (let i = 0; i < LINEA.length - 1; i += 1) {
+      expect(esTransicionValida(LINEA[i]!, LINEA[i + 1]!)).toBe(true);
     }
   });
 });

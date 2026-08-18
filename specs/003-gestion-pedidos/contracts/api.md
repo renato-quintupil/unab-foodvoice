@@ -190,7 +190,7 @@ Confirma el carrito del cliente autenticado como un pedido (FR-025). Cuerpo:
 {
   "addressId": "uuid opcional",
   "addressText": "string opcional, dirección puntual sin guardar (FR-017)",
-  "expectedLines": [{ "productId": "uuid", "price": 4990 }]
+  "expectedLines": [{ "productId": "uuid", "quantity": 2, "price": 4990 }]
 }
 ```
 

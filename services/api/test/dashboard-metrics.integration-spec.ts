@@ -92,7 +92,7 @@ describe('Usuarios activos por rol (FR-019)', () => {
 });
 
 describe('Pedidos por estado (FR-023, D-012)', () => {
-  it('los cinco estados aparecen siempre, todos en cero', async () => {
+  it('los seis estados aparecen siempre, todos en cero', async () => {
     const respuesta = await metricas().expect(200);
 
     expect(respuesta.body.ordersByStatus).toEqual({
@@ -101,6 +101,7 @@ describe('Pedidos por estado (FR-023, D-012)', () => {
       [OrderStatus.ASIGNADO_REPARTIDOR]: 0,
       [OrderStatus.ENTREGADO]: 0,
       [OrderStatus.CERRADO]: 0,
+      [OrderStatus.RECHAZADO]: 0,
     });
   });
 
@@ -122,13 +123,13 @@ describe('Forma de la respuesta', () => {
     );
   });
 
-  it('las nueve cifras están siempre presentes', async () => {
+  it('las diez cifras están siempre presentes', async () => {
     const respuesta = await metricas().expect(200);
     const cifras = [
       ...Object.values(respuesta.body.activeUsersByRole),
       ...Object.values(respuesta.body.ordersByStatus),
     ];
-    expect(cifras).toHaveLength(9);
+    expect(cifras).toHaveLength(10);
     for (const cifra of cifras) expect(typeof cifra).toBe('number');
   });
 });

@@ -7,7 +7,7 @@
  */
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { Dimension, Role, UserStatus } from '@prisma/client';
+import { Dimension, OrderStatus, Role, UserStatus } from '@prisma/client';
 import { normalizarBusqueda } from '@foodvoice/shared';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
@@ -220,4 +220,135 @@ export async function sesionDeRol(entorno: Entorno, role: Role) {
   const email = `${role.toLowerCase()}@foodvoice.test`;
   await crearUsuario({ email, role });
   return conSesion(await iniciarSesion(entorno, email));
+}
+
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos
+//
+// Los helpers escriben **directamente en la base**, mismo criterio que los de
+// E3: preparar el escenario de una prueba no debe depender de que el
+// endpoint que se está probando funcione.
+// ---------------------------------------------------------------------------
+
+/**
+ * Crea un cliente y devuelve su cookie de sesión, además del propio usuario
+ * (muchas pruebas de E2 necesitan el `userId` para sembrar carrito, direcciones
+ * o pedidos directamente en la base).
+ */
+export async function sesionCliente(entorno: Entorno, email = 'cliente@foodvoice.test') {
+  const usuario = await crearUsuario({ email, role: Role.CLIENTE, fullName: 'Cliente De Prueba' });
+  const cookie = conSesion(await iniciarSesion(entorno, email));
+  return { usuario, cookie };
+}
+
+/** Crea (o reutiliza) el carrito de un cliente con las líneas indicadas. */
+export async function crearCarrito(
+  userId: string,
+  lineas: { productId: string; quantity?: number }[] = [],
+) {
+  const carrito = await prisma.cart.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+  });
+
+  for (const linea of lineas) {
+    await prisma.cartLine.create({
+      data: { cartId: carrito.id, productId: linea.productId, quantity: linea.quantity ?? 1 },
+    });
+  }
+
+  return carrito;
+}
+
+/** Crea una dirección guardada para un cliente, activa por defecto. */
+export async function crearDireccion(datos: {
+  userId: string;
+  label: string;
+  text?: string;
+  isDefault?: boolean;
+  active?: boolean;
+  usedInOrder?: boolean;
+}) {
+  return prisma.address.create({
+    data: {
+      userId: datos.userId,
+      label: datos.label,
+      labelNormalized: normalizarBusqueda(datos.label),
+      text: datos.text ?? 'Los Aromos 123, depto 4B',
+      isDefault: datos.isDefault ?? false,
+      active: datos.active ?? true,
+      usedInOrder: datos.usedInOrder ?? false,
+    },
+  });
+}
+
+/**
+ * Crea un pedido ya confirmado, con su(s) línea(s) y el evento inicial
+ * `NULL → creado` — y, si `status` no es `creado`, también el evento de la
+ * transición correspondiente con `negocioActorId` como actor. Pensado para
+ * sembrar el escenario de pruebas de HU-01 que no ejercen `POST /orders`.
+ */
+export async function crearPedido(datos: {
+  userId: string;
+  status?: 'creado' | 'en_preparacion' | 'rechazado';
+  addressText?: string;
+  rejectionReason?: string | null;
+  lines?: { productId: string; productName?: string; price?: number; quantity?: number }[];
+  negocioActorId?: string;
+  createdAt?: Date;
+}) {
+  const MAPA_ESTADO = {
+    creado: OrderStatus.CREADO,
+    en_preparacion: OrderStatus.EN_PREPARACION,
+    rechazado: OrderStatus.RECHAZADO,
+  } as const;
+  const status = MAPA_ESTADO[datos.status ?? 'creado'];
+  const lineas = datos.lines ?? [];
+
+  return prisma.$transaction(async (tx) => {
+    const pedido = await tx.order.create({
+      data: {
+        userId: datos.userId,
+        status,
+        addressText: datos.addressText ?? 'Los Aromos 123, depto 4B',
+        rejectionReason:
+          status === OrderStatus.RECHAZADO ? (datos.rejectionReason ?? 'Motivo de prueba') : null,
+        createdAt: datos.createdAt,
+        lines: {
+          create: lineas.map((l) => ({
+            productId: l.productId,
+            productName: l.productName ?? 'Producto de prueba',
+            productPrice: l.price ?? 4990,
+            quantity: l.quantity ?? 1,
+          })),
+        },
+      },
+    });
+
+    await tx.orderStatusEvent.create({
+      data: {
+        orderId: pedido.id,
+        previousStatus: null,
+        resultingStatus: OrderStatus.CREADO,
+        actorUserId: datos.userId,
+        actorRole: Role.CLIENTE,
+      },
+    });
+
+    if (status !== OrderStatus.CREADO) {
+      const actorId = datos.negocioActorId ?? datos.userId;
+      await tx.orderStatusEvent.create({
+        data: {
+          orderId: pedido.id,
+          previousStatus: OrderStatus.CREADO,
+          resultingStatus: status,
+          actorUserId: actorId,
+          actorRole: Role.NEGOCIO,
+        },
+      });
+    }
+
+    return pedido;
+  });
 }

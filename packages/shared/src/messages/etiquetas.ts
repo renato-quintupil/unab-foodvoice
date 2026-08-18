@@ -25,12 +25,18 @@ export const ETIQUETA_ESTADO: Record<UserStatus, string> = {
   [UserStatus.DESACTIVADO]: 'Desactivado',
 };
 
+/**
+ * `CREADO` se muestra como «Pendiente» (D-041, FR-037): describe mejor lo que
+ * el negocio y el cliente ven —un pedido que espera decisión— que «Creado».
+ * `RECHAZADO` se agrega en E2 (FR-030, FR-037).
+ */
 export const ETIQUETA_ESTADO_PEDIDO: Record<OrderStatus, string> = {
-  [OrderStatus.CREADO]: 'Creado',
+  [OrderStatus.CREADO]: 'Pendiente',
   [OrderStatus.EN_PREPARACION]: 'En preparación',
   [OrderStatus.ASIGNADO_REPARTIDOR]: 'Asignado a repartidor',
   [OrderStatus.ENTREGADO]: 'Entregado',
   [OrderStatus.CERRADO]: 'Cerrado',
+  [OrderStatus.RECHAZADO]: 'Rechazado',
 };
 
 /**

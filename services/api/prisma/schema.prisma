@@ -21,6 +21,20 @@ enum Role {
   ADMINISTRADOR
 }
 
+/// Los seis estados del Principio XII v2.0.0 (E2, D-035). `@map` en cada valor
+/// porque `OrderStatus` quedó fijado en minúscula desde E1
+/// (`OrderStatus.CREADO = 'creado'`) y así viaja en toda la superficie HTTP;
+/// sin `@map`, Postgres almacenaría la etiqueta en mayúscula del identificador
+/// de Prisma y cada comparación con el enum de `packages/shared` fallaría.
+enum OrderStatus {
+  CREADO               @map("creado")
+  EN_PREPARACION       @map("en_preparacion")
+  ASIGNADO_REPARTIDOR  @map("asignado_repartidor")
+  ENTREGADO            @map("entregado")
+  CERRADO              @map("cerrado")
+  RECHAZADO            @map("rechazado")
+}
+
 enum UserStatus {
   ACTIVO
   DESACTIVADO
@@ -67,6 +81,12 @@ model User {
   sessions      Session[]
   auditActed    AdminAuditLog[] @relation("actor")
   auditTargeted AdminAuditLog[] @relation("target")
+
+  /// E2 · Gestión de pedidos. Ninguna de las cuatro cambia la forma de `User`.
+  cart                   Cart?
+  addresses              Address[]
+  orders                 Order[]
+  orderStatusEventsActed OrderStatusEvent[] @relation("orderStatusActor")
 
   @@index([searchNormalized], map: "user_search_normalized_idx")
   @@index([role, status], map: "user_role_status_idx")
@@ -221,5 +241,165 @@ model Product {
   /// El filtro por categoría y el conteo de bloqueadores de FR-007.
   @@index([foodTypeCategoryId], map: "product_food_type_category_id_idx")
   @@index([healthProfileCategoryId], map: "product_health_profile_category_id_idx")
+
+  /// E2 · Gestión de pedidos.
+  cartLines  CartLine[]
+  orderLines OrderLine[]
+
   @@map("product")
+}
+
+// ---------------------------------------------------------------------------
+// E2 · Gestión de pedidos (data-model.md de 003-gestion-pedidos)
+//
+// Seis tablas nuevas. Ninguna tabla de E1 ni de E3 cambia de forma; `user` y
+// `product` solo ganan relaciones entrantes. Las restricciones que Prisma no
+// expresa —CHECKs, el índice único parcial de dirección predeterminada y el
+// trigger append-only de `order_status_event`— se agregan como SQL create-only
+// en la migración (data-model.md § Restricciones SQL añadidas).
+// ---------------------------------------------------------------------------
+
+/// Uno por cliente, creado perezosamente al primer `POST /cart/lines` (D-046).
+/// No expone endpoint de «crear»: nace con la primera línea.
+model Cart {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lines CartLine[]
+
+  @@map("cart")
+}
+
+/// `@@unique([cartId, productId])` es lo que hace FR-004 («sumar cantidad a la
+/// línea existente») una operación de base de datos (`upsert`), no una
+/// búsqueda-y-decide de la aplicación. No congela nombre ni precio (FR-006):
+/// el DTO se construye uniendo contra el `Product` vigente en cada lectura.
+///
+/// `onDelete: Cascade` en `cartId` —a diferencia de todo lo demás en este
+/// esquema— porque `CartLine` no es un registro histórico: cuando el carrito
+/// se vacía o se consume al confirmar, sus líneas deben desaparecer con él.
+model CartLine {
+  id        String @id @default(uuid()) @db.Uuid
+  cartId    String @map("cart_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  /// `CHECK (quantity >= 1)` en la migración.
+  quantity  Int
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productId], map: "cart_line_cart_id_product_id_key")
+  @@map("cart_line")
+}
+
+/// Dirección de entrega guardada por el cliente (HU-11). No hay borrado físico
+/// de una que ya fue usada (RN-005): `active = false` la retira del uso
+/// conservando su contenido; `usedInOrder` nunca vuelve a `false` (D-039).
+model Address {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  /// 2–60 caracteres (Supuesto 2), validado en `packages/shared`.
+  label           String
+  /// `normalizarBusqueda(label)` (D-040). ⚠️ Cambiar esa función exige una
+  /// migración que repueble esta columna.
+  labelNormalized String   @map("label_normalized")
+  /// 10–500 caracteres, saltos de línea permitidos (Supuesto 2).
+  text            String
+  isDefault       Boolean  @default(false) @map("is_default")
+  active          Boolean  @default(true)
+  usedInOrder     Boolean  @default(false) @map("used_in_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// Alcanza también a las desactivadas (D-040), mismo criterio que
+  /// `product.nameNormalized` de E3.
+  @@unique([userId, labelNormalized], map: "address_user_id_label_normalized_key")
+  /// Sirve a la consulta de «direcciones activas para elegir al confirmar».
+  @@index([userId, active], map: "address_user_id_active_idx")
+  @@map("address")
+}
+
+/// Nace del carrito de un cliente. Nunca se edita tras confirmarse (FR-035,
+/// RN-009), salvo las dos transiciones de estado que el rol `NEGOCIO`
+/// dispara — las únicas dos escrituras posibles sobre una fila de `Order` en
+/// toda la vida del producto hasta E5.
+model Order {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  status          OrderStatus @default(CREADO)
+  /// Snapshot del texto de la dirección elegida al confirmar (FR-023, RN-006).
+  addressText     String      @map("address_text")
+  /// `NULL` salvo cuando `status = 'rechazado'` (FR-033). La invariante
+  /// `rejection_reason IS NOT NULL ↔ status = 'rechazado'` la garantiza el
+  /// servicio, no un `CHECK`: acoplaría el esquema a un solo valor del enum de
+  /// una forma que Prisma no modela limpiamente (mismo criterio que D-024 de
+  /// E3 con la clasificación de dos categorías).
+  rejectionReason String?     @map("rejection_reason")
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lines        OrderLine[]
+  statusEvents OrderStatusEvent[]
+
+  /// Sirve la bandeja combinada del negocio (D-043):
+  /// `WHERE status IN ('creado', 'en_preparacion') ORDER BY created_at ASC, id ASC`.
+  /// El desempate por `id` hace el orden total y evita que la paginación
+  /// repita u omita filas si dos pedidos comparten marca de tiempo (FR-041).
+  @@index([status, createdAt, id], map: "order_status_created_at_id_idx")
+  /// El propio historial del cliente (`GET /orders`).
+  @@index([userId, createdAt], map: "order_user_id_created_at_idx")
+  @@map("order")
+}
+
+/// Copias inmutables del producto tomadas al confirmar (FR-027) — a
+/// diferencia de `CartLine`, que siempre refleja el catálogo vigente.
+/// `onDelete: Restrict` en `orderId` (no `Cascade`): una línea de pedido es un
+/// registro histórico que nunca se borra junto con nada, porque el pedido
+/// tampoco se borra nunca.
+model OrderLine {
+  id           String @id @default(uuid()) @db.Uuid
+  orderId      String @map("order_id") @db.Uuid
+  productId    String @map("product_id") @db.Uuid
+  productName  String @map("product_name")
+  /// Entero en pesos chilenos, congelado (FR-027).
+  productPrice Int    @map("product_price")
+  /// `CHECK (quantity >= 1)` en la migración.
+  quantity     Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId], map: "order_line_order_id_idx")
+  @@map("order_line")
+}
+
+/// Entrada append-only del historial del pedido (D-047, Principio XII). E2 la
+/// escribe en la misma transacción que crea o cambia el pedido (D-048), pero
+/// no la expone mediante API ni DTO (D-050): E4 publicará su consulta.
+model OrderStatusEvent {
+  id              String       @id @default(uuid()) @db.Uuid
+  orderId         String       @map("order_id") @db.Uuid
+  /// `NULL` únicamente en el evento inicial.
+  previousStatus  OrderStatus? @map("previous_status")
+  /// `creado` en el evento inicial; luego el estado ganado por la transición.
+  resultingStatus OrderStatus  @map("resulting_status")
+  actorUserId     String       @map("actor_user_id") @db.Uuid
+  /// Copia del rol efectivo de la sesión, no del rol actual del usuario: el
+  /// historial conserva qué función ejercía el actor aunque su rol cambie.
+  actorRole       Role         @map("actor_role")
+  occurredAt      DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  actor User  @relation("orderStatusActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  /// Deja preparado el orden estable de consulta de E4, sin exponerla en E2.
+  @@index([orderId, occurredAt, id], map: "order_status_event_order_id_occurred_at_id_idx")
+  @@map("order_status_event")
 }
