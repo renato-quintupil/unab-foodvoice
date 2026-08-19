@@ -6,9 +6,12 @@ y tres usuarios de prueba creados desde el panel de administración de E1
 (`cliente@foodvoice.local`, `negocio@foodvoice.local`, `admin@foodvoice.local`), más dos
 direcciones ("Casa", "Trabajo") registradas para el cliente desde `/cliente/direcciones/nueva`.
 
-Este documento recoge el resultado de T024–T025 de `tasks.md` — las 20 comprobaciones
-funcionales de `quickstart.md` (V-01 a V-20), recorridas contra la aplicación real, no contra
-el código. **A diferencia de E1, E3 y E2, esta validación no encontró ningún defecto.**
+Este documento recoge el resultado de T024–T025 y, en una segunda pasada tras usar la
+aplicación, de T028–T031 de `tasks.md` — las 23 comprobaciones funcionales de `quickstart.md`
+(V-01 a V-23), recorridas contra la aplicación real, no contra el código. **A diferencia de E1,
+E3 y E2, esta validación no encontró ningún defecto** — la única corrección (FR-016, ver § H) no
+la encontró la validación en sí, sino el propio usuario al usar la aplicación después de que la
+validación inicial ya había cerrado T025 sin objeciones.
 
 **Aclaración sobre quién ejecutó el recorrido**: lo hizo Claude, manejando el navegador real
 (clics, formularios, cambios de sesión) contra los contenedores levantados — no lectura de
@@ -28,6 +31,7 @@ navegador de escritorio.
 |---|---|---|
 | T024 | `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build` | ✅ 185/185 pruebas de `apps/web` en verde (incluidas las 4 suites nuevas de esta épica), `tsc --noEmit` limpio, `eslint` limpio sobre los archivos tocados, y build de producción exitoso (imagen Docker reconstruida sin errores) |
 | T025 | V-01 a V-20 de `quickstart.md` | ✅ Ejecutados — 18/20 observados en vivo, 2/20 (mobile) confirmados por código, cero defectos |
+| T028–T031 | Enmienda FR-016 (landing sin duplicar el encabezado) + V-21 a V-23 | ✅ Implementado, reconstruido y verificado en vivo con los tres roles |
 
 ---
 
@@ -88,6 +92,23 @@ navegador de escritorio.
 | V-19 | ✅ Ningún badge de conteo sobre Carrito ni sobre Pedidos, en ningún encabezado — confirmado visualmente en los dos roles |
 | V-20 | ✅ Agregar un producto al carrito, verlo en `/cliente/carrito` con cantidad y subtotal correctos, y las pantallas de Categorías/Productos de negocio: todo se comporta igual que antes de esta épica |
 
+### H · Landing sin duplicar el encabezado (FR-016, enmienda tras uso real)
+
+Detectado por el usuario al mirar la landing de cliente ya con el encabezado de HU-15 puesto:
+`/cliente` seguía mostrando la pantalla genérica `InicioDeRol` (Menú, Carrito, Direcciones, Mis
+pedidos) **debajo** del encabezado que ya ofrecía lo mismo. Mismo problema en `/negocio`, con su
+propia lista de botones de E3. Se amplió `spec.md` (FR-016, escenarios 12–14 de HU-15, SC-009) y
+`tasks.md` (Fase 6, T028–T031) antes de tocar el código.
+
+| Paso | Resultado |
+|---|---|
+| V-21 | ✅ Iniciar sesión como cliente aterriza directo en `/menu` — sin pantalla intermedia |
+| V-22 | ✅ Iniciar sesión como negocio aterriza directo en `/negocio/pedidos` — sin pantalla intermedia |
+| V-23 | ✅ Iniciar sesión como repartidor (usuario de prueba creado para esta verificación) sigue viendo la misma pantalla de siempre — «Ver el menú» y «Cerrar sesión», sin cambios |
+
+Reconstruida la imagen Docker con el fix; `pnpm test` (185/185), `tsc --noEmit` y `eslint`
+limpios antes de reconstruir.
+
 ---
 
 ## Cobertura de los criterios de éxito
@@ -102,6 +123,7 @@ navegador de escritorio.
 | SC-006 | V-15 | ⚠️ Confirmado por código, no observado en vivo (ver nota mobile arriba) |
 | SC-007 | V-17 | ✅ |
 | SC-008 | V-05 | ✅ |
+| SC-009 | V-21, V-22 | ✅ |
 
 ### Lo que queda fuera de este registro
 
@@ -112,5 +134,5 @@ navegador de escritorio.
 - **Auditoría formal de accesibilidad y lectores de pantalla reales**: fuera de v1 por decisión
   declarada, heredado de E1/E3/E2.
 
-Con T024 y T025 completas —salvo la confirmación visual mobile señalada arriba—, **E9 ·
-Navegación y experiencia visual queda verificada** al 2026-08-19.
+Con T024, T025 y T028–T031 completas —salvo la confirmación visual mobile señalada arriba—,
+**E9 · Navegación y experiencia visual queda verificada** al 2026-08-19.

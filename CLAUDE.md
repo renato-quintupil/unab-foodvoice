@@ -31,10 +31,15 @@ funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
 - En E2: el error de una dirección puntual demasiado corta al confirmar un
   pedido se mostraba **en inglés** —el mensaje por omisión de Zod, sin
   traducir—, mientras el resto de la misma pantalla sí estaba en español.
-- En E9: ningún defecto. Su alcance —navegación y presentación sobre pantallas
-  ya construidas, sin lógica de negocio nueva— es más chico y más fácil de
-  demostrar completo que el de las tres anteriores; no es evidencia de que la
-  validación manual haya dejado de aportar valor en general.
+- En E9: ningún defecto de la validación en sí, pero sí una corrección después
+  de darla por cerrada: al usar la aplicación con el header ya puesto, las
+  landing genéricas de cliente y negocio (E1/E3) quedaron duplicando lo que el
+  header ya ofrecía — se corrigió con una enmienda chica a la spec (FR-016)
+  antes de tocar el código, no coló directo. Su alcance —navegación y
+  presentación sobre pantallas ya construidas, sin lógica de negocio nueva— es
+  más chico y más fácil de demostrar completo que el de las tres anteriores;
+  no es evidencia de que la validación manual haya dejado de aportar valor en
+  general.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -80,6 +85,11 @@ E1+E3+E2 ya habían construido.
   sin cambios visuales.
 - **Deliberadamente no construido**: badges de conteo (carrito, pedidos
   pendientes) que aparecían en el mockup de referencia — ninguna FR los pedía.
+- **Landings de cliente y negocio redirigen** (`/cliente` → `/menu`,
+  `/negocio` → `/negocio/pedidos`) en vez de mostrar la pantalla genérica de
+  botones de E1/E3, que quedó duplicando el header nuevo (FR-016, detectado al
+  usar la aplicación). `/repartidor` sigue usando `InicioDeRol` sin cambios:
+  no tiene header, así que no es redundante ahí.
 
 ### Lo que E2 añadió al código
 

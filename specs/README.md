@@ -20,7 +20,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
-| **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 27 / 27 tareas · construida y verificada, incluidos los 20 pasos de validación funcional |
+| **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 31 / 31 tareas · construida y verificada, incluidos los 23 pasos de validación funcional |
 
 El orden de la tabla es el orden sugerido de especificación (E1 → E3 → E2 → E4 →
 E6 → E5 → E7 → E8): E1 es prerrequisito de casi todo lo demás, E3 debe existir
@@ -151,20 +151,25 @@ arriba).
 | [`research.md`](./004-navegacion-por-rol/research.md) | Las cinco decisiones D-001 a D-005 con su fundamento |
 | [`data-model.md`](./004-navegacion-por-rol/data-model.md) | Sin entidades nuevas; documenta el `AddressDto` reutilizado de E2 |
 | [`contracts/`](./004-navegacion-por-rol/contracts/) | Sin endpoints nuevos; referencia los dos de E2 que reutiliza |
-| [`quickstart.md`](./004-navegacion-por-rol/quickstart.md) | Puesta en marcha y los 20 pasos de validación funcional |
-| [`tasks.md`](./004-navegacion-por-rol/tasks.md) | 27 tareas ordenadas por historia |
+| [`quickstart.md`](./004-navegacion-por-rol/quickstart.md) | Puesta en marcha y los 23 pasos de validación funcional |
+| [`tasks.md`](./004-navegacion-por-rol/tasks.md) | 31 tareas ordenadas por historia |
 | [`verificacion.md`](./004-navegacion-por-rol/verificacion.md) | Resultado de la validación — sin defectos encontrados |
 | [`design/`](./004-navegacion-por-rol/design/) | Capturas del mockup decidido antes de escribir la spec |
 | [`checklists/`](./004-navegacion-por-rol/checklists/) | Calidad de requisitos |
 
 Fases de entrega: **A** navegación de cliente (HU-15) → **B** navegación de negocio (HU-15) →
 **C** categorías del menú y despacho en `/menu` (HU-15) → **D** identidad visual (HU-16), que
-aplica `.tema-voz` sobre los archivos que A-C ya crearon → **E** validación funcional.
+aplica `.tema-voz` sobre los archivos que A-C ya crearon → **E** validación funcional → **F**
+landing de cliente/negocio sin duplicar el encabezado (FR-016), enmienda agregada al usar la
+aplicación ya verificada.
 
 **Por qué se da por terminada.** Las dos historias están construidas, las 185 pruebas de
 `apps/web` pasan en verde (incluidas las 4 suites nuevas de esta épica), `tsc`/`eslint`/el build
-de producción están limpios, y la **validación funcional se ejecutó el 2026-08-19**, los 20
-pasos de `quickstart.md`. **No encontró ningún defecto** — a diferencia de E1, E3 y E2. Dos
+de producción están limpios, y la **validación funcional se ejecutó el 2026-08-19**, los 23
+pasos de `quickstart.md`. **No encontró ningún defecto** — a diferencia de E1, E3 y E2; la única
+corrección (FR-016: `/cliente` y `/negocio` ahora redirigen a su pantalla principal en vez de
+mostrar una landing que duplicaba el encabezado) la señaló el usuario al usar la aplicación, no
+la validación en sí, y se resolvió con una enmienda chica a la spec antes de tocar el código. Dos
 pasos (V-14/V-15, patrón mobile) se confirmaron por revisión de código en vez de observación
 visual en vivo, por una limitación de la herramienta de automatización de esa sesión; queda
 anotado en `verificacion.md` como pendiente de una confirmación visual futura. El detalle está en

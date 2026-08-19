@@ -134,6 +134,20 @@ no pedido.
 
 ---
 
+## Fase 6: Landing redundante (enmienda FR-016, tras verificación funcional)
+
+**Propósito**: con el encabezado de HU-15 ya construido y verificado, `/cliente` y `/negocio`
+quedaron mostrando una pantalla de botones que duplica lo que el encabezado ya ofrece —
+detectado al usar la aplicación real, no en el diseño. Cubre FR-016 y los escenarios 12–14 de
+HU-15.
+
+- [X] T028 [P] Cambiar `apps/web/src/app/cliente/page.tsx` para redirigir a `/menu` con `redirect()` de `next/navigation`, en vez de renderizar `InicioDeRol`
+- [X] T029 [P] Cambiar `apps/web/src/app/negocio/page.tsx` para redirigir a `/negocio/pedidos` con `redirect()`, en vez de su lista de botones propia
+- [X] T030 Confirmar que `apps/web/src/app/repartidor/page.tsx` sigue usando `InicioDeRol` sin cambios (FR-015) — no se toca `apps/web/src/components/inicio-de-rol.tsx`
+- [X] T031 Ejecutar `pnpm test`, `pnpm lint`, `pnpm typecheck` y `pnpm build`, y recorrer V-21 a V-23 (nuevos, en `quickstart.md`) más V-01/V-09 (siguen pasando con la redirección)
+
+---
+
 ## Dependencias y orden de ejecución
 
 ### Dependencias de fase
@@ -208,6 +222,7 @@ Tarea: "Implementar NavegacionNegocio en apps/web/src/app/negocio/_components/na
 | FR-012; escenarios 1–3 de HU-16 | T017, T020 |
 | FR-013; escenarios 2–3 de HU-16 | T018, T019, T021–T023 |
 | FR-014, FR-015; SC-001 a SC-008 | T024–T027 |
+| FR-016; escenarios 12–14 de HU-15; SC-009 | T028–T031 |
 
 ## Notas
 

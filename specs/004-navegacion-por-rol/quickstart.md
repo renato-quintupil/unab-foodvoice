@@ -108,3 +108,11 @@ Con cualquiera de las dos sesiones, en un viewport de 360–390 px de ancho.
 | **V-18** | Iniciar sesión como administrador | El encabezado y la paleta de `admin` son exactamente los de antes de esta épica — sin ningún cambio visual |
 | **V-19** | Revisar el encabezado de cliente y de negocio | No hay ningún número/badge sobre Carrito ni sobre Pedidos — no se construyó, aunque el mockup de referencia lo mostraba |
 | **V-20** | Usar el carrito, las direcciones (crear/editar/desactivar) y la confirmación de pedido con normalidad | Todo se comporta exactamente igual que antes de E9 — esta épica no tocó ninguna lógica de negocio (FR-014) |
+
+### H · Landing sin duplicar el encabezado (FR-016)
+
+| Paso | Qué hacer | Qué debe ocurrir |
+|---|---|---|
+| **V-21** | Iniciar sesión como cliente o navegar a `/cliente` estando ya logueado | Llega directo a `/menu`, sin pasar por una pantalla intermedia de botones |
+| **V-22** | Iniciar sesión como negocio o navegar a `/negocio` estando ya logueado | Llega directo a `/negocio/pedidos`, sin pasar por una pantalla intermedia de botones |
+| **V-23** | Iniciar sesión como repartidor | Sigue viendo la pantalla de siempre («Ver el menú»), sin cambios — este rol no tiene encabezado (FR-015) |

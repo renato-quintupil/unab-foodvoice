@@ -28,6 +28,10 @@ Hasta esta épica, E1 + E3 + E2 construyeron todas las pantallas que cliente y n
 
 - Q: Cuando el cliente elige una dirección distinta desde el desplegable del encabezado, ¿esa selección debe cambiar de verdad cuál es su dirección predeterminada, o el desplegable es solo de lectura y el cambio real sigue requiriendo ir a `/cliente/direcciones`? → A: Sí cambia de verdad; el desplegable reutiliza `PUT /api/v1/addresses/:id/default`, ya construido y probado en E2, para marcarla como predeterminada de inmediato.
 
+### Session 2026-08-19 (segunda ronda, tras verificación funcional)
+
+- Q: Con el encabezado de HU-15 ya construido, `/cliente` y `/negocio` siguen mostrando su pantalla de aterrizaje genérica de E1/E3 (`InicioDeRol` en cliente, una lista de botones propia en negocio) con los mismos destinos que ahora también están en el encabezado — ¿se corrige dentro de esta épica o queda para otra? → A: Se corrige acá: ambas landing redirigen a la pantalla principal de su rol, porque el encabezado ya cubre lo que ofrecían. `/repartidor` no cambia — sigue usando `InicioDeRol` porque no tiene encabezado (FR-015) y "Ver el menú" sigue siendo su único destino.
+
 ## Roles de usuario en esta épica
 
 - **Cliente**: ve un encabezado persistente con Menú, Carrito y Mis pedidos, más un selector de su dirección de entrega predeterminada. En `/menu` ve además una fila de categorías navegable.
@@ -58,6 +62,9 @@ Como cliente o como negocio, quiero moverse entre las pantallas de mi rol sin es
 9. **Dado** que selecciono una categoría desde la fila de íconos, **Cuando** reviso el filtro "Tipo de comida", **Entonces** ambos reflejan la misma selección.
 10. **Dado** que uso la aplicación desde una pantalla de ancho de celular, **Cuando** miro la navegación, **Entonces** aparece como una barra inferior en vez de un encabezado superior, sin recortar contenido.
 11. **Dado** que estoy en cualquier pantalla de cliente o negocio, **Cuando** uso "Cerrar sesión" desde el encabezado, **Entonces** el comportamiento es el mismo ya construido en E1 (sin ningún aviso, FR-006 de E1).
+12. **Dado** que inicio sesión con rol cliente, **Cuando** aterrizo en la aplicación, **Entonces** llego directo a `/menu`, sin una pantalla intermedia de botones que dupliquen el encabezado.
+13. **Dado** que inicio sesión con rol negocio, **Cuando** aterrizo en la aplicación, **Entonces** llego directo a `/negocio/pedidos`, sin una pantalla intermedia de botones que dupliquen el encabezado.
+14. **Dado** que inicio sesión con rol repartidor, **Cuando** aterrizo en la aplicación, **Entonces** sigo viendo la misma pantalla de siempre (`InicioDeRol`, con el acceso a "Ver el menú") — este rol no tiene encabezado, así que su landing no cambia.
 
 ---
 
@@ -100,8 +107,9 @@ Como usuario de cualquier rol, quiero que la aplicación se sienta como un mismo
 - **FR-011**: El encabezado DEBE mantener accesible la acción de cerrar sesión ya construida en E1, sin alterar su comportamiento.
 - **FR-012**: La pantalla de inicio de sesión DEBE presentar una identidad visual (marca, paleta, tipografía) que exprese que la búsqueda/pedido por voz es el diferenciador del producto, sin agregar ni quitar ningún campo o comportamiento del formulario existente.
 - **FR-013**: La paleta, tipografía y marca definidas para el login DEBEN aplicarse también a los encabezados de cliente y negocio de FR-001/FR-002, de modo que ambos roles compartan una identidad visual coherente con el login.
-- **FR-014**: Esta épica NO DEBE alterar el comportamiento funcional de ninguna pantalla existente (autenticación, carrito, direcciones, pedidos, catálogo) — los cambios son exclusivamente de navegación y presentación visual.
+- **FR-014**: Esta épica NO DEBE alterar el comportamiento funcional de ninguna pantalla existente que no sea la landing de cliente o negocio (autenticación, carrito, direcciones, pedidos, catálogo) — los cambios son exclusivamente de navegación y presentación visual.
 - **FR-015**: El encabezado del rol administrador y las pantallas del rol repartidor NO se modifican en esta épica.
+- **FR-016**: Las pantallas de aterrizaje genéricas de cliente (`/cliente`) y negocio (`/negocio`) DEBEN redirigir a la pantalla principal de su rol (`/menu` y `/negocio/pedidos` respectivamente), porque el encabezado de FR-001/FR-002 ya ofrece los mismos destinos que esas landing mostraban como botones — mantenerlas sería navegación duplicada. La landing de repartidor (`/repartidor`) NO cambia: sigue siendo su única forma de llegar al menú, porque este rol no tiene encabezado (FR-015).
 
 ## Success Criteria *(mandatory)*
 
@@ -115,6 +123,7 @@ Como usuario de cualquier rol, quiero que la aplicación se sienta como un mismo
 - **SC-006**: La navegación se usa sin recortar ni superponer contenido tanto en una pantalla de escritorio como en una de ancho de celular.
 - **SC-007**: Una persona que ve el login y luego cualquier pantalla de cliente o negocio percibe ambas como el mismo producto, sin un cambio de identidad visual entre una y otra.
 - **SC-008**: Un cliente cambia su dirección predeterminada en un solo toque desde el encabezado, sin salir de la pantalla en la que está ni navegar a `/cliente/direcciones`.
+- **SC-009**: Un cliente o negocio que inicia sesión llega directo a la pantalla principal de su rol, sin pasar por una pantalla intermedia de botones que dupliquen el encabezado.
 
 ## Assumptions
 
