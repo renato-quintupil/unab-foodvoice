@@ -11,11 +11,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
-    include: ['tests/**/*.test.{ts,tsx}'],
+    include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
+        'src/**/*.test.{ts,tsx}',
         // Copiados de shadcn/ui: son de terceros y no llevan lógica del producto.
         'src/components/ui/**',
         'src/app/globals.css',

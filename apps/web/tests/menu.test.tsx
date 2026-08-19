@@ -32,12 +32,17 @@ const PIZZAS: CategoryDto = {
   id: '11111111-1111-4111-8111-111111111111',
   dimension: Dimension.TIPO_COMIDA,
   name: 'Pizzas',
-  description: 'Agrupa preparaciones horneadas de masa con queso y verduras variadas del dia.',
+  description:
+    'Agrupa preparaciones horneadas de masa con queso y verduras variadas del dia.',
   active: true,
   createdAt: '2026-08-16T12:00:00.000Z',
 };
 
-const SOPAS: CategoryDto = { ...PIZZAS, id: '44444444-4444-4444-8444-444444444444', name: 'Sopas' };
+const SOPAS: CategoryDto = {
+  ...PIZZAS,
+  id: '44444444-4444-4444-8444-444444444444',
+  name: 'Sopas',
+};
 
 const SALUDABLE: CategoryDto = {
   ...PIZZAS,
@@ -68,11 +73,15 @@ describe('Los tres filtros del menú (FR-031, FR-033, SC-025)', () => {
     const tipo = screen.getByLabelText('Tipo de comida');
     expect(within(tipo).getByRole('option', { name: 'Pizzas' })).toBeInTheDocument();
     expect(within(tipo).getByRole('option', { name: 'Sopas' })).toBeInTheDocument();
-    expect(within(tipo).queryByRole('option', { name: 'Saludable' })).not.toBeInTheDocument();
+    expect(
+      within(tipo).queryByRole('option', { name: 'Saludable' }),
+    ).not.toBeInTheDocument();
 
     const salud = screen.getByLabelText('Perfil de salud');
     expect(within(salud).getByRole('option', { name: 'Saludable' })).toBeInTheDocument();
-    expect(within(salud).queryByRole('option', { name: 'Pizzas' })).not.toBeInTheDocument();
+    expect(
+      within(salud).queryByRole('option', { name: 'Pizzas' }),
+    ).not.toBeInTheDocument();
   });
 
   it('el selector de precio nombra los tres tramos con su etiqueta visible', () => {
@@ -80,7 +89,9 @@ describe('Los tres filtros del menú (FR-031, FR-033, SC-025)', () => {
 
     const precio = screen.getByLabelText('Precio');
     for (const tramo of Object.values(PriceTier)) {
-      expect(within(precio).getByRole('option', { name: ETIQUETA_TRAMO[tramo] })).toBeInTheDocument();
+      expect(
+        within(precio).getByRole('option', { name: ETIQUETA_TRAMO[tramo] }),
+      ).toBeInTheDocument();
     }
   });
 
@@ -121,7 +132,9 @@ describe('Los tres filtros del menú (FR-031, FR-033, SC-025)', () => {
 
   it('«Quitar filtros» aparece solo cuando hay alguno, y sale del resultado vacío en un clic', async () => {
     const { rerender } = render(<FiltrosMenu categorias={CATEGORIAS} />);
-    expect(screen.queryByRole('button', { name: 'Quitar filtros' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Quitar filtros' }),
+    ).not.toBeInTheDocument();
 
     parametros = new URLSearchParams({ priceTier: PriceTier.CARO });
     rerender(<FiltrosMenu categorias={CATEGORIAS} />);
@@ -137,13 +150,21 @@ describe('Los tres filtros del menú (FR-031, FR-033, SC-025)', () => {
     });
     render(<FiltrosMenu categorias={CATEGORIAS} />);
 
-    expect(screen.getByLabelText<HTMLSelectElement>('Tipo de comida').value).toBe(SOPAS.id);
-    expect(screen.getByLabelText<HTMLSelectElement>('Precio').value).toBe(PriceTier.MEDIO);
+    expect(screen.getByLabelText<HTMLSelectElement>('Tipo de comida').value).toBe(
+      SOPAS.id,
+    );
+    expect(screen.getByLabelText<HTMLSelectElement>('Precio').value).toBe(
+      PriceTier.MEDIO,
+    );
   });
 
   it('cada selector tiene su etiqueta asociada, y se opera con teclado (FR-037)', async () => {
     render(<FiltrosMenu categorias={CATEGORIAS} />);
 
+    for (const etiqueta of ['Todas', 'Pizzas', 'Sopas']) {
+      await userEvent.tab();
+      expect(screen.getByRole('button', { name: etiqueta })).toHaveFocus();
+    }
     await userEvent.tab();
     expect(screen.getByLabelText('Tipo de comida')).toHaveFocus();
     await userEvent.tab();

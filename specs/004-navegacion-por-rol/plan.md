@@ -153,29 +153,34 @@ desincronicen. El selector de dirección es un componente aparte porque lo usa s
 
 ## Fases de entrega
 
-### Fase A · Identidad visual (HU-16, P2 en la spec pero base técnica de HU-15)
+El orden sigue el de `tasks.md`: HU-15 primero, porque es completamente funcional con la
+apariencia actual del producto —`.tema-voz` redefine variables CSS existentes sin tocar el
+código de ningún componente (D-005), así que construir el header antes que la identidad **no**
+obliga a rehacer nada—; HU-16 después, como una capa de integración aditiva sobre los archivos
+que HU-15 ya creó.
 
-Variables `--color-*` nuevas dentro de `.tema-voz` en `globals.css`, tipografía Bricolage
-Grotesque vía `next/font/google`, y el rediseño de `login/page.tsx`. Se implementa primero
-porque HU-15 la consume (FR-013): construir el header antes que la identidad obligaría a
-rehacer sus estilos.
-
-### Fase B · Navegación de cliente (HU-15, P1)
+### Fase A · Navegación de cliente (HU-15, P1)
 
 `cliente/layout.tsx` + `cliente/_components/navegacion.tsx` + `selector-direccion.tsx`. Cubre
-FR-001, FR-003 a FR-007, FR-010, FR-011 y los escenarios 1, 2, 4–7, 9, 10 de HU-15.
+FR-001, FR-003 a FR-007, FR-010, FR-011 y los escenarios 1, 2, 4–7, 10, 11 de HU-15.
 
-### Fase C · Navegación de negocio (HU-15, P1)
+### Fase B · Navegación de negocio (HU-15, P1)
 
 `negocio/layout.tsx` + `negocio/_components/navegacion.tsx`. Cubre FR-002, FR-003, FR-010,
-FR-011 y los escenarios 3, 9, 10 de HU-15.
+FR-011 y los escenarios 3, 10, 11 de HU-15.
 
-### Fase D · Categorías del menú y despacho en `/menu` (HU-15, P1)
+### Fase C · Categorías del menú y despacho en `/menu` (HU-15, P1)
 
-Modificar `menu/page.tsx` para despachar el header correcto según `sesion.role` y aplicar
-`.tema-voz` solo a cliente/negocio; extender `FiltrosMenu` con la fila de íconos. Cubre FR-008,
-FR-009 y los escenarios 8, 9 de HU-15. Va después de B y C porque el despacho necesita que
-ambos componentes de navegación ya existan.
+Modificar `menu/page.tsx` para despachar el header correcto según `sesion.role`; extender
+`FiltrosMenu` con la fila de íconos. Cubre FR-008, FR-009 y los escenarios 8, 9 de HU-15. Va
+después de A y B porque el despacho necesita que ambos componentes de navegación ya existan.
+
+### Fase D · Identidad visual (HU-16, P2)
+
+Variables `--color-*` nuevas dentro de `.tema-voz` en `globals.css`, tipografía Bricolage
+Grotesque vía `next/font/google`, el rediseño de `login/page.tsx`, y aplicar `.tema-voz` a los
+contenedores raíz que las Fases A–C ya crearon (`cliente/layout.tsx`, `negocio/layout.tsx`, el
+despacho de `menu/page.tsx`). Cubre FR-012, FR-013 y los escenarios 1–3 de HU-16.
 
 ### Fase E · Validación funcional
 
@@ -201,8 +206,8 @@ La puerta constitucional pasa sin violaciones que justificar. No aplica esta sec
 
 | Requisitos | Fase |
 |---|---|
-| Identidad visual: FR-012, FR-013; HU-16 escenarios 1–3 | A |
-| FR-001, FR-003 a FR-007, FR-010, FR-011; HU-15 escenarios 1, 2, 4–7, 9, 10 | B |
-| FR-002, FR-003, FR-010, FR-011; HU-15 escenario 3 | C |
-| FR-008, FR-009; HU-15 escenario 8 | D |
+| FR-001, FR-003 a FR-007, FR-010, FR-011; HU-15 escenarios 1, 2, 4–7, 10, 11 | A |
+| FR-002, FR-003, FR-010, FR-011; HU-15 escenarios 3, 10, 11 | B |
+| FR-008, FR-009; HU-15 escenarios 8, 9 | C |
+| Identidad visual: FR-012, FR-013; HU-16 escenarios 1–3 | D |
 | FR-014, FR-015; SC-001 a SC-008 | E |
