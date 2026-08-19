@@ -21,6 +21,13 @@ Este documento es la referencia de planificación de alto nivel del proyecto. Se
 | E6  | **Búsqueda por voz**           | Búsqueda de productos asistida por voz                                    |
 | E7  | **Cierre del servicio**        | Confirmación digital de entrega y conformidad/reclamo entrega de feedback |
 | E8  | **Controles y administración** | Controles de flujos críticos y supervisión                                |
+| E9  | **Navegación y experiencia visual** *(transversal)* | Shell de navegación por rol e identidad visual de la aplicación construida |
+
+**E9 es transversal**: no participa del orden de especificación E1→E8 (no bloquea
+ni depende de ninguna otra épica), porque no agrega una capacidad de negocio
+nueva sino la forma de moverse entre las pantallas que las demás épicas ya
+construyeron. Se especifica cuando haga falta, no en un punto fijo de la
+secuencia.
 
 ## Historias de usuario (HU)
 
@@ -40,6 +47,8 @@ Este documento es la referencia de planificación de alto nivel del proyecto. Se
 | HU-12 | Carrito editable manual                                                              |
 | HU-13 | Agregar al carrito por voz                                                           |
 | HU-14 | Metadata y clasificación de productos (precio, tipo de comida, etiqueta de salud...) |
+| HU-15 | Navegación por rol (header/nav, destinos por rol, selector de dirección de entrega, categorías del menú) |
+| HU-16 | Identidad visual de la aplicación (login, marca, paleta y tipografía coherentes)     |
 
 ## Épicas / Historias de usuario
 
@@ -53,6 +62,7 @@ Este documento es la referencia de planificación de alto nivel del proyecto. Se
 | E6 · Búsqueda por voz           | HU-06, HU-13        |
 | E7 · Cierre del servicio        | HU-05               |
 | E8 · Controles y administración | HU-07               |
+| E9 · Navegación y experiencia visual *(transversal)* | HU-15, HU-16 |
 
 ## Notas de frontera entre HU (a respetar al especificar)
 
@@ -82,3 +92,9 @@ pedido sin catálogo) y antes de E6 (no hay búsqueda sin catálogo clasificado)
 entidad Pedido, sin la cual E4 no tiene sobre qué registrar historial. El contrato de estados
 que E2, E5 y E7 consumen no bloquea este orden: ya está construido en `packages/shared`
 desde E1.
+
+**E9 no forma parte de esta secuencia.** Es transversal: envuelve con navegación las pantallas
+que las demás épicas ya construyeron, en vez de agregar una capacidad de negocio nueva. Su único
+prerrequisito real es que exista al menos una pantalla por rol a la que navegar (ya lo hay desde
+E1+E3+E2), y no bloquea a E4/E5/E6/E7/E8: cuando cada una agregue una pantalla nueva, extiende el
+componente de navegación que E9 deja construido en vez de reabrir su spec.

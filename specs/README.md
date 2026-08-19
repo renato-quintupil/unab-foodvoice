@@ -20,6 +20,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
+| E9 · Navegación y experiencia visual *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | En especificación |
 
 El orden de la tabla es el orden sugerido de especificación (E1 → E3 → E2 → E4 →
 E6 → E5 → E7 → E8): E1 es prerrequisito de casi todo lo demás, E3 debe existir
@@ -27,6 +28,10 @@ antes que E2 y E6 (no hay pedido ni búsqueda sin catálogo), y E2 crea la entid
 Pedido sobre la cual E4 registra el historial. El contrato de estados que E2, E5 y
 E7 consumen no condiciona este orden, porque ya está construido en
 `packages/shared` desde E1.
+
+**E9 queda fuera de esa secuencia**: es transversal, envuelve con navegación las
+pantallas que E1+E3+E2 ya construyeron en vez de agregar una capacidad de negocio
+nueva. No bloquea ni depende de E4/E5/E6/E7/E8.
 
 ## E1 · Acceso y usuarios
 
