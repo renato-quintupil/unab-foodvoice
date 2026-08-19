@@ -1,6 +1,6 @@
 {
   "name": "foodvoice",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "FoodVoice — pedidos por voz o de forma manual, con trazabilidad de punta a punta",
   "engines": {
