@@ -87,6 +87,28 @@ Levanta `postgres`, `api` y `web`; **solo `web` publica puerto** hacia el
 anfitrión, de modo que el navegador solo habla con Next.js y la cookie de sesión
 queda same-origin.
 
+#### Comandos de Docker Compose
+
+| Comando | Qué hace | Cuándo usarlo |
+|---|---|---|
+| `docker compose up --build` | Construye las imágenes (si cambió el código o el `Dockerfile`) y levanta `postgres`, `api` y `web`. Con `-d` corre en segundo plano. | Primera vez, o después de tocar código/dependencias. |
+| `docker compose up -d` | Levanta los contenedores sin reconstruir imágenes. | Volver a levantar todo sin cambios de código. |
+| `docker compose stop` | Detiene los contenedores **sin borrarlos**. El volumen de datos y los contenedores en sí quedan intactos, listos para retomar. | Pausar el trabajo del día. |
+| `docker compose start` | Vuelve a arrancar contenedores ya existentes que fueron detenidos con `stop`. No reconstruye ni recrea nada. | Retomar después de un `stop`. |
+| `docker compose start <servicio>` | Arranca solo un contenedor puntual, por ejemplo `docker compose start postgres`. | Cuando solo necesitas un servicio (p. ej. la base de datos para conectar un cliente externo). |
+| `docker compose down` | Detiene y **elimina** los contenedores y la red. El volumen `foodvoice_pgdata` (los datos) **sobrevive**, porque no se pide `-v`. | Limpiar contenedores para recrearlos desde cero (p. ej. tras cambiar `docker-compose.yml`), sin perder los datos. |
+| `docker compose down -v` | Igual que `down`, pero además **borra el volumen de datos**. Arranque totalmente limpio: la próxima vez que subas `postgres`, se inicializa vacío y hay que correr `db:migrate` y `db:seed` de nuevo. | Solo cuando quieras empezar de cero a propósito — es **destructivo e irreversible**. |
+
+> **Un solo Postgres por volumen a la vez.** El volumen tiene nombre fijo
+> (`foodvoice_pgdata` en `docker-compose.yml`), así que si tienes más de un
+> checkout o rama de este repo (por ejemplo, otro worktree), **ambos apuntan al
+> mismo volumen** aunque estén en carpetas distintas. Levantar dos contenedores
+> de `postgres` al mismo tiempo sobre ese volumen es inseguro: Postgres toma un
+> lock exclusivo sobre los datos, y hacerlo igual fuerza una recuperación de
+> caída (crash recovery) cada vez que uno "le quita" el turno al otro. Antes de
+> levantar `postgres` en un checkout, confirma que no está corriendo en otro
+> (`docker ps -a`).
+
 ## Cómo ejecutar las pruebas
 
 ```bash
