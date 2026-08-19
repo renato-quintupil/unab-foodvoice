@@ -4,21 +4,24 @@ Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
-menú** y **E2 · Gestión de pedidos** están **construidas y verificadas**. Los
-tres espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
-poblados, y las dos capas automáticas pasan en verde: **522 pruebas unitarias**
-con sus umbrales de cobertura y **587 de integración en 73 baterías** contra
-PostgreSQL real.
+menú**, **E2 · Gestión de pedidos** y **E9 · Navegación y experiencia visual**
+están **construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
+`services/api` y `packages/shared`— están poblados, y las dos capas automáticas
+pasan en verde: **522 pruebas unitarias** con sus umbrales de cobertura (más
+las 5 suites nuevas de E9, 188 pruebas en total sobre `apps/web`) y **587 de integración
+en 73 baterías** contra PostgreSQL real — E9 no agrega baterías de integración
+porque no toca `services/api`.
 
-Las tres validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las cuatro validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
-2026-08-18, sus 40 pasos— y su detalle está en el `verificacion.md` de cada
-spec.
+2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
+enmiendas incluidas)— y su detalle está en el `verificacion.md` de cada spec.
 
-**Ninguna de las tres fue un trámite, y esa es la lección que conviene llevarse
-a las épicas siguientes**: cada una encontró defectos reales que ninguna prueba
-automática detectaba, siempre del mismo tipo —cada pieza funcionaba aislada y aun
-así el usuario no veía lo que la spec le promete—.
+**Las tres primeras no fueron un trámite, y esa es la lección que conviene
+llevarse a las épicas siguientes**: cada una encontró defectos reales que
+ninguna prueba automática detectaba, siempre del mismo tipo —cada pieza
+funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
+**E9 es la primera que no encontró ninguno.**
 
 - En E1: el error de formulario no quedaba asociado a su campo, y cuatro
   pantallas usaban un mensaje recortado en lugar del compartido (T133, T134).
@@ -28,6 +31,17 @@ así el usuario no veía lo que la spec le promete—.
 - En E2: el error de una dirección puntual demasiado corta al confirmar un
   pedido se mostraba **en inglés** —el mensaje por omisión de Zod, sin
   traducir—, mientras el resto de la misma pantalla sí estaba en español.
+- En E9: ningún defecto de la validación en sí, pero sí dos correcciones
+  después de darla por cerrada, ambas al seguir usando la aplicación con el
+  header ya puesto: las landing genéricas de cliente y negocio (E1/E3)
+  quedaron duplicando lo que el header ya ofrecía (FR-016), y el encabezado de
+  administrador quedó con el estilo visual anterior a HU-16 mientras cliente y
+  negocio ya tenían el rediseño (FR-017). Las dos se corrigieron con una
+  enmienda chica a la spec antes de tocar el código, no colaron directo. Su
+  alcance —navegación y presentación sobre pantallas ya construidas, sin
+  lógica de negocio nueva— es más chico y más fácil de demostrar completo que
+  el de las tres anteriores; no es evidencia de que la validación manual haya
+  dejado de aportar valor en general.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -43,8 +57,48 @@ está en el `verificacion.md` de E3.
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039), y la verificación funcional de las métricas de
 pedidos, que espera a E4 (registra el historial sobre el que se miden). La
-siguiente épica del orden sugerido es **E4** (el orden es E1 → E3 → E2 → E4 →
-E6 → E5 → E7 → E8).
+siguiente épica del orden sugerido sigue siendo **E4** (el orden es E1 → E3 →
+E2 → E4 → E6 → E5 → E7 → E8); **E9 es transversal y no participa de ese
+orden** — se completó en paralelo, envolviendo con navegación las pantallas que
+E1+E3+E2 ya habían construido.
+
+### Lo que E9 añadió al código
+
+- **`apps/web`** únicamente — E9 no toca `services/api` ni `packages/shared`.
+- **Shell de navegación por rol**: `cliente/layout.tsx` y `negocio/layout.tsx`
+  (nuevos, mismo patrón que `admin/layout.tsx` desde E1), cada uno con su
+  componente `_components/navegacion.tsx` — header superior en escritorio,
+  barra inferior en mobile vía `hidden md:block` / `md:hidden`, sin duplicar
+  componentes.
+- **Selector de dirección** (`components/selector-direccion.tsx`): reutiliza
+  `PUT /addresses/:id/default` de E2 para cambiar la predeterminada desde el
+  encabezado — **sin regla de negocio nueva**.
+- **`/menu` despacha el encabezado según `sesion.role`** dentro de
+  `menu/page.tsx`, porque es una ruta compartida por los cuatro roles y no
+  admite un `layout.tsx` anidado bajo `cliente/`. `admin` y `repartidor` no
+  reciben header nuevo ahí, igual que antes de E9.
+- **Fila de categorías del menú** (`menu/_components/filtros-menu.tsx`):
+  comparte la misma función `aplicar()` que el combobox "Tipo de comida" ya
+  existente — un solo estado, no dos sincronizados.
+- **Identidad visual** (`.tema-voz` en `globals.css`, tipografía Bricolage
+  Grotesque vía `next/font/google`, login rediseñado): redefine los mismos
+  nombres de variable CSS que ya usan `Button`/`Input` dentro de un wrapper,
+  sin tocar `:root` ni el código de esos componentes — por eso `admin` queda
+  sin cambios visuales.
+- **Deliberadamente no construido**: badges de conteo (carrito, pedidos
+  pendientes) que aparecían en el mockup de referencia — ninguna FR los pedía.
+- **Landings de cliente y negocio redirigen** (`/cliente` → `/menu`,
+  `/negocio` → `/negocio/pedidos`) en vez de mostrar la pantalla genérica de
+  botones de E1/E3, que quedó duplicando el header nuevo (FR-016, detectado al
+  usar la aplicación). `/repartidor` sigue usando `InicioDeRol` sin cambios:
+  no tiene header, así que no es redundante ahí.
+- **`NavegacionAdmin` recibió el mismo rediseño que cliente y negocio**
+  (FR-017, segunda enmienda post-verificación): marca, íconos, estado activo,
+  barra mobile y `.tema-voz` en `admin/layout.tsx`. Sus dos destinos —Panel y
+  Usuarios— no cambiaron. Ojo con el bug que encontró su propia prueba:
+  `/admin` es prefijo de toda ruta administrativa, así que "Panel" necesita
+  comparación exacta, no `startsWith`, o queda marcado activo en
+  `/admin/usuarios` también.
 
 ### Lo que E2 añadió al código
 

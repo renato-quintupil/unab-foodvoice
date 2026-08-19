@@ -2,31 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { AddressDto } from '@foodvoice/shared';
 import { CerrarSesion } from '@/components/cerrar-sesion';
+import { SelectorDireccion } from '@/components/selector-direccion';
 
-/**
- * Navegación del administrador (T103 de E1, FR-017 de E9).
- *
- * **Dos destinos y ninguno más**: Panel y Usuarios, más «Cerrar sesión» — los
- * mismos de siempre, sin agregar navegación nueva (Principio III). Lo único
- * que cambia con E9/HU-17 es la apariencia: mismo patrón de componente que
- * `NavegacionCliente`/`NavegacionNegocio` (marca, íconos, estado activo,
- * barra inferior en mobile), para que los tres roles se sientan el mismo
- * producto.
- */
 const DESTINOS = [
-  { href: '/admin', etiqueta: 'Panel', icono: 'panel' },
-  { href: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'usuarios' },
+  { href: '/menu', etiqueta: 'Menú', icono: 'menu' },
+  { href: '/cliente/carrito', etiqueta: 'Carrito', icono: 'carrito' },
+  { href: '/cliente/pedidos', etiqueta: 'Mis pedidos', icono: 'pedidos' },
 ] as const;
 
-export function NavegacionAdmin() {
+export function NavegacionCliente({ direcciones }: { direcciones: AddressDto[] }) {
   const pathname = usePathname();
 
   return (
     <>
       <header className="sticky top-0 z-40 hidden border-b border-[var(--color-borde)] bg-[var(--color-fondo)] md:block">
         <nav
-          aria-label="Navegación de administrador"
+          aria-label="Navegación de cliente"
           className="mx-auto flex min-h-16 max-w-6xl items-center gap-5 px-4"
         >
           <Marca />
@@ -35,18 +28,24 @@ export function NavegacionAdmin() {
               <EnlaceDestino key={destino.href} destino={destino} pathname={pathname} />
             ))}
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            <SelectorDireccion direcciones={direcciones} />
             <CerrarSesion />
           </div>
         </nav>
       </header>
 
       <nav
-        aria-label="Navegación mobile de administrador"
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 border-t border-[var(--color-borde)] bg-[var(--color-fondo)] px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
+        aria-label="Navegación mobile de cliente"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-[var(--color-borde)] bg-[var(--color-fondo)] px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {DESTINOS.map((destino) => (
-          <EnlaceDestino key={destino.href} destino={destino} pathname={pathname} mobile />
+          <EnlaceDestino
+            key={destino.href}
+            destino={destino}
+            pathname={pathname}
+            mobile
+          />
         ))}
         <div className="flex items-center justify-center [&_button]:h-auto [&_button]:flex-col [&_button]:border-0 [&_button]:px-1 [&_button]:py-2 [&_button]:text-xs">
           <CerrarSesion />
@@ -67,12 +66,9 @@ function EnlaceDestino({
   pathname: string;
   mobile?: boolean;
 }) {
-  // '/admin' es prefijo de toda ruta administrativa (/admin/usuarios, ...), así
-  // que Panel solo puede matchear por igualdad exacta — un prefijo lo marcaría
-  // activo en cualquier subpágina, incluida la de Usuarios.
   const activo =
-    destino.href === '/admin'
-      ? pathname === '/admin'
+    destino.href === '/menu'
+      ? pathname === '/menu' || pathname.startsWith('/menu/')
       : pathname === destino.href || pathname.startsWith(`${destino.href}/`);
 
   return (
@@ -94,7 +90,7 @@ function EnlaceDestino({
 function Marca() {
   return (
     <Link
-      href="/admin"
+      href="/menu"
       className="flex items-center gap-2 font-semibold"
       aria-label="FoodVoice"
     >
@@ -116,15 +112,9 @@ function IconoNavegacion({ tipo }: { tipo: Destino['icono'] }) {
       strokeWidth="1.8"
       className="size-5"
     >
-      {tipo === 'panel' && <path d="M4 20V10M12 20V4M20 20v-7" />}
-      {tipo === 'usuarios' && (
-        <>
-          <circle cx="9" cy="8" r="3.2" />
-          <path d="M3.5 20c0-3.5 2.7-6 5.5-6s5.5 2.5 5.5 6" />
-          <circle cx="17.5" cy="9" r="2.4" />
-          <path d="M15 14.5c2.4.3 4 2.2 4.5 5.5" />
-        </>
-      )}
+      {tipo === 'menu' && <path d="M4 6h16M4 12h16M4 18h16" />}
+      {tipo === 'carrito' && <path d="M3 4h2l2.2 10h9.8l2-7H6M9 19h.01M17 19h.01" />}
+      {tipo === 'pedidos' && <path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4" />}
     </svg>
   );
 }

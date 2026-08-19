@@ -11,6 +11,17 @@
   --color-exito: #15803d;
 }
 
+.tema-voz {
+  --color-fondo: #fff8f3;
+  --color-texto: #2a1712;
+  --color-tenue: #8a6a5c;
+  --color-borde: #f0ddd2;
+  --color-primario: #b91c1c;
+  --color-coral: #ff6b4a;
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}
+
 /* FR-039: el foco debe ser visible en todo momento. Se declara aquí y no por
    componente para que ningún control pueda quedarse sin él por descuido. */
 :focus-visible {

@@ -20,6 +20,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
+| **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 35 / 35 tareas · construida y verificada, incluidos los 26 pasos de validación funcional |
 
 El orden de la tabla es el orden sugerido de especificación (E1 → E3 → E2 → E4 →
 E6 → E5 → E7 → E8): E1 es prerrequisito de casi todo lo demás, E3 debe existir
@@ -27,6 +28,10 @@ antes que E2 y E6 (no hay pedido ni búsqueda sin catálogo), y E2 crea la entid
 Pedido sobre la cual E4 registra el historial. El contrato de estados que E2, E5 y
 E7 consumen no condiciona este orden, porque ya está construido en
 `packages/shared` desde E1.
+
+**E9 queda fuera de esa secuencia**: es transversal, envuelve con navegación las
+pantallas que E1+E3+E2 ya construyeron en vez de agregar una capacidad de negocio
+nueva. No bloquea ni depende de E4/E5/E6/E7/E8.
 
 ## E1 · Acceso y usuarios
 
@@ -133,6 +138,56 @@ cubierto por una prueba nueva. El detalle está en
 No hay pantalla ni endpoint de consulta del historial de estados en E2, por
 diseño: lo incorpora E4. Sigue fuera de v1, heredado de E1/E3: la auditoría
 formal de accesibilidad y las pruebas con lectores de pantalla reales.
+
+## E9 · Navegación y experiencia visual
+
+Rama de trabajo: `004-navegacion-por-rol`. Transversal — no participa del orden E1→E8 (ver más
+arriba).
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./004-navegacion-por-rol/spec.md) | Requisitos, escenarios y criterios de éxito de HU-15/HU-16 |
+| [`plan.md`](./004-navegacion-por-rol/plan.md) | Decisiones técnicas (`.tema-voz`, despacho por rol en `/menu`) y fases de entrega |
+| [`research.md`](./004-navegacion-por-rol/research.md) | Las cinco decisiones D-001 a D-005 con su fundamento |
+| [`data-model.md`](./004-navegacion-por-rol/data-model.md) | Sin entidades nuevas; documenta el `AddressDto` reutilizado de E2 |
+| [`contracts/`](./004-navegacion-por-rol/contracts/) | Sin endpoints nuevos; referencia los dos de E2 que reutiliza |
+| [`quickstart.md`](./004-navegacion-por-rol/quickstart.md) | Puesta en marcha y los 26 pasos de validación funcional |
+| [`tasks.md`](./004-navegacion-por-rol/tasks.md) | 35 tareas ordenadas por historia |
+| [`verificacion.md`](./004-navegacion-por-rol/verificacion.md) | Resultado de la validación — sin defectos encontrados |
+| [`design/`](./004-navegacion-por-rol/design/) | Capturas del mockup decidido antes de escribir la spec |
+| [`checklists/`](./004-navegacion-por-rol/checklists/) | Calidad de requisitos |
+
+Fases de entrega: **A** navegación de cliente (HU-15) → **B** navegación de negocio (HU-15) →
+**C** categorías del menú y despacho en `/menu` (HU-15) → **D** identidad visual (HU-16), que
+aplica `.tema-voz` sobre los archivos que A-C ya crearon → **E** validación funcional → **F**
+landing de cliente/negocio sin duplicar el encabezado (FR-016) → **G** identidad visual del
+administrador (FR-017) — las últimas dos, enmiendas agregadas al usar la aplicación ya
+verificada.
+
+**Por qué se da por terminada.** Las dos historias están construidas, las 188 pruebas de
+`apps/web` pasan en verde (incluidas las 5 suites nuevas de esta épica), `tsc`/`eslint`/el build
+de producción están limpios, y la **validación funcional se ejecutó el 2026-08-19**, los 26
+pasos de `quickstart.md`. **No encontró ningún defecto en su primera pasada** — a diferencia de
+E1, E3 y E2; las dos correcciones posteriores las señaló el usuario al seguir usando la
+aplicación, no la validación en sí, y ambas se resolvieron con una enmienda chica a la spec antes
+de tocar el código:
+
+- **FR-016**: `/cliente` y `/negocio` ahora redirigen a su pantalla principal en vez de mostrar
+  una landing que duplicaba el encabezado.
+- **FR-017**: el encabezado de administrador pasó al mismo patrón visual que cliente y negocio
+  (marca, íconos, estado activo, `.tema-voz`), reemplazando la exclusión que la spec original le
+  daba. Sus dos destinos (Panel, Usuarios) no cambiaron. La prueba nueva de este cambio encontró
+  un bug propio antes de llegar a la app: `/admin` es prefijo de todas sus rutas, así que "Panel"
+  quedaba activo también en `/admin/usuarios` con un `startsWith` ingenuo.
+
+Dos pasos (V-14/V-15, patrón mobile) se confirmaron por revisión de código en vez de observación
+visual en vivo, por una limitación de la herramienta de automatización de esa sesión; queda
+anotado en `verificacion.md` como pendiente de una confirmación visual futura. El detalle está en
+[`verificacion.md`](./004-navegacion-por-rol/verificacion.md).
+
+Esta épica no crea entidades ni endpoints: reutiliza `GET /addresses` y
+`PUT /addresses/:id/default`, ya construidos y probados en E2. `admin` y las pantallas del rol
+repartidor quedan sin cambios, por decisión declarada (FR-015).
 
 ## Alcance de v1
 

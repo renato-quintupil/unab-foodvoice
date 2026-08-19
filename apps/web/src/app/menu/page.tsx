@@ -9,11 +9,15 @@ import {
   formatearPrecio,
   recortarDescripcion,
   type CategoryDto,
+  type AddressDto,
   type MenuResponse,
   type ProductDto,
 } from '@foodvoice/shared';
 import { AgregarAlCarrito } from '@/components/agregar-al-carrito';
+import { NavegacionCliente } from '@/app/cliente/_components/navegacion';
+import { NavegacionNegocio } from '@/app/negocio/_components/navegacion';
 import { pedirALaApi } from '@/lib/api-servidor';
+import { claseBricolage } from '@/lib/fuentes';
 import { exigirSesion } from '@/lib/sesion-servidor';
 import { FiltrosMenu } from './_components/filtros-menu';
 
@@ -46,41 +50,71 @@ export default async function PaginaMenu({
   const parametros = await searchParams;
 
   const consulta = new URLSearchParams();
-  for (const clave of ['foodTypeCategoryId', 'healthProfileCategoryId', 'priceTier'] as const) {
+  for (const clave of [
+    'foodTypeCategoryId',
+    'healthProfileCategoryId',
+    'priceTier',
+  ] as const) {
     const valor = parametros[clave];
     if (typeof valor === 'string' && valor !== '') consulta.set(clave, valor);
   }
   const hayFiltros = consulta.toString() !== '';
 
-  const [menu, categorias] = await Promise.all([
+  const direcciones =
+    sesion.role === Role.CLIENTE
+      ? pedirALaApi<{ items: AddressDto[] }>('/addresses')
+      : Promise.resolve({ items: [] as AddressDto[] });
+
+  const [menu, categorias, respuestaDirecciones] = await Promise.all([
     pedirALaApi<MenuResponse>(`/menu/products?${consulta.toString()}`),
     pedirALaApi<{ items: CategoryDto[] }>('/menu/categories'),
+    direcciones,
   ]);
 
+  const navegacion =
+    sesion.role === Role.CLIENTE ? (
+      <NavegacionCliente
+        direcciones={respuestaDirecciones.items.filter((direccion) => direccion.active)}
+      />
+    ) : sesion.role === Role.NEGOCIO ? (
+      <NavegacionNegocio />
+    ) : null;
+  const conTema = sesion.role === Role.CLIENTE || sesion.role === Role.NEGOCIO;
+
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
-      <h1 className="text-2xl font-semibold">Menú</h1>
+    <div
+      className={
+        conTema ? `tema-voz ${claseBricolage} min-h-screen pb-20 md:pb-0` : undefined
+      }
+    >
+      {navegacion}
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+        <h1 className="text-2xl font-semibold">Menú</h1>
 
-      <FiltrosMenu categorias={categorias.items} />
+        <FiltrosMenu categorias={categorias.items} />
 
-      {menu.items.length === 0 ? (
-        <p className="rounded-md border border-[var(--color-borde)] px-4 py-6 text-sm">
-          {/* Sin filtros aplicados, un menú vacío significa que el catálogo no
+        {menu.items.length === 0 ? (
+          <p className="rounded-md border border-[var(--color-borde)] px-4 py-6 text-sm">
+            {/* Sin filtros aplicados, un menú vacío significa que el catálogo no
               tiene ningún producto activo; con filtros, que esa combinación no
               devuelve nada. Ni error, ni pantalla en blanco, ni carga
               permanente (SC-018, SC-022). */}
-          {hayFiltros ? MSG_SIN_RESULTADOS_CATALOGO : MSG_MENU_VACIO}
-        </p>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {menu.items.map((producto) => (
-            <li key={producto.id}>
-              <TarjetaDeProducto producto={producto} esCliente={sesion.role === Role.CLIENTE} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+            {hayFiltros ? MSG_SIN_RESULTADOS_CATALOGO : MSG_MENU_VACIO}
+          </p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {menu.items.map((producto) => (
+              <li key={producto.id}>
+                <TarjetaDeProducto
+                  producto={producto}
+                  esCliente={sesion.role === Role.CLIENTE}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
   );
 }
 
