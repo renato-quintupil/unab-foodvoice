@@ -128,7 +128,7 @@ va después, porque aplica su paleta a los archivos que HU-15 crea).
 no pedido.
 
 - [X] T024 Ejecutar `pnpm test`, `pnpm lint`, `pnpm typecheck` y `pnpm build` con todo lo anterior implementado
-- [ ] T025 Recorrer `specs/004-navegacion-por-rol/quickstart.md` completo (V-01 a V-20) con un cliente, un negocio y un administrador, incluida la sección G (alcance excluido)
+- [X] T025 Recorrer `specs/004-navegacion-por-rol/quickstart.md` completo (V-01 a V-20) con un cliente, un negocio y un administrador, incluida la sección G (alcance excluido) — ver `verificacion.md`
 - [X] T026 Confirmar explícitamente que ningún badge de conteo (carrito, pedidos pendientes) quedó implementado — research.md § "Decisión explícitamente descartada" — y eliminarlo si algún paso anterior lo introdujo por arrastre del mockup
 - [X] T027 Confirmar que `services/api/` y `packages/shared/` no tienen diffs respecto del estado previo a esta épica (FR-014, FR-015)
 
