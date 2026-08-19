@@ -6,12 +6,15 @@ y tres usuarios de prueba creados desde el panel de administración de E1
 (`cliente@foodvoice.local`, `negocio@foodvoice.local`, `admin@foodvoice.local`), más dos
 direcciones ("Casa", "Trabajo") registradas para el cliente desde `/cliente/direcciones/nueva`.
 
-Este documento recoge el resultado de T024–T025 y, en una segunda pasada tras usar la
-aplicación, de T028–T031 de `tasks.md` — las 23 comprobaciones funcionales de `quickstart.md`
-(V-01 a V-23), recorridas contra la aplicación real, no contra el código. **A diferencia de E1,
-E3 y E2, esta validación no encontró ningún defecto** — la única corrección (FR-016, ver § H) no
-la encontró la validación en sí, sino el propio usuario al usar la aplicación después de que la
-validación inicial ya había cerrado T025 sin objeciones.
+Este documento recoge el resultado de T024–T025 y, en dos pasadas posteriores tras usar la
+aplicación, de T028–T031 y T032–T035 de `tasks.md` — las 26 comprobaciones funcionales de
+`quickstart.md` (V-01 a V-26), recorridas contra la aplicación real, no contra el código. **A
+diferencia de E1, E3 y E2, esta validación no encontró ningún defecto en su primera pasada** —
+las dos correcciones posteriores (FR-016 § H, FR-017 § I) no las encontró la validación inicial
+en sí, sino el propio usuario al seguir usando la aplicación después de que T025 ya la había
+cerrado sin objeciones. La única falla real que sí apareció (`/admin` como prefijo de todas sus
+rutas) la encontró una prueba unitaria antes de llegar a la app, no la validación funcional — ver
+§ I.
 
 **Aclaración sobre quién ejecutó el recorrido**: lo hizo Claude, manejando el navegador real
 (clics, formularios, cambios de sesión) contra los contenedores levantados — no lectura de
@@ -32,6 +35,7 @@ navegador de escritorio.
 | T024 | `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build` | ✅ 185/185 pruebas de `apps/web` en verde (incluidas las 4 suites nuevas de esta épica), `tsc --noEmit` limpio, `eslint` limpio sobre los archivos tocados, y build de producción exitoso (imagen Docker reconstruida sin errores) |
 | T025 | V-01 a V-20 de `quickstart.md` | ✅ Ejecutados — 18/20 observados en vivo, 2/20 (mobile) confirmados por código, cero defectos |
 | T028–T031 | Enmienda FR-016 (landing sin duplicar el encabezado) + V-21 a V-23 | ✅ Implementado, reconstruido y verificado en vivo con los tres roles |
+| T032–T035 | Enmienda FR-017 (identidad visual del administrador) + V-24 a V-26 | ✅ Implementado, reconstruido y verificado en vivo — encontró y corrigió un bug propio de la prueba antes de llegar a la app |
 
 ---
 
@@ -109,6 +113,25 @@ propia lista de botones de E3. Se amplió `spec.md` (FR-016, escenarios 12–14 
 Reconstruida la imagen Docker con el fix; `pnpm test` (185/185), `tsc --noEmit` y `eslint`
 limpios antes de reconstruir.
 
+### I · Identidad visual del administrador (FR-017, segunda enmienda tras uso real)
+
+El usuario notó que el encabezado de administrador seguía con el estilo de E1 —texto subrayado
+plano, sin marca ni íconos, sin `.tema-voz`— mientras cliente y negocio ya tenían el rediseño
+completo. Se amplió `spec.md` (FR-017, escenarios 15–17 de HU-15, escenario 4 de HU-16, SC-010)
+y `tasks.md` (Fase 7, T032–T035) antes de tocar el código. La prueba nueva de `NavegacionAdmin`
+encontró un bug propio antes de llegar a la app real: `/admin` es prefijo de toda ruta
+administrativa, así que "Panel" quedaba marcado activo también en `/admin/usuarios` con un
+`startsWith` ingenuo — corregido con match exacto para la raíz.
+
+| Paso | Resultado |
+|---|---|
+| V-24 | ✅ El encabezado de administrador tiene marca "FV" circular y la paleta cálida — ya no el texto subrayado plano de antes |
+| V-25 | ✅ Ir a `/admin/usuarios` marca "Usuarios" como activo y "Panel" deja de estarlo; la gestión de usuarios (cambiar rol, desactivar, restablecer contraseña) sigue funcionando igual que antes |
+| V-26 | ✅ El encabezado de administrador comparte paleta, tipografía y marca con cliente y negocio |
+
+Reconstruida la imagen Docker con el fix; `pnpm test` (188/188), `tsc --noEmit` y `eslint`
+limpios antes de reconstruir.
+
 ---
 
 ## Cobertura de los criterios de éxito
@@ -124,6 +147,7 @@ limpios antes de reconstruir.
 | SC-007 | V-17 | ✅ |
 | SC-008 | V-05 | ✅ |
 | SC-009 | V-21, V-22 | ✅ |
+| SC-010 | V-26 | ✅ |
 
 ### Lo que queda fuera de este registro
 
@@ -134,5 +158,5 @@ limpios antes de reconstruir.
 - **Auditoría formal de accesibilidad y lectores de pantalla reales**: fuera de v1 por decisión
   declarada, heredado de E1/E3/E2.
 
-Con T024, T025 y T028–T031 completas —salvo la confirmación visual mobile señalada arriba—,
-**E9 · Navegación y experiencia visual queda verificada** al 2026-08-19.
+Con T024, T025, T028–T031 y T032–T035 completas —salvo la confirmación visual mobile señalada
+arriba—, **E9 · Navegación y experiencia visual queda verificada** al 2026-08-19.

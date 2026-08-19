@@ -148,6 +148,19 @@ HU-15.
 
 ---
 
+## Fase 7: Identidad visual del administrador (enmienda FR-017, tras usar la aplicación)
+
+**Propósito**: `NavegacionAdmin` seguía con el estilo previo a HU-16 (texto subrayado plano, sin
+marca, sin íconos, sin `.tema-voz`) mientras cliente y negocio ya tenían el rediseño completo.
+Cubre FR-017, los escenarios 15–17 de HU-15, el escenario 4 de HU-16 y SC-010.
+
+- [X] T032 [P] Prueba fallida: `NavegacionAdmin` renderiza Panel/Usuarios con marca e íconos, y marca como activo el que coincide con la ruta actual, en `apps/web/src/app/admin/_components/navegacion.test.tsx`
+- [X] T033 Reescribir `NavegacionAdmin` (Client Component: mismo patrón que `NavegacionCliente`/`NavegacionNegocio` — `usePathname()`, marca "FV", íconos de Panel/Usuarios, header superior `hidden md:block`, barra inferior `md:hidden`, `CerrarSesion`) en `apps/web/src/app/admin/_components/navegacion.tsx` (depende de T032) — encontró y corrigió un bug propio en la prueba: `/admin` es prefijo de toda ruta administrativa, así que "Panel" necesita match exacto, no por prefijo
+- [X] T034 Aplicar `.tema-voz` y la clase de `claseBricolage` (`apps/web/src/lib/fuentes.ts`, ya existente) al contenedor raíz de `apps/web/src/app/admin/layout.tsx`, mismo patrón `min-h-screen pb-20 md:pb-0` que `cliente/layout.tsx`/`negocio/layout.tsx` (depende de T033)
+- [X] T035 Ejecutar `pnpm test`, `pnpm lint`, `pnpm typecheck` y `pnpm build`, y recorrer V-24 a V-26 (nuevos, en `quickstart.md`) más V-18 actualizado (admin ya no se ve "viejo" a propósito — revisar su redacción)
+
+---
+
 ## Dependencias y orden de ejecución
 
 ### Dependencias de fase
@@ -223,6 +236,7 @@ Tarea: "Implementar NavegacionNegocio en apps/web/src/app/negocio/_components/na
 | FR-013; escenarios 2–3 de HU-16 | T018, T019, T021–T023 |
 | FR-014, FR-015; SC-001 a SC-008 | T024–T027 |
 | FR-016; escenarios 12–14 de HU-15; SC-009 | T028–T031 |
+| FR-017; escenarios 15–17 de HU-15; escenario 4 de HU-16; SC-010 | T032–T035 |
 
 ## Notas
 

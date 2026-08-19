@@ -32,12 +32,16 @@ Hasta esta épica, E1 + E3 + E2 construyeron todas las pantallas que cliente y n
 
 - Q: Con el encabezado de HU-15 ya construido, `/cliente` y `/negocio` siguen mostrando su pantalla de aterrizaje genérica de E1/E3 (`InicioDeRol` en cliente, una lista de botones propia en negocio) con los mismos destinos que ahora también están en el encabezado — ¿se corrige dentro de esta épica o queda para otra? → A: Se corrige acá: ambas landing redirigen a la pantalla principal de su rol, porque el encabezado ya cubre lo que ofrecían. `/repartidor` no cambia — sigue usando `InicioDeRol` porque no tiene encabezado (FR-015) y "Ver el menú" sigue siendo su único destino.
 
+### Session 2026-08-19 (tercera ronda, tras usar la aplicación con los otros dos roles)
+
+- Q: El encabezado del administrador (`NavegacionAdmin`, de E1) quedó con el estilo visual anterior a HU-16 —texto subrayado plano, sin marca, sin íconos, sin indicador de página activa, sin `.tema-voz`— mientras cliente y negocio ya tienen el rediseño completo. La spec original (FR-015) decía explícitamente que no se tocaba, "porque no existe mockup ni decisión tomada al respecto". ¿Seguimos dejándolo así o lo alineamos? → A: Se alinea, a fondo: `NavegacionAdmin` pasa al mismo patrón de componente que `NavegacionCliente`/`NavegacionNegocio` (marca, íconos, estado activo, barra inferior en mobile) y recibe `.tema-voz`. Los destinos siguen siendo exactamente los mismos dos de siempre —Panel y Usuarios—, no se agrega navegación nueva. Esto **reemplaza** la exclusión de admin que tenía FR-015 original.
+
 ## Roles de usuario en esta épica
 
 - **Cliente**: ve un encabezado persistente con Menú, Carrito y Mis pedidos, más un selector de su dirección de entrega predeterminada. En `/menu` ve además una fila de categorías navegable.
 - **Negocio**: ve un encabezado persistente con Pedidos, Productos y Categorías.
 - **Repartidor**: sin cambios — no tiene pantallas propias en v1, fuera de alcance.
-- **Administrador**: sin cambios — conserva el encabezado ya construido en E1, fuera de alcance de esta épica.
+- **Administrador**: ve un encabezado persistente con Panel y Usuarios —los mismos dos destinos de siempre—, ahora con el mismo patrón visual e identidad que cliente y negocio.
 
 ## Escenarios de Usuario y Pruebas *(obligatorio)*
 
@@ -65,6 +69,9 @@ Como cliente o como negocio, quiero moverse entre las pantallas de mi rol sin es
 12. **Dado** que inicio sesión con rol cliente, **Cuando** aterrizo en la aplicación, **Entonces** llego directo a `/menu`, sin una pantalla intermedia de botones que dupliquen el encabezado.
 13. **Dado** que inicio sesión con rol negocio, **Cuando** aterrizo en la aplicación, **Entonces** llego directo a `/negocio/pedidos`, sin una pantalla intermedia de botones que dupliquen el encabezado.
 14. **Dado** que inicio sesión con rol repartidor, **Cuando** aterrizo en la aplicación, **Entonces** sigo viendo la misma pantalla de siempre (`InicioDeRol`, con el acceso a "Ver el menú") — este rol no tiene encabezado, así que su landing no cambia.
+15. **Dado** que inicié sesión con rol administrador, **Cuando** estoy en cualquier pantalla administrativa, **Entonces** veo un encabezado con accesos a Panel y Usuarios, con marca e íconos igual que los de cliente y negocio.
+16. **Dado** que estoy en `/admin/usuarios`, **Cuando** miro el encabezado, **Entonces** el destino "Usuarios" se distingue visualmente como la pantalla activa.
+17. **Dado** que uso la aplicación como administrador desde una pantalla de ancho de celular, **Cuando** miro la navegación, **Entonces** aparece como una barra inferior, igual que en cliente y negocio.
 
 ---
 
@@ -81,6 +88,7 @@ Como usuario de cualquier rol, quiero que la aplicación se sienta como un mismo
 1. **Dado** que abro la pantalla de inicio de sesión, **Cuando** la miro, **Entonces** veo una identidad visual (marca, paleta cálida, motivo de voz) distinta del formulario genérico anterior, con los mismos campos y comportamiento de antes.
 2. **Dado** que ya inicié sesión, **Cuando** comparo el encabezado de mi rol con la pantalla de login, **Entonces** ambos comparten la misma paleta, tipografía y marca.
 3. **Dado** que uso cualquier formulario o control ya existente (email, contraseña, botones), **Cuando** interactúo con él tras esta épica, **Entonces** su comportamiento funcional es idéntico al de antes — solo cambió su apariencia.
+4. **Dado** que ya inicié sesión como administrador, **Cuando** comparo su encabezado con el de cliente o negocio, **Entonces** los tres comparten la misma paleta, tipografía y marca.
 
 ### Edge Cases
 
@@ -106,10 +114,11 @@ Como usuario de cualquier rol, quiero que la aplicación se sienta como un mismo
 - **FR-010**: El sistema DEBE ofrecer, en pantallas de ancho de celular, un patrón de navegación adaptado (barra inferior) distinto de la barra superior usada en escritorio, para los encabezados de cliente y negocio.
 - **FR-011**: El encabezado DEBE mantener accesible la acción de cerrar sesión ya construida en E1, sin alterar su comportamiento.
 - **FR-012**: La pantalla de inicio de sesión DEBE presentar una identidad visual (marca, paleta, tipografía) que exprese que la búsqueda/pedido por voz es el diferenciador del producto, sin agregar ni quitar ningún campo o comportamiento del formulario existente.
-- **FR-013**: La paleta, tipografía y marca definidas para el login DEBEN aplicarse también a los encabezados de cliente y negocio de FR-001/FR-002, de modo que ambos roles compartan una identidad visual coherente con el login.
+- **FR-013**: La paleta, tipografía y marca definidas para el login DEBEN aplicarse también a los encabezados de cliente, negocio y administrador, de modo que los tres roles compartan una identidad visual coherente con el login.
 - **FR-014**: Esta épica NO DEBE alterar el comportamiento funcional de ninguna pantalla existente que no sea la landing de cliente o negocio (autenticación, carrito, direcciones, pedidos, catálogo) — los cambios son exclusivamente de navegación y presentación visual.
-- **FR-015**: El encabezado del rol administrador y las pantallas del rol repartidor NO se modifican en esta épica.
+- **FR-015**: Las pantallas del rol repartidor NO se modifican en esta épica — sigue sin encabezado, porque no tiene más de un destino real. *(Superada en su redacción original respecto del administrador por FR-017 — ver Clarifications, tercera ronda.)*
 - **FR-016**: Las pantallas de aterrizaje genéricas de cliente (`/cliente`) y negocio (`/negocio`) DEBEN redirigir a la pantalla principal de su rol (`/menu` y `/negocio/pedidos` respectivamente), porque el encabezado de FR-001/FR-002 ya ofrece los mismos destinos que esas landing mostraban como botones — mantenerlas sería navegación duplicada. La landing de repartidor (`/repartidor`) NO cambia: sigue siendo su única forma de llegar al menú, porque este rol no tiene encabezado (FR-015).
+- **FR-017**: El encabezado del rol administrador DEBE seguir el mismo patrón visual que los de cliente y negocio (marca, íconos por destino, indicador de página activa, barra inferior en mobile, `.tema-voz`), manteniendo exactamente sus dos destinos ya existentes —Panel y Usuarios— sin agregar navegación nueva.
 
 ## Success Criteria *(mandatory)*
 
@@ -124,11 +133,12 @@ Como usuario de cualquier rol, quiero que la aplicación se sienta como un mismo
 - **SC-007**: Una persona que ve el login y luego cualquier pantalla de cliente o negocio percibe ambas como el mismo producto, sin un cambio de identidad visual entre una y otra.
 - **SC-008**: Un cliente cambia su dirección predeterminada en un solo toque desde el encabezado, sin salir de la pantalla en la que está ni navegar a `/cliente/direcciones`.
 - **SC-009**: Un cliente o negocio que inicia sesión llega directo a la pantalla principal de su rol, sin pasar por una pantalla intermedia de botones que dupliquen el encabezado.
+- **SC-010**: Una persona que ve los encabezados de cliente, negocio y administrador, uno tras otro, los percibe como el mismo producto — ninguno se ve "más viejo" que los otros dos.
 
 ## Assumptions
 
 - El rol repartidor no tiene pantallas propias en v1 (ya establecido desde E1), por lo que no requiere navegación en esta épica.
-- El encabezado del administrador, ya construido en E1, no se modifica: no hay mockup ni decisión tomada para rediseñarlo junto con esta épica.
+- El encabezado del administrador adopta el mismo patrón visual que cliente y negocio (tercera ronda de clarifications), pero conserva exactamente sus dos destinos ya construidos en E1 — Panel y Usuarios; no se le agrega ningún destino nuevo.
 - La fila de categorías de `/menu` y el filtro "Tipo de comida" ya existente son dos vistas sincronizadas del mismo criterio de filtrado (`foodTypeCategoryId`), no un segundo mecanismo de filtrado independiente.
 - El punto de quiebre entre el patrón de escritorio (barra superior) y el patrón mobile (barra inferior) sigue el mismo criterio responsivo ya usado en el resto de la aplicación.
 - Las categorías de tipo de comida mostradas con ícono son las que ya existen en el catálogo de E3 (Pizzas, Sándwiches, Ensaladas); no se inventan categorías nuevas.

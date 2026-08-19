@@ -211,3 +211,23 @@ La puerta constitucional pasa sin violaciones que justificar. No aplica esta sec
 | FR-008, FR-009; HU-15 escenarios 8, 9 | C |
 | Identidad visual: FR-012, FR-013; HU-16 escenarios 1–3 | D |
 | FR-014, FR-015; SC-001 a SC-008 | E |
+| FR-016; HU-15 escenarios 12–14; SC-009 | F (`tasks.md` Fase 6, post-verificación) |
+| FR-017; HU-15 escenarios 15–17; HU-16 escenario 4; SC-010 | G (`tasks.md` Fase 7, post-verificación) |
+
+## Enmiendas post-verificación
+
+Este plan describe el diseño tal como se entendía en la Fase 1, **antes** de la primera
+validación funcional. Dos decisiones se sumaron después, al usar la aplicación real (mismo
+patrón D-001/D-005 de `research.md`, sin dependencias ni entidades nuevas):
+
+- **FR-016** (Fase F): `/cliente` y `/negocio` redirigen a su pantalla principal en vez de
+  mostrar la landing genérica de E1/E3, que quedó duplicando el encabezado.
+- **FR-017** (Fase G): `NavegacionAdmin` pasa al mismo patrón de componente que
+  `NavegacionCliente`/`NavegacionNegocio` (marca, íconos, estado activo, barra mobile) y recibe
+  `.tema-voz`, **superando** la exclusión de admin que este plan describía originalmente en la
+  Fase D y en la fila de Riesgos sobre `:root`. Los destinos de admin no cambian: siguen siendo
+  Panel y Usuarios.
+
+El detalle de cada una está en `spec.md` § Clarifications (segunda y tercera ronda) y en
+`tasks.md` Fases 6 y 7; no se reescriben las secciones de arriba para no perder el rastro de qué
+se decidió en qué momento.

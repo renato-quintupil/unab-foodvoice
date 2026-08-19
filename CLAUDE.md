@@ -8,14 +8,14 @@ menú**, **E2 · Gestión de pedidos** y **E9 · Navegación y experiencia visua
 están **construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
 `services/api` y `packages/shared`— están poblados, y las dos capas automáticas
 pasan en verde: **522 pruebas unitarias** con sus umbrales de cobertura (más
-las 4 suites nuevas de E9 sobre el total de `apps/web`) y **587 de integración
+las 5 suites nuevas de E9, 188 pruebas en total sobre `apps/web`) y **587 de integración
 en 73 baterías** contra PostgreSQL real — E9 no agrega baterías de integración
 porque no toca `services/api`.
 
 Las cuatro validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
-2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 20 pasos— y su detalle está en
-el `verificacion.md` de cada spec.
+2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
+enmiendas incluidas)— y su detalle está en el `verificacion.md` de cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
@@ -31,15 +31,17 @@ funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
 - En E2: el error de una dirección puntual demasiado corta al confirmar un
   pedido se mostraba **en inglés** —el mensaje por omisión de Zod, sin
   traducir—, mientras el resto de la misma pantalla sí estaba en español.
-- En E9: ningún defecto de la validación en sí, pero sí una corrección después
-  de darla por cerrada: al usar la aplicación con el header ya puesto, las
-  landing genéricas de cliente y negocio (E1/E3) quedaron duplicando lo que el
-  header ya ofrecía — se corrigió con una enmienda chica a la spec (FR-016)
-  antes de tocar el código, no coló directo. Su alcance —navegación y
-  presentación sobre pantallas ya construidas, sin lógica de negocio nueva— es
-  más chico y más fácil de demostrar completo que el de las tres anteriores;
-  no es evidencia de que la validación manual haya dejado de aportar valor en
-  general.
+- En E9: ningún defecto de la validación en sí, pero sí dos correcciones
+  después de darla por cerrada, ambas al seguir usando la aplicación con el
+  header ya puesto: las landing genéricas de cliente y negocio (E1/E3)
+  quedaron duplicando lo que el header ya ofrecía (FR-016), y el encabezado de
+  administrador quedó con el estilo visual anterior a HU-16 mientras cliente y
+  negocio ya tenían el rediseño (FR-017). Las dos se corrigieron con una
+  enmienda chica a la spec antes de tocar el código, no colaron directo. Su
+  alcance —navegación y presentación sobre pantallas ya construidas, sin
+  lógica de negocio nueva— es más chico y más fácil de demostrar completo que
+  el de las tres anteriores; no es evidencia de que la validación manual haya
+  dejado de aportar valor en general.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -90,6 +92,13 @@ E1+E3+E2 ya habían construido.
   botones de E1/E3, que quedó duplicando el header nuevo (FR-016, detectado al
   usar la aplicación). `/repartidor` sigue usando `InicioDeRol` sin cambios:
   no tiene header, así que no es redundante ahí.
+- **`NavegacionAdmin` recibió el mismo rediseño que cliente y negocio**
+  (FR-017, segunda enmienda post-verificación): marca, íconos, estado activo,
+  barra mobile y `.tema-voz` en `admin/layout.tsx`. Sus dos destinos —Panel y
+  Usuarios— no cambiaron. Ojo con el bug que encontró su propia prueba:
+  `/admin` es prefijo de toda ruta administrativa, así que "Panel" necesita
+  comparación exacta, no `startsWith`, o queda marcado activo en
+  `/admin/usuarios` también.
 
 ### Lo que E2 añadió al código
 
