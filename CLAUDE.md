@@ -242,9 +242,10 @@ complementarios — no hay que elegir uno:
 - Cada issue de épica lleva la etiqueta `epica` (morada); las tareas
   individuales de `tasks.md`, si se abren como issues, usan `tarea` como
   sub-issue de su épica.
-- Las épicas ya **Terminadas** (E1, E3, E2, E9) no tienen issue abierto ni
-  milestone — su seguimiento es el `specs/README.md`, no GitHub. Solo se abre
-  issue/milestone para una épica cuando empieza su especificación.
+- Las épicas ya **Terminadas** (E1, E3, E2, E9) tienen issue cerrado
+  (`epica`, sin milestone) solo para que el Project las muestre en `Done`; su
+  fuente de verdad sigue siendo `specs/README.md` y el `verificacion.md` de
+  cada una, no el issue.
 - **Configurar el "Group by" de una vista de Project es exclusivo de la UI
   web** — la API GraphQL no expone mutación para eso (`createProjectV2View`
   sí existe, pero `groupByFields` no es configurable por API).
