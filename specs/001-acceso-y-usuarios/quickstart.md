@@ -70,6 +70,32 @@ Solo `web` publica un puerto hacia el exterior; `api` y `postgres` quedan en la 
 
 Los datos de PostgreSQL viven en el volumen nombrado `foodvoice_pgdata` y sobreviven a `docker compose down`. Se pierden solo con `docker compose down -v`. **No hay estrategia de respaldo en v1** (D-013): declarado fuera de alcance, no olvidado.
 
+### 2a. "Reconstruí todo desde cero y no puedo entrar con el administrador"
+
+Síntoma: tras recrear los contenedores (`docker compose down` + `up --build`, sin `-v`), el inicio de sesión del administrador falla con **401** aunque `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` en `.env` sean correctas.
+
+**Causa**: "reconstruir desde cero" recrea imágenes y contenedores, pero **no** el volumen `foodvoice_pgdata` — ese solo se borra con `down -v` (ver nota arriba). Si en algún momento anterior `.env` tuvo otro `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`, el administrador que sigue viviendo en ese volumen es el de esas credenciales viejas, no el del `.env` actual. La semilla es idempotente por correo (§ 2b): si el correo del `.env` no coincide con el que ya existe, no crea uno nuevo ni actualiza el viejo, así que ninguna de las dos combinaciones de credenciales funciona salvo que se use la que realmente quedó en la base.
+
+**Dónde se ve el error**: `docker compose logs api`, filtrando por el intento de login. La línea de la API nunca distingue si falló el correo o la contraseña (FR-008), a propósito:
+
+```bash
+docker compose logs api --since 1h | grep -i "auth/login\|INVALID_CREDENTIALS"
+# ...POST /api/v1/auth/login 401 …ms
+# ...WARN [HttpExceptionFilter] INVALID_CREDENTIALS · 401
+```
+
+**Solución** cuando lo que se quiere es un entorno de prueba limpio (se pierden todos los datos, no solo el administrador):
+
+```bash
+docker compose down -v          # borra también foodvoice_pgdata
+docker compose up -d            # api migra sola al arrancar (§ arriba)
+docker compose exec api node dist-seed/prisma/seed.js   # crea catálogo + administrador
+```
+
+El seed **no** se corre con `pnpm --filter api db:seed` desde el anfitrión en este escenario: ese comando necesita que Prisma resuelva `DATABASE_URL` desde un `.env` en el cwd de `services/api` (el `.env` real vive en la raíz) y, aunque se resolviera eso, el host `postgres` de la cadena de conexión solo existe dentro de la red interna de Docker — `postgres` no publica puerto al anfitrión (D-006). Ejecutar el seed **dentro** del contenedor `api` con `docker compose exec` evita ambos problemas, porque reutiliza el entorno y la red ya configurados por `docker compose up`.
+
+Si en cambio se quiere conservar los demás datos (catálogo, pedidos, otros usuarios) y solo arreglar el acceso del administrador, es el caso de la § 2b siguiente — pero ojo: si el `.env` tiene un `ADMIN_SEED_EMAIL` distinto al que ya existe en la base, `--recuperar` fuerza *esa* cuenta a administrador activo, y el administrador anterior queda intacto con su rol y contraseña previos (no se fusionan ni se eliminan).
+
 ### 2b. Recuperar el acceso administrativo (FR-036)
 
 Si ningún administrador conserva acceso —el caso típico es que el último olvide su contraseña y no exista otro que se la restablezca—, la aplicación no puede resolverlo: no hay autoservicio de contraseña (FR-026) y la cuenta sigue activa y válida a ojos del sistema. La salida es operativa:
