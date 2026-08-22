@@ -249,6 +249,19 @@ complementarios — no hay que elegir uno:
 - **Configurar el "Group by" de una vista de Project es exclusivo de la UI
   web** — la API GraphQL no expone mutación para eso (`createProjectV2View`
   sí existe, pero `groupByFields` no es configurable por API).
+- **Esto no es automatización de CI**: nadie más que Claude, siguiendo los
+  pasos de la sección `## Spec-kit` de abajo, mantiene el Project al día. Si
+  una rama se crea o una épica se verifica sin pasar por una conversación con
+  Claude, el Project queda desactualizado hasta que se sincronice a mano.
+- IDs de referencia para las mutaciones GraphQL (`updateProjectV2ItemFieldValue`,
+  `addProjectV2ItemById`) sobre el Project:
+  - `projectId`: `PVT_kwHOD-ZNOM4BhImJ`
+  - Campo `Status` (`PVTSSF_lAHOD-ZNOM4BhImJzhgFgt8`): `Todo=f75ad846` ·
+    `In Progress=47fc9ee4` · `Done=98236657`
+  - Campo `Épica` (`PVTSSF_lAHOD-ZNOM4BhImJzhgFhEo`): un `singleSelectOptionId`
+    por cada una de las 9 épicas — listarlas con
+    `gh api graphql -f query='{ user(login:"renato-quintupil") { projectV2(number:1) { field(name:"Épica") { ... on ProjectV2SingleSelectField { options { id name } } } } } }'`
+    si hace falta re-obtenerlos (por ejemplo tras un `--force` o recreación del campo).
 
 ---
 
@@ -256,3 +269,17 @@ complementarios — no hay que elegir uno:
 
 - Antes de ejecutar el flujo de `/speckit.specify`, SIEMPRE ejecuta primero el hook `before_specify` (skill `speckit-git-feature`) para crear la rama de la feature, y espera su resultado antes de crear la spec.
 - Tras completar `/speckit.specify`, verifica con `git branch --show-current` que estamos en la rama `NNN-nombre-feature` y no en `master`. Si no es así, avísame antes de continuar.
+- **Al crear la rama de una épica nueva** (justo después de que el hook
+  `before_specify` confirme `BRANCH_NAME`): si la épica no tiene issue en
+  GitHub todavía, créalo con `gh issue create --label epica` (título
+  `EN · Nombre de la épica`, body con las HU y la ruta de la spec); si ya
+  existe, reábrelo si estaba cerrado. En ambos casos, agrégalo al Project
+  (`gh project item-add 1 --owner renato-quintupil --url ...`) y setea
+  `Status = In Progress` y `Épica` correspondiente vía
+  `updateProjectV2ItemFieldValue` (ver IDs en "Seguimiento en GitHub" arriba).
+- **Al completar la verificación funcional de una épica** (mismo momento que
+  dispara el tag de release en `## Releases`, es decir `verificacion.md` con
+  todos los criterios cumplidos y la rama ya en `main`): cierra el issue de
+  esa épica (`gh issue close ... --reason completed`) y actualiza su ítem del
+  Project a `Status = Done`. Hazlo como parte del mismo paso en que se crea el
+  tag, no antes.
