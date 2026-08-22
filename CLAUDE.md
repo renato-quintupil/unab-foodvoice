@@ -224,6 +224,31 @@ git tag -a v0.2.0 -m "..." && git push origin v0.2.0
 gh release create v0.2.0 --repo renato-quintupil/unab-foodvoice --title "..." --notes "..."
 ```
 
+## Seguimiento en GitHub (Milestones + Project)
+
+El seguimiento de épicas pendientes vive en dos lugares de GitHub, distintos y
+complementarios — no hay que elegir uno:
+
+- **Milestone por épica pendiente** (`E4`…`E8`, uno por cada fila "Sin
+  especificar"/"Borrador de HU" de `specs/README.md`): agrupa el issue de esa
+  épica y su `docs/epicas-hu/HU-NN-*.md` o spec asociada. Da % de avance y
+  conteo abierto/cerrado, nada más — no tiene vistas ni estados intermedios.
+- **Project "FoodVoice · Avance por épica"** (`https://github.com/users/renato-quintupil/projects/1`,
+  vinculado al repo `unab-foodvoice`): el mismo conjunto de issues, con dos
+  campos propios —`Status` (`Todo`/`In Progress`/`Done`) y `Épica` (las 9
+  épicas)— y dos vistas: `View 1` en tabla y `Tablero` en Kanban agrupado por
+  `Status`. Al arrancar una épica, su tarjeta se arrastra a `In Progress` en
+  el Tablero; al verificarla, a `Done`.
+- Cada issue de épica lleva la etiqueta `epica` (morada); las tareas
+  individuales de `tasks.md`, si se abren como issues, usan `tarea` como
+  sub-issue de su épica.
+- Las épicas ya **Terminadas** (E1, E3, E2, E9) no tienen issue abierto ni
+  milestone — su seguimiento es el `specs/README.md`, no GitHub. Solo se abre
+  issue/milestone para una épica cuando empieza su especificación.
+- **Configurar el "Group by" de una vista de Project es exclusivo de la UI
+  web** — la API GraphQL no expone mutación para eso (`createProjectV2View`
+  sí existe, pero `groupByFields` no es configurable por API).
+
 ---
 
 ## Spec-kit
