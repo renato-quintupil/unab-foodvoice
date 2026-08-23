@@ -28,25 +28,33 @@ import type {
  * productos ya filtrados por el servicio, más la frase del cliente).
  */
 
+/**
+ * Cada uno `.nullable().default(...)`: el modelo, en la práctica, **omite**
+ * los campos que no aplican a la frase en vez de mandarlos como `null`
+ * explícito — es el comportamiento normal de tool use, no un fallo. Exigirlos
+ * siempre presentes (como hacía la primera versión de este esquema) rechazaba
+ * respuestas válidas del modelo real; detectado al probar con Claude Haiku
+ * 4.5 en vivo, no lo cubría el doble de prueba de los tests de integración.
+ */
 const RESULTADO_BUSQUEDA_SCHEMA = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('RESULTS'),
-    priceTier: z.enum(['ECONOMICO', 'MEDIO', 'CARO']).nullable(),
-    foodTypeCategoryId: z.string().nullable(),
-    healthProfileCategoryId: z.string().nullable(),
-    vegan: z.boolean().nullable(),
-    productTerms: z.array(z.string()),
-    openRecommendation: z.boolean(),
+    priceTier: z.enum(['ECONOMICO', 'MEDIO', 'CARO']).nullable().default(null),
+    foodTypeCategoryId: z.string().nullable().default(null),
+    healthProfileCategoryId: z.string().nullable().default(null),
+    vegan: z.boolean().nullable().default(null),
+    productTerms: z.array(z.string()).default([]),
+    openRecommendation: z.boolean().default(false),
     productIds: z.array(z.string()).max(5),
   }),
   z.object({
     status: z.literal('NO_RESULTS'),
-    priceTier: z.enum(['ECONOMICO', 'MEDIO', 'CARO']).nullable(),
-    foodTypeCategoryId: z.string().nullable(),
-    healthProfileCategoryId: z.string().nullable(),
-    vegan: z.boolean().nullable(),
-    productTerms: z.array(z.string()),
-    openRecommendation: z.boolean(),
+    priceTier: z.enum(['ECONOMICO', 'MEDIO', 'CARO']).nullable().default(null),
+    foodTypeCategoryId: z.string().nullable().default(null),
+    healthProfileCategoryId: z.string().nullable().default(null),
+    vegan: z.boolean().nullable().default(null),
+    productTerms: z.array(z.string()).default([]),
+    openRecommendation: z.boolean().default(false),
   }),
   z.object({
     status: z.literal('CLARIFICATION'),
