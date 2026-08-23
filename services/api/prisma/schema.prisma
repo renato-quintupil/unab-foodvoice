@@ -59,6 +59,40 @@ enum Dimension {
   PERFIL_SALUD
 }
 
+/// E6 · Búsqueda por voz. Canal de origen de una búsqueda — solo telemetría
+/// (`search_log.channel`); nunca cambia el resultado de la búsqueda (FR-009).
+enum SearchChannel {
+  TEXT
+  VOICE
+
+  @@map("search_channel")
+}
+
+/// E6 · Búsqueda por voz. `SEARCH` resuelve una lista; `ADD` resuelve un único
+/// producto candidato para HU-13, reutilizando el mismo endpoint (D-056).
+enum SearchIntent {
+  SEARCH
+  ADD
+
+  @@map("search_intent")
+}
+
+/// E6 · Búsqueda por voz. Resultado final de una búsqueda, para `search_log`
+/// únicamente — no viaja al cliente HTTP tal cual (contracts/shared.md).
+enum SearchOutcome {
+  RESULTS
+  CLARIFICATION
+  NO_RESULTS
+  /// Solo `intent = ADD`: se resolvió un único producto candidato.
+  RESOLVED
+  /// Solo `intent = ADD`: ningún candidato razonable.
+  NOT_FOUND
+  /// Timeout, JSON inválido tras el reintento, o error del proveedor (D-065).
+  ERROR
+
+  @@map("search_outcome")
+}
+
 /// Persona que accede a la plataforma. No hay borrado físico (RN-002):
 /// `status = DESACTIVADO` conserva el historial asociado.
 model User {
@@ -111,6 +145,9 @@ model Session {
   revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// E6 · Búsqueda por voz. Telemetría de las búsquedas hechas en esta sesión.
+  searchLogs SearchLog[]
 
   @@index([userId], map: "session_user_id_idx")
   @@map("session")
@@ -245,6 +282,11 @@ model Product {
   /// E2 · Gestión de pedidos.
   cartLines  CartLine[]
   orderLines OrderLine[]
+
+  /// E6 · Búsqueda por voz. Relación implícita, sin tabla de unión propia
+  /// (D-059): Prisma la administra sola. Ausencia = "no declarado", nunca
+  /// "declarado que no cumple" (data-model.md).
+  dietaryTags DietaryTag[] @relation("productDietaryTags")
 
   @@map("product")
 }
@@ -402,4 +444,49 @@ model OrderStatusEvent {
   /// Deja preparado el orden estable de consulta de E4, sin exponerla en E2.
   @@index([orderId, occurredAt, id], map: "order_status_event_order_id_occurred_at_id_idx")
   @@map("order_status_event")
+}
+
+// ---------------------------------------------------------------------------
+// E6 · Búsqueda por voz (data-model.md de 006-busqueda-por-voz)
+//
+// Dos tablas nuevas. Ninguna tabla de E1/E2/E3/E9 cambia de forma; `product` y
+// `session` solo ganan relaciones entrantes.
+// ---------------------------------------------------------------------------
+
+/// Aptitud dietética (D-059). En v1, una única fila ("Vegano"), cargada por
+/// semilla — sin pantalla de administración (Clarifications, spec.md,
+/// 2026-08-23). El negocio solo marca o desmarca la aptitud en cada producto.
+model DietaryTag {
+  id String @id @default(uuid()) @db.Uuid
+  /// Único valor en v1: "Vegano".
+  name String @unique(map: "dietary_tag_name_key")
+
+  products Product[] @relation("productDietaryTags")
+
+  @@map("dietary_tag")
+}
+
+/// Telemetría de `POST /menu/search` (D-060). **Nunca** contiene la frase del
+/// cliente ni audio (FR-027, Clarifications) — solo lo necesario para medir el
+/// SLO (SC-004) y el gasto (SC-007) sin acumular contenido semántico.
+model SearchLog {
+  id        String        @id @default(uuid()) @db.Uuid
+  sessionId String        @map("session_id") @db.Uuid
+  channel   SearchChannel
+  intent    SearchIntent
+  outcome   SearchOutcome
+  /// Tiempo total de la solicitud, incluida la reconsulta a PostgreSQL.
+  latencyMs Int           @map("latency_ms")
+  /// `null` cuando `outcome = ERROR` antes de recibir respuesta del proveedor.
+  tokensUsed Int?         @map("tokens_used")
+  /// Identificador exacto del modelo usado, para comparar versiones (D-057).
+  model     String
+  /// `null` salvo `outcome = ERROR`. Código interno, no el mensaje del proveedor.
+  errorCode String?       @map("error_code")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId, createdAt], map: "search_log_session_id_created_at_idx")
+  @@map("search_log")
 }

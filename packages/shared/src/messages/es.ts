@@ -242,6 +242,25 @@ export const MSG_SIN_PEDIDOS_PENDIENTES = 'No tienes pedidos pendientes por ahor
 /** FR-039. El negocio todavía no rechazó ningún pedido. */
 export const MSG_SIN_PEDIDOS_RECHAZADOS = 'Todavía no has rechazado ningún pedido.';
 
+// ---------------------------------------------------------------------------
+// E6 · Búsqueda por voz
+// ---------------------------------------------------------------------------
+
+/** FR-015. `query` vacío o solo espacios. */
+export const MSG_BUSQUEDA_VACIA = 'Escribe o dicta lo que quieres comer para poder buscarlo.';
+
+/** FR-015. `query` de más de 300 caracteres. */
+export const MSG_BUSQUEDA_MUY_LARGA =
+  'Tu búsqueda es demasiado larga. Prueba con una frase más corta.';
+
+/** FR-014. Más de 20 búsquedas en 5 minutos para la misma sesión. */
+export const MSG_LIMITE_BUSQUEDAS =
+  'Hiciste demasiadas búsquedas seguidas. Espera unos minutos e inténtalo de nuevo.';
+
+/** FR-016. Timeout, error del proveedor, o JSON inválido tras el reintento. */
+export const MSG_BUSQUEDA_NO_DISPONIBLE =
+  'No pudimos interpretar tu búsqueda en este momento. Mientras tanto, puedes usar los filtros del menú.';
+
 export const AYUDA_DESCRIPCION_CATEGORIA = {
   explicacion:
     'Esta descripción es lo que permitirá encontrar la categoría cuando el cliente pida algo ' +

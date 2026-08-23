@@ -31,6 +31,13 @@ import { PrismaClient } from '@prisma/client';
  */
 const TABLAS = [
   'admin_audit_log',
+  // E6 · Búsqueda por voz. `search_log` va antes que `session` (referencia a
+  // ella); `_productDietaryTags` antes que `product`/`dietary_tag` (referencia
+  // a ambas). Requiere comillas dobles: Prisma la nombró en mayúsculas y
+  // minúsculas mezcladas, sin `@@map`.
+  'search_log',
+  '"_productDietaryTags"',
+  'dietary_tag',
   'session',
   'login_attempt_control',
   // E2 · Gestión de pedidos. `order_status_event` va antes que `order`:

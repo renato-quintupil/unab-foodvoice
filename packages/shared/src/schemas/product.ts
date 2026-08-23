@@ -77,6 +77,13 @@ const CamposProducto = z.object({
     .string()
     .uuid('Debes seleccionar un perfil de salud.')
     .describe('Categoría de dimensión PERFIL_SALUD'),
+  /**
+   * Aptitud vegana declarada por el negocio (E6, FR-012). `false` por
+   * omisión — significa "no declarado", nunca "declarado que no es apto"
+   * (data-model.md de 006-busqueda-por-voz). Nunca se infiere de
+   * `ingredients`.
+   */
+  vegan: z.boolean().optional().default(false),
 });
 
 /**

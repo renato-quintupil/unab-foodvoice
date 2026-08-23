@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import type { MenuQuery, MenuResponse, ProductDto } from '@foodvoice/shared';
 import { productoNoEncontrado } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
-import { calcularCortes, filtroDeTramo } from '../products/price-tier';
+import { calcularCortes, filtroDeTramo, type Cortes } from '../products/price-tier';
 import { productoADto } from '../products/products.service';
 
 /**
@@ -60,7 +60,7 @@ export class MenuService {
 
       const filas = await tx.product.findMany({
         where,
-        include: { foodTypeCategory: true, healthProfileCategory: true },
+        include: { foodTypeCategory: true, healthProfileCategory: true, dietaryTags: true },
         // Orden estable, igual que en la administración: sin el desempate por
         // `id`, dos productos creados en el mismo instante podrían intercambiarse
         // entre consultas.
@@ -83,11 +83,34 @@ export class MenuService {
     return this.prisma.$transaction(async (tx) => {
       const producto = await tx.product.findFirst({
         where: { id, active: true },
-        include: { foodTypeCategory: true, healthProfileCategory: true },
+        include: { foodTypeCategory: true, healthProfileCategory: true, dietaryTags: true },
       });
       if (!producto) throw productoNoEncontrado();
 
       return productoADto(producto, await calcularCortes(tx));
+    });
+  }
+
+  /**
+   * Proyección que consume el proveedor de búsqueda por voz (E6, D-061).
+   *
+   * **Deliberadamente distinto de `consultar()`**: aquí `available` también se
+   * exige, no solo `active`. Un producto agotado sigue visible en el menú manual
+   * (RN-003), pero la búsqueda por voz nunca puede sugerirlo ni agregarlo
+   * (Principio VIII, RN-02 de HU-06) — el comentario de la clase ya anticipaba
+   * esta vía como una consulta propia, no un filtro aplicado sobre `consultar()`.
+   */
+  async candidatosParaBusqueda(): Promise<{ items: ProductDto[]; cortes: Cortes }> {
+    return this.prisma.$transaction(async (tx) => {
+      const cortes = await calcularCortes(tx);
+
+      const filas = await tx.product.findMany({
+        where: { active: true, available: true },
+        include: { foodTypeCategory: true, healthProfileCategory: true, dietaryTags: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      });
+
+      return { items: filas.map((fila) => productoADto(fila, cortes)), cortes };
     });
   }
 }

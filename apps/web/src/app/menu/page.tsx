@@ -19,6 +19,7 @@ import { NavegacionNegocio } from '@/app/negocio/_components/navegacion';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { claseBricolage } from '@/lib/fuentes';
 import { exigirSesion } from '@/lib/sesion-servidor';
+import { BusquedaPorVoz } from './_components/busqueda-por-voz';
 import { FiltrosMenu } from './_components/filtros-menu';
 
 export const dynamic = 'force-dynamic';
@@ -90,6 +91,10 @@ export default async function PaginaMenu({
       {navegacion}
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
         <h1 className="text-2xl font-semibold">Menú</h1>
+
+        {/* Solo CLIENTE (FR-002, RN-11 de HU-06): negocio, admin y
+            repartidor siguen con el menú manual, sin búsqueda por voz. */}
+        {sesion.role === Role.CLIENTE && <BusquedaPorVoz />}
 
         <FiltrosMenu categorias={categorias.items} />
 

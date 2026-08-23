@@ -76,6 +76,9 @@ export function FormularioProducto({ categorias, producto }: FormularioProductoP
       price: producto?.price ?? undefined,
       foodTypeCategoryId: producto?.foodTypeCategory.id ?? deTipoComida[0]?.id ?? '',
       healthProfileCategoryId: producto?.healthProfileCategory.id ?? dePerfilSalud[0]?.id ?? '',
+      // E6: única aptitud dietética de v1, sin pantalla de administración
+      // aparte — se marca o desmarca directamente en el producto (D-059).
+      vegan: producto?.dietaryTags.includes('Vegano') ?? false,
     },
   });
 
@@ -262,6 +265,18 @@ export function FormularioProducto({ categorias, producto }: FormularioProductoP
               </option>
             ))}
           </select>
+        )}
+      </Campo>
+
+      <Campo id="vegan" etiqueta="Apto para veganos" error={errors.vegan?.message}>
+        {(control) => (
+          <div className="flex items-center gap-2">
+            <input type="checkbox" {...control} {...register('vegan')} className="h-4 w-4" />
+            <span className="text-sm text-[var(--color-tenue)]">
+              Solo lo que declares aquí aparece en la búsqueda por voz como apto para veganos; no se
+              infiere de los ingredientes.
+            </span>
+          </div>
         )}
       </Campo>
 

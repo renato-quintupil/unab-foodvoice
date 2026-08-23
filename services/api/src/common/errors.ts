@@ -21,6 +21,8 @@ import {
   MSG_PRODUCTO_YA_EXISTE,
   MSG_SESION_EXPIRADA,
   MSG_SIN_PERMISO,
+  MSG_LIMITE_BUSQUEDAS,
+  MSG_BUSQUEDA_NO_DISPONIBLE,
 } from '@foodvoice/shared';
 
 /**
@@ -62,6 +64,9 @@ export const ErrorCode = {
   ADDRESS_NEEDS_NEW_DEFAULT: 'ADDRESS_NEEDS_NEW_DEFAULT',
   ADDRESS_IN_USE: 'ADDRESS_IN_USE',
   ORDER_NOT_PENDING: 'ORDER_NOT_PENDING',
+  // E6 · Búsqueda por voz (`contracts/api.md` § Códigos de error que E6 añade).
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+  SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -248,3 +253,15 @@ export const direccionEnUso = (): AppError =>
 /** `409 ORDER_NOT_PENDING` (FR-032, D-038). El pedido no está en `creado`, o perdió la carrera. */
 export const pedidoNoPendiente = (): AppError =>
   new AppError(409, ErrorCode.ORDER_NOT_PENDING, MSG_PEDIDO_NO_PENDIENTE);
+
+// ---------------------------------------------------------------------------
+// E6 · Búsqueda por voz (`contracts/api.md` § Códigos de error que E6 añade)
+// ---------------------------------------------------------------------------
+
+/** `429 TOO_MANY_REQUESTS` (FR-014, D-058). Más de 20 búsquedas en 5 minutos por sesión. */
+export const demasiadasBusquedas = (): AppError =>
+  new AppError(429, ErrorCode.TOO_MANY_REQUESTS, MSG_LIMITE_BUSQUEDAS);
+
+/** `503 SEARCH_UNAVAILABLE` (FR-016, D-065). Timeout, error del proveedor, o JSON inválido tras el reintento. */
+export const busquedaNoDisponible = (): AppError =>
+  new AppError(503, ErrorCode.SEARCH_UNAVAILABLE, MSG_BUSQUEDA_NO_DISPONIBLE);

@@ -70,6 +70,7 @@ const PRODUCTO: ProductDto = {
   status: ProductStatus.DISPONIBLE,
   priceTier: null,
   createdAt: '2026-08-16T12:00:00.000Z',
+  dietaryTags: [],
 };
 
 let fetchSimulado: ReturnType<typeof vi.fn>;
@@ -138,7 +139,7 @@ describe('Formulario de producto · clasificación (FR-012, HU14-E07)', () => {
 });
 
 describe('Formulario de producto · campos (FR-013, FR-016, FR-017, SC-019)', () => {
-  it('presenta los seis campos, con los ingredientes marcados como opcionales', () => {
+  it('presenta los siete campos, con los ingredientes marcados como opcionales', () => {
     render(<FormularioProducto categorias={CATEGORIAS} />);
     for (const etiqueta of [
       'Nombre',
@@ -147,9 +148,31 @@ describe('Formulario de producto · campos (FR-013, FR-016, FR-017, SC-019)', ()
       'Precio en pesos',
       'Tipo de comida',
       'Perfil de salud',
+      'Apto para veganos',
     ]) {
       expect(screen.getByLabelText(etiqueta)).toBeInTheDocument();
     }
+  });
+
+  it('la aptitud vegana llega destildada por omisión (E6)', () => {
+    render(<FormularioProducto categorias={CATEGORIAS} />);
+    expect(screen.getByLabelText('Apto para veganos')).not.toBeChecked();
+  });
+
+  it('envía vegan: true cuando se tilda la aptitud vegana al crear', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(respuesta(201, { ...PRODUCTO, dietaryTags: ['Vegano'] }));
+    render(<FormularioProducto categorias={CATEGORIAS} />);
+
+    await usuario.type(screen.getByLabelText('Nombre'), 'Pizza Napolitana');
+    await usuario.type(screen.getByLabelText('Descripción'), DESCRIPCION_OK);
+    await usuario.type(screen.getByLabelText('Precio en pesos'), '8990');
+    await usuario.click(screen.getByLabelText('Apto para veganos'));
+    await usuario.click(screen.getByRole('button', { name: 'Crear producto' }));
+
+    await waitFor(() => expect(fetchSimulado).toHaveBeenCalled());
+    const [, opciones] = fetchSimulado.mock.calls[0]!;
+    expect(JSON.parse(opciones.body as string)).toMatchObject({ vegan: true });
   });
 
   it('muestra la ayuda de la descripción sin interacción previa (SC-019)', () => {
@@ -320,6 +343,13 @@ describe('Formulario de producto · edición (FR-018, FR-022)', () => {
     render(<FormularioProducto categorias={CATEGORIAS} producto={PRODUCTO} />);
     expect(screen.getByLabelText('Tipo de comida')).toHaveValue(PIZZAS.id);
     expect(screen.getByLabelText('Perfil de salud')).toHaveValue(INDULGENTE.id);
+  });
+
+  it('llega con la aptitud vegana tildada cuando el producto ya la tiene (E6)', () => {
+    render(
+      <FormularioProducto categorias={CATEGORIAS} producto={{ ...PRODUCTO, dietaryTags: ['Vegano'] }} />,
+    );
+    expect(screen.getByLabelText('Apto para veganos')).toBeChecked();
   });
 
   it('guarda con `PATCH` sobre el identificador del producto', async () => {
