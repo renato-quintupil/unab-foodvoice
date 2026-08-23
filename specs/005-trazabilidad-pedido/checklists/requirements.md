@@ -31,6 +31,14 @@
 
 ## Notes
 
+- **Corrección durante `/speckit.plan` (2026-08-23)**: FR-004, la Historia 2
+  (Acceptance Scenario 2) y SC-003 asumían un escenario de "pedido de otro
+  negocio" que no puede ocurrir en v1, porque el producto es mono-local
+  (Principio VIII de la constitución) y no existe una tabla de negocios. Se
+  corrigió el texto para reflejar que cualquier cuenta `NEGOCIO` gestiona el
+  único local, y se documentó como supuesto explícito. No cambia el alcance
+  ni los criterios de éxito de fondo, solo corrige una premisa incorrecta.
+
 - Todos los ítems pasan en la primera iteración. La descripción de la
   funcionalidad recibida ya venía suficientemente acotada (incluía alcance
   explícito y fuera de alcance), lo que evitó ambigüedades que requirieran
