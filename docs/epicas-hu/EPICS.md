@@ -74,14 +74,22 @@ secuencia.
   respetarse también en HU-12 (el carrito no permite agregar un producto agotado) y en HU-06 /
   HU-13 (la búsqueda y el agregado por voz no deben sugerir ni agregar productos agotados).
 - **HU-04 / HU-05 / HU-01 y la trazabilidad (HU-03)**: la máquina de estados
-  (creado → en preparación → asignado a repartidor → entregado → cerrado, principio XII de la
-  constitución) ya está construida en `packages/shared` desde E1. HU-01, HU-04 y HU-05
-  disparan transiciones sobre ese contrato, no deben redefinir sus propios estados; HU-03
-  añade el historial persistido de esas transiciones y su consulta. Los estados son **cinco**:
-  no existe un estado "aceptado" (la aceptación del negocio es la transición
-  creado → en preparación) ni estado de rechazo o cancelación en v1.
-- **HU-03 y la entidad Pedido**: el historial se registra sobre pedidos que ya existen, y la
-  entidad Pedido se crea en E2. Por eso E2 se especifica antes que E4.
+  (principio XII de la constitución, enmendado a la versión 2.0.0 durante E2) ya está
+  construida en `packages/shared` desde E1, con la rama de rechazo agregada por E2. Los
+  estados son **seis**: `creado → en_preparacion → asignado_repartidor → entregado →
+  cerrado`, más `rechazado` —terminal, alcanzable únicamente desde `creado`, con motivo
+  obligatorio (RN-008, RN-010 de E2)—. No existe un estado "aceptado" independiente: la
+  aceptación del negocio es la transición `creado → en_preparacion`. HU-01, HU-04 y HU-05
+  disparan transiciones sobre ese contrato y no deben redefinir sus propios estados.
+- **HU-03 y la entidad Pedido**: la entidad Pedido se crea en E2, por eso E2 se especifica
+  antes que E4. **E2 ya escribe el historial** (`OrderStatusEvent`, append-only, con la
+  creación y sus dos transiciones) porque el principio XII lo exige desde el primer
+  pedido — pero no lo expone: no hay endpoint, DTO ni pantalla que lo consulte (RN-011 de
+  E2). HU-03 incorpora esa consulta (API + pantalla) sobre las entradas que E2 ya dejó
+  escritas, y dispone el mecanismo para que E5 (`asignado_repartidor`) y E7 (`entregado`,
+  `cerrado`) seguirán agregando entradas cuando existan; HU-03 no dispara esas dos
+  transiciones futuras, solo las que E2 ya construyó pueden verificarse funcionalmente
+  hoy.
 
 ## Orden sugerido de especificación
 

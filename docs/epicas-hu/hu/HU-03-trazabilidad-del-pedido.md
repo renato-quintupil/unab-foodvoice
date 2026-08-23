@@ -1,280 +1,132 @@
-# HU-03 — Trazabilidad del pedido
+# HU-03 · Trazabilidad del pedido
 
-> Borrador de historia de usuario, preparatorio de la spec de **E4 · Trazabilidad
-> del pedido**. Es material de entrada para `/speckit-specify`, no la spec en sí:
-> los escenarios de esta ficha se incorporarán como criterios de aceptación
-> dentro de `specs/00N-trazabilidad-del-pedido/spec.md`.
+**Épica**: E4 · Trazabilidad del pedido
+**Estado**: sin especificar (este documento es la base para `/speckit.specify`,
+no reemplaza la spec que generará ese comando)
 
-**Como** administrador, cliente, negocio o repartidor, **quiero** consultar el
-historial completo de estados por los que pasó un pedido, con quién produjo cada
-cambio y cuándo, **para** dar seguimiento al servicio y auditarlo sin depender de
-la memoria de nadie.
+## Historia
 
-| Campo | Valor |
-| --- | --- |
-| **Épica** | E4 · Trazabilidad del pedido |
-| **Prioridad** | Alta |
-| **MVP (web)** | Sí |
-| **Story points** | 8 *(revisado desde 5; ver «Nota sobre la estimación»)* |
-| **Causa raíz** | General — trazabilidad del servicio |
-| **Depende de** | E1 (roles y sesión, máquina de estados en `packages/shared`), E2 (entidad Pedido), E3 (catálogo) |
-| **Consumida por** | HU-01 (E2), HU-04 (E5), HU-05 (E7), HU-07 (E8), HU-10 (E1) |
+> Como **cliente**, quiero **ver el historial de estados de mi pedido, no solo
+> el estado actual**, para saber qué pasó y cuándo, sin tener que preguntarle
+> al local.
+>
+> Como **negocio**, quiero **la misma trazabilidad sobre los pedidos que
+> gestiono**, para responder consultas de un cliente con datos y no con
+> memoria.
 
-**Justificación de prioridad**: es un objetivo central declarado del proyecto y
-el Principio XII de la constitución lo exige de forma no ambigua. Además sustenta
-la métrica de evaluación «100 % de pedidos con historial» y es el insumo de los
-reportes de HU-10, cuya superficie ya está construida en E1 y hoy responde vacía.
+## Qué ya existe en el sistema (2026-08-23)
 
----
+Antes de especificar, esto es lo que E1/E2 ya construyeron y sobre lo que
+HU-03 se apoya — no hay que redefinirlo, solo consumirlo y exponerlo:
 
-## Alcance de esta HU
+- **La máquina de estados es de seis estados**, constitución (Principio XII,
+  v2.0.0, enmendada durante E2). `rechazado` **sí forma parte de la máquina**,
+  como rama terminal desde `creado`:
 
-**Qué entra**: el registro append-only de cada cambio de estado y su consulta en
-pantalla por los cuatro roles, sobre pedidos que ya existen.
+  ```
+  creado ─┬─→ en_preparacion → asignado_repartidor → entregado → cerrado
+          └─→ rechazado   (terminal, sin transiciones salientes)
+  ```
 
-**Qué no entra**: disparar las transiciones. HU-03 define *el contrato y el
-registro*; quién pulsa el botón que produce cada cambio pertenece a otras HU:
+  Alcanzable únicamente desde `creado`, con motivo de texto obligatorio,
+  inmutable y visible para el cliente. Vive en
+  `packages/shared/src/order-state/machine.ts` y
+  `packages/shared/src/enums/order-status.ts`. **No existe un estado
+  "aceptado"** independiente: aceptar es la transición `creado →
+  en_preparacion`.
+- **El historial ya se escribe**, no se crea en E4. El modelo
+  `OrderStatusEvent` (`services/api/prisma/schema.prisma:386`) es append-only
+  —lo protege el mismo tipo de trigger `BEFORE UPDATE OR DELETE` que ya usan
+  otras tablas del proyecto— y guarda por cada entrada: estado anterior
+  (`NULL` solo en la primera), estado resultante, usuario actor, **rol que
+  ejercía al actuar** (no su rol actual — se congela igual que la sesión) y
+  fecha. E2 escribe ahí, en la misma transacción atómica que crea o cambia el
+  pedido, dos casos: la creación (`creado`, sin estado anterior) y las dos
+  transiciones que dispara (`→ en_preparacion`, `→ rechazado`).
+- **Lo que E2 explícitamente no hizo, a propósito (RN-011 de su spec)**:
+  ningún endpoint ni DTO expone `OrderStatusEvent`. La pantalla `/cliente/
+  pedidos` (`apps/web/src/app/cliente/pedidos/page.tsx`) lo dice en su propio
+  comentario: "estado actual y, si corresponde, el motivo de rechazo — **sin
+  historial (RN-011, E4)**". Es el punto exacto donde arranca HU-03.
+- **`GET /orders`** (cliente) y **`GET /orders`, `GET /orders/rejected`,
+  `PUT /orders/:id/accept`, `PUT /orders/:id/reject`** (negocio,
+  `business-orders.controller.ts`) ya existen y devuelven el estado actual.
+  No hay `GET /orders/:id` ni ruta de detalle por pedido todavía — HU-03 la
+  necesita para anclar el historial a un pedido concreto.
+- **`GET /dashboard/orders`** (HU-10, `services/api/src/dashboard/
+  dashboard.controller.ts`) ya existe: reporte paginado, filtrable por estado
+  y rango de fechas, para el rol `ADMIN`. Su `OrderDto`
+  (`packages/shared/src/types/api.ts:57`) hoy solo trae `id`, `status`,
+  `createdAt` — a propósito, porque en E1 la lista era vacía por
+  construcción. **HU-10 depende de HU-03/E4 para su verificación funcional**
+  (así lo dice explícitamente `specs/001-acceso-y-usuarios/spec.md`, FR-019,
+  FR-020, SC-006): las métricas y el reporte de pedidos existen en código
+  desde E1 pero no se pudieron probar con datos reales hasta que hubiera
+  pedidos. Definir si ese `OrderDto` se enriquece con el historial es una
+  decisión de esta HU, no algo que HU-10 ya haya resuelto.
+- **El rol `REPARTIDOR` ya existe** en `packages/shared/src/enums/role.ts`,
+  aunque E5 (Reparto) todavía no construye ninguna pantalla ni endpoint para
+  él.
+- **El motivo del rechazo ya está resuelto en E2 y no es tarea de HU-03**:
+  RN-007 de `specs/003-gestion-pedidos/spec.md` decide explícitamente que el
+  motivo es **texto libre**, no una lista fija de causas predefinidas — "un
+  local pequeño no tiene por qué encajar su realidad en categorías adivinadas
+  de antemano". Si el negocio rechaza un pedido porque detectó un problema en
+  cómo está armado el menú (precio o ingredientes mal cargados, por ejemplo),
+  simplemente lo escribe como motivo (igual que "se acabó el ingrediente
+  principal", el ejemplo ya usado en la spec de E2) — no hace falta un estado,
+  un subtipo de rechazo ni ningún campo nuevo. HU-03 no toca el contenido del
+  motivo: solo consulta y muestra la entrada de historial que E2 ya escribió,
+  motivo incluido (FR-034).
 
-| Transición | La dispara | HU |
-| --- | --- | --- |
-| — → `creado` | El cliente confirma el pedido | HU-01 (E2) |
-| `creado` → `en_preparacion` | El negocio acepta el pedido | HU-01 (E2) |
-| `en_preparacion` → `asignado_repartidor` | Asignación o toma del pedido | HU-04 (E5) |
-| `asignado_repartidor` → `entregado` | El repartidor marca la entrega | HU-05 (E7) |
-| `entregado` → `cerrado` | Cierre del servicio | HU-05 (E7) |
+## Qué falta (alcance de HU-03 / E4)
 
----
+1. **Exponer el historial de un pedido por API.** Como mínimo una ruta de
+   detalle por pedido (`GET /orders/:id` o equivalente) que incluya sus
+   entradas de `OrderStatusEvent` ordenadas, respetando el mismo control de
+   acceso por rol que ya existe: el cliente solo ve los suyos, el negocio los
+   que gestiona.
+2. **Mostrar el historial en la pantalla del cliente.** `/cliente/pedidos`
+   pasa de "estado actual" a una línea de tiempo por pedido —qué estado, cuándo,
+   y el motivo cuando fue rechazado—. Decidir en la spec si es la misma
+   pantalla ampliada o una vista de detalle aparte.
+3. **Extender (si corresponde) el reporte de HU-10** para que el
+   administrador pueda ver el historial de un pedido desde el panel, no solo
+   su estado puntual — a definir con criterios de aceptación propios, sin
+   dar por sentado que HU-10 ya lo resolvió.
+4. **Dejar preparado el mecanismo para que E5 y E7 sigan escribiendo al
+   mismo historial.** E4 no dispara `→ asignado_repartidor`, `→ entregado` ni
+   `→ cerrado` —esas transiciones nacen en E5 y E7, que todavía no existen—,
+   pero si el helper transaccional que hoy vive privado en
+   `orders.service.ts` conviene compartirse o generalizarse para que las
+   épicas futuras lo reusen sin reinventar la atomicidad ya resuelta, es una
+   decisión de diseño de esta HU (se documenta en su `plan.md` / `research.md`,
+   no aquí).
+5. **Verificación funcional pendiente de HU-10** (FR-019, FR-020, SC-006 de
+   `specs/001-acceso-y-usuarios/spec.md`): una vez que HU-03 deje pedidos con
+   historial real, corresponde volver a esa spec y completar su validación
+   manual, que quedó condicionada a que existieran E4/E2.
 
-## Máquina de estados (contrato único)
+## Explícitamente fuera de alcance (v1)
 
-Son **cinco** estados, estrictamente lineales, los del Principio XII, ya
-implementados en `packages/shared/src/order-state/machine.ts` durante E1 (T109):
+- Disparar `asignado_repartidor`, `entregado` o `cerrado` — pertenecen a E5 y
+  E7. HU-03 solo puede verificarse funcionalmente sobre los estados que ya
+  son alcanzables hoy: `creado`, `en_preparacion`, `rechazado`.
+- Geolocalización o seguimiento en tiempo real del repartidor — descartado
+  por decisión de alcance de v1 (`docs/epicas-hu/EPICS.md`, "Sin
+  geolocalización").
+- Notificaciones push o por correo ante cada cambio de estado — ninguna HU
+  del mapa la pide; sería alcance fantasma (Principio III de la
+  constitución).
+- Auditoría de accesos a la trazabilidad — no confundir con
+  `admin_audit_log`, que registra acciones administrativas sobre usuarios
+  (HU-09), no consultas de historial de pedidos.
 
-```
-creado → en_preparacion → asignado_repartidor → entregado → cerrado
-```
+## Preguntas abiertas para `/speckit.clarify`
 
-Tres precisiones que el borrador original dejaba abiertas y aquí quedan cerradas:
-
-- **No existe un estado «aceptado»**. La aceptación del pedido por el negocio
-  *es* la transición `creado → en_preparacion`; no añade un estado propio.
-- **«En reparto» es `asignado_repartidor`**, el mismo estado con otro nombre. Se
-  usa el nombre del principio para no duplicar vocabulario.
-- **No hay cancelación ni rechazo en v1**, y no hay transiciones de retroceso.
-  `cerrado` es terminal. Si el producto llegara a necesitarlos, corresponde
-  enmendar la constitución y esta HU, no ampliar la máquina en el código.
-
----
-
-## Qué se registra en cada entrada del historial
-
-Cada entrada guarda, como mínimo:
-
-1. **Estado alcanzado** y **estado anterior** (el anterior es nulo solo en la
-   primera entrada).
-2. **Fecha y hora** del cambio, almacenada en UTC y mostrada al usuario en la
-   zona horaria local, con fecha y hora legibles (no marca técnica).
-3. **Actor**: la identidad del usuario que lo produjo y **el rol que tenía en ese
-   momento**, congelado en la entrada. Un cambio de rol posterior no reescribe el
-   historial.
-4. **Origen**: si el cambio lo produjo una persona o el sistema.
-
-**El historial solo admite agregar entradas.** No se edita ni se borra, por
-ninguna vía y por ningún rol, ni siquiera el administrador. Corregir un error
-solo es posible avanzando el estado, nunca reescribiendo el pasado.
-
----
-
-## Reglas de negocio
-
-- **RN-01** — Todo pedido tiene al menos una entrada de historial desde el
-  instante en que se crea. No existe pedido sin historial.
-- **RN-02** — Una transición solo se acepta si el estado destino es alcanzable
-  desde el estado actual según la máquina. Cualquier otra se rechaza sin efecto y
-  sin dejar entrada.
-- **RN-03** — El historial es append-only: no se expone ninguna operación de
-  edición ni de borrado de entradas.
-- **RN-04** — El pedido se cierra únicamente después de que la entrega fue
-  marcada como realizada (Principio XII).
-- **RN-05** — Repetir una transición ya aplicada no crea una entrada duplicada.
-- **RN-06** — Ante dos intentos simultáneos de la misma transición, solo uno
-  produce entrada; el otro recibe la indicación de que el pedido ya avanzó.
-- **RN-07** — Visibilidad por rol: el **cliente** ve el historial de sus propios
-  pedidos; el **negocio**, el de los pedidos del local; el **repartidor**, el de
-  los pedidos que le fueron asignados; el **administrador**, el de todos.
-- **RN-08** — El historial se muestra siempre en orden cronológico ascendente
-  (del más antiguo al más reciente), sin opción de alterar el orden.
-
----
-
-## Criterios de aceptación (Gherkin)
-
-```gherkin
-Característica: Trazabilidad del pedido
-
-  Escenario: HU03-E01 · Todo pedido nace con historial
-    Dado que un cliente confirma un pedido
-    Cuando el pedido queda creado
-    Entonces su historial muestra una entrada con el estado "creado"
-    Y esa entrada indica la fecha, la hora y el nombre del cliente que lo creó
-
-  Escenario: HU03-E02 · Cada cambio de estado deja registro
-    Dado un pedido en estado "creado"
-    Cuando el negocio lo acepta y pasa a "en preparación"
-    Entonces el historial muestra una segunda entrada
-    Y esa entrada indica el estado alcanzado, la fecha y hora, y el nombre y el
-      rol de quien produjo el cambio
-
-  Escenario: HU03-E03 · Historial completo en orden cronológico
-    Dado un pedido que recorrió los cinco estados hasta "cerrado"
-    Cuando consulto su historial
-    Entonces veo cinco entradas
-    Y aparecen ordenadas del cambio más antiguo al más reciente
-    Y puedo reconstruir la secuencia completa leyendo solo la pantalla
-
-  Escenario: HU03-E04 · Transición fuera de orden rechazada
-    Dado un pedido en estado "creado"
-    Cuando se intenta llevarlo directamente a "entregado"
-    Entonces el sistema lo impide
-    Y muestra un mensaje en español indicando que la transición no es válida
-    Y el historial del pedido no incorpora ninguna entrada nueva
-
-  Escenario: HU03-E05 · No se puede retroceder de estado
-    Dado un pedido en estado "entregado"
-    Cuando se intenta devolverlo a "en preparación"
-    Entonces el sistema lo impide
-    Y el historial no incorpora ninguna entrada nueva
-
-  Escenario: HU03-E06 · El estado cerrado es terminal
-    Dado un pedido en estado "cerrado"
-    Cuando se intenta aplicarle cualquier cambio de estado
-    Entonces el sistema lo impide
-    Y muestra un mensaje en español indicando que el pedido ya está cerrado
-
-  Escenario: HU03-E07 · El historial no se puede editar ni borrar
-    Dado que inicié sesión con rol "administrador"
-    Cuando consulto el historial de cualquier pedido
-    Entonces no existe ninguna acción para modificar ni eliminar una entrada
-    Y las entradas anteriores se mantienen idénticas tras nuevos cambios de estado
-
-  Escenario: HU03-E08 · El rol del actor queda congelado en la entrada
-    Dado un pedido cuyo cambio a "en preparación" lo produjo un usuario con rol "negocio"
-    Cuando el administrador cambia después el rol de ese usuario
-    Y vuelvo a consultar el historial del pedido
-    Entonces la entrada sigue mostrando el rol "negocio" que tenía al producir el cambio
-
-  Escenario: HU03-E09 · El actor desactivado sigue siendo identificable
-    Dado un pedido con entradas producidas por un repartidor
-    Cuando el administrador desactiva a ese repartidor
-    Y consulto el historial del pedido
-    Entonces las entradas siguen mostrando su nombre y su rol
-
-  Escenario: HU03-E10 · Doble envío de la misma transición
-    Dado un pedido en estado "creado"
-    Cuando el negocio pulsa dos veces seguidas la acción de aceptar el pedido
-    Entonces el historial incorpora una sola entrada de "en preparación"
-
-  Escenario: HU03-E11 · Dos actores intentan la misma transición a la vez
-    Dado un pedido en estado "en preparación"
-    Cuando dos repartidores intentan tomarlo simultáneamente
-    Entonces solo uno queda registrado en el historial como actor del cambio
-    Y el otro recibe un mensaje en español indicando que el pedido ya fue tomado
-
-  Escenario: HU03-E12 · El cliente ve el historial de su propio pedido
-    Dado que inicié sesión con rol "cliente"
-    Cuando consulto uno de mis pedidos
-    Entonces veo su historial completo de estados
-
-  Escenario: HU03-E13 · El cliente no ve pedidos ajenos
-    Dado que inicié sesión con rol "cliente"
-    Cuando intento consultar el historial de un pedido de otro cliente
-    Entonces el sistema me lo impide
-    Y muestra un mensaje en español explicando que no tengo permiso
-
-  Escenario: HU03-E14 · El administrador ve el historial de cualquier pedido
-    Dado que inicié sesión con rol "administrador"
-    Cuando consulto cualquier pedido de la plataforma
-    Entonces veo su historial completo de estados
-```
-
----
-
-## Casos límite a cubrir
-
-- Pedido recién creado, sin más transiciones: el historial muestra una sola
-  entrada y la pantalla no queda vacía ni con aspecto de error.
-- Cambio de estado producido por el sistema y no por una persona: la entrada
-  indica el origen sin inventar un actor humano.
-- Consulta del historial de un pedido inexistente o de otro local.
-- Pedido con muchas entradas: la pantalla sigue siendo legible desde 360 píxeles
-  de ancho y recorrible por teclado.
-- Dos cambios de estado en el mismo segundo: el orden cronológico mostrado sigue
-  siendo determinista.
-
----
-
-## Criterios de éxito (medibles, verificables sin leer código)
-
-| ID | Criterio |
-| --- | --- |
-| SC-1 | El **100 %** de los pedidos creados tiene al menos una entrada de historial, comprobable en el panel del administrador comparando total de pedidos contra pedidos con historial. |
-| SC-2 | El **100 %** de los cambios de estado observados en pantalla aparece en el historial en la consulta inmediatamente posterior. |
-| SC-3 | El **100 %** de los intentos de transición inválida se rechaza con un mensaje en español y sin dejar entrada. |
-| SC-4 | Una persona no técnica reconstruye la secuencia completa de un pedido leyendo solo la pantalla, sin consultar la base de datos ni logs. |
-| SC-5 | No existe en toda la interfaz ninguna acción que edite o elimine una entrada del historial, para ningún rol. |
-| SC-6 | El historial de un pedido se alcanza en **3 clics o menos** desde el listado de pedidos del rol correspondiente. |
-
----
-
-## Fuera de alcance de v1 (declarado, no omitido)
-
-- Cancelación y rechazo de pedidos, y cualquier estado terminal distinto de
-  `cerrado`.
-- Retroceso o corrección de estados ya registrados.
-- Exportación del historial (CSV, PDF) y notificaciones al cliente ante cada
-  cambio de estado.
-- Geolocalización del reparto (Principio X: direcciones como texto libre).
-- Política de retención o purga del historial.
-
----
-
-## Decisiones que quedan abiertas para `/speckit-clarify`
-
-1. **Quién dispara `entregado → cerrado`** y si es automático. El Principio XII
-   fija que el cierre ocurre solo tras la entrega, pero no dice si lo produce el
-   repartidor, el negocio o el sistema tras la confirmación de conformidad de
-   HU-05.
-2. **Qué nombre visible se muestra al cliente** para el actor de cada cambio:
-   nombre completo del repartidor, nombre de pila o solo el rol. Afecta al
-   Principio X (datos mínimos).
-3. **Si el historial se muestra igual para todos los roles** o el cliente ve una
-   versión resumida sin detalle del actor interno del local.
-
----
-
-## Nota sobre la estimación
-
-Se sube de **5 a 8 SP**. El borrador original estimaba el registro de estados,
-pero el trabajo real incluye además: garantía append-only a nivel de base de
-datos, control de concurrencia e idempotencia en las transiciones (RN-05, RN-06),
-visibilidad diferenciada para cuatro roles (RN-07) y la pantalla de historial
-recorrible por teclado y desde 360 píxeles. La experiencia de E1 es explícita al
-respecto: la unicidad, las transacciones y la atomicidad no se cubren con tests
-unitarios, requieren la capa de integración.
-
----
-
-## Cambios respecto del borrador original
-
-| Punto del borrador | Qué se corrigió |
-| --- | --- |
-| «Estados soportados: creado, aceptado, en preparación, en reparto, entregado, cerrado» | Contradecía el Principio XII y `packages/shared`. Se alinea a los cinco estados reales y se explica dónde encaja «aceptado». |
-| «actores del pedido» | Se nombran los cuatro roles y se define qué ve cada uno (RN-07). |
-| Faltaba la inmutabilidad | El Principio XII exige historial append-only, no editable ni borrable. Ahora es RN-03 con su escenario. |
-| Faltaba la regla de cierre | RN-04: el cierre solo ocurre tras la entrega marcada. |
-| «fecha/hora» sin más | Se precisa almacenamiento en UTC, presentación en hora local y legible. |
-| «actor que lo produjo» sin más | Se precisa identidad **más rol congelado**, y el comportamiento ante cambio de rol o desactivación posterior. |
-| Criterios en forma de lista | Reescritos en Gherkin, como exige el Principio XI antes de programar. |
-| Sin casos límite | Se añaden concurrencia, doble envío, estado terminal y pedido sin transiciones. |
-| Métrica «100 % de pedidos con historial» sin forma de medirla | Traducida a SC-1, comprobable desde el panel del administrador. |
-| «MPV» | Es **MVP**. |
+- ¿El historial se muestra siempre completo o se resume (p. ej. solo el
+  último cambio + acceso a "ver más")?
+- ¿El negocio necesita ver el historial de un pedido ya rechazado o
+  entregado, o solo de los que sigue gestionando activamente?
+- ¿`GET /dashboard/orders` (HU-10) se enriquece en esta épica o queda para
+  cuando E5/E7 aporten más estados que reportar?
