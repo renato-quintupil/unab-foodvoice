@@ -229,8 +229,13 @@ export class AnthropicSemanticIntentProvider implements SemanticIntentProvider {
         return { datos: validar(input), tokensUsed };
       } catch (error) {
         ultimoError = error;
+        // `error.message` es solo la envoltura ("Fallo al invocar...");
+        // la causa real (401 de credenciales, 400 de crédito agotado,
+        // timeout de red) vive en `.cause` y sin ella el log no sirve
+        // para diagnosticar nada.
+        const causa = error instanceof Error && error.cause ? ` — causa: ${String(error.cause)}` : '';
         this.logger.warn(
-          `Intento ${intento}/${MAX_INTENTOS} de ${nombreTool} falló: ${(error as Error).message}`,
+          `Intento ${intento}/${MAX_INTENTOS} de ${nombreTool} falló: ${(error as Error).message}${causa}`,
         );
       }
     }
