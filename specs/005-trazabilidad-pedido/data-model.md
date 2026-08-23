@@ -64,13 +64,14 @@ export type OrderDetailDto = OrderSummaryDto & {
 ## Diagrama de flujo de lectura
 
 ```text
-GET /orders/:id            ──┐
-GET /business/orders/:id    ─┼─→ OrdersService.detalle(id, alcance)  ──┐
-                              │                                        ├─→ OrderDetailDto
-GET /admin/dashboard/orders/:id → DashboardService.detalle(id)        ─┘
+GET /orders/:id                  → OrdersService.detalleParaCliente(id, userId)  ──┐
+GET /business/orders/:id         → OrdersService.detalleParaNegocio(id)           ├─→ OrderDetailDto
+GET /admin/dashboard/orders/:id  → DashboardService.detalle(id)                   ──┘
 ```
 
-`alcance` es la única diferencia entre el método que usa el cliente y el que usa el negocio:
-para cliente, `{ userId }` (RN de FR-003); para negocio, sin restricción (D-053). El método del
-admin no comparte código con `OrdersService` porque vive en un módulo distinto
+Tres métodos, no uno solo: `detalleParaCliente` y `detalleParaNegocio` comparten la misma
+consulta y el mismo mapeo a `OrderDetailDto`, y difieren únicamente en que el primero agrega
+`WHERE order.userId = :userId` (RN de FR-003) y el segundo no (D-053) — la diferencia es una
+cláusula, no justifica un parámetro `alcance` genérico (Principio I: la opción más simple). El
+método del admin no comparte código con `OrdersService` porque vive en un módulo distinto
 (`DashboardService`), pero construye el mismo `OrderDetailDto` a partir de la misma consulta.
