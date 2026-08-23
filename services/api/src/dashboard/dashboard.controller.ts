@@ -1,7 +1,8 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
   OrdersQuerySchema,
+  type OrderDetailDto,
   type OrderDto,
   type OrdersQuery,
   type Paginated,
@@ -37,5 +38,11 @@ export class DashboardController {
     @Query(new ZodValidationPipe(OrdersQuerySchema)) consulta: OrdersQuery,
   ): Promise<Paginated<OrderDto>> {
     return this.dashboard.pedidos(consulta);
+  }
+
+  /** `GET /api/v1/admin/dashboard/orders/:id` (E4, FR-006, FR-009). */
+  @Get('orders/:id')
+  detalle(@Param('id') id: string): Promise<OrderDetailDto> {
+    return this.dashboard.detalle(id);
   }
 }

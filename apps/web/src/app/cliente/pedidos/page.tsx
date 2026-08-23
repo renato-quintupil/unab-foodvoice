@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ETIQUETA_ESTADO_PEDIDO, Role, formatearPrecio, type OrderSummaryDto } from '@foodvoice/shared';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
@@ -55,6 +56,9 @@ export default async function PaginaMisPedidos() {
                   Motivo: {pedido.rejectionReason}
                 </p>
               )}
+              <Link href={`/cliente/pedidos/${pedido.id}`} className="text-sm underline">
+                Ver historial
+              </Link>
             </li>
           ))}
         </ul>

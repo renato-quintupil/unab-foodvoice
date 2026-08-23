@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
   ConfirmOrderSchema,
   type ConfirmOrderInput,
+  type OrderDetailDto,
   type OrderSummaryDto,
 } from '@foodvoice/shared';
 import { Roles } from '../common/guards/roles.decorator';
@@ -32,5 +33,14 @@ export class OrdersController {
   @Get()
   listar(@Req() peticion: PeticionConSesion): Promise<{ items: OrderSummaryDto[] }> {
     return this.pedidos.listarDelCliente(peticion.sesion.userId);
+  }
+
+  /** `GET /api/v1/orders/:id` (E4, FR-001–FR-003, FR-005). */
+  @Get(':id')
+  detalle(
+    @Req() peticion: PeticionConSesion,
+    @Param('id') id: string,
+  ): Promise<OrderDetailDto> {
+    return this.pedidos.detalleParaCliente(id, peticion.sesion.userId);
   }
 }

@@ -3,7 +3,14 @@
  */
 import { Role, UserStatus } from '@prisma/client';
 import { OrderStatus } from '@foodvoice/shared';
-import { conSesion, crearEntorno, crearUsuario, iniciarSesion, type Entorno } from './helpers';
+import {
+  conSesion,
+  crearEntorno,
+  crearPedido,
+  crearUsuario,
+  iniciarSesion,
+  type Entorno,
+} from './helpers';
 
 let entorno: Entorno;
 let sesionAdmin: string;
@@ -91,7 +98,7 @@ describe('Usuarios activos por rol (FR-019)', () => {
   });
 });
 
-describe('Pedidos por estado (FR-023, D-012)', () => {
+describe('Pedidos por estado (FR-019, FR-023)', () => {
   it('los seis estados aparecen siempre, todos en cero', async () => {
     const respuesta = await metricas().expect(200);
 
@@ -102,6 +109,22 @@ describe('Pedidos por estado (FR-023, D-012)', () => {
       [OrderStatus.ENTREGADO]: 0,
       [OrderStatus.CERRADO]: 0,
       [OrderStatus.RECHAZADO]: 0,
+    });
+  });
+
+  it('cuenta los pedidos reales por estado cuando E2/E4 ya existen', async () => {
+    const cliente = await crearUsuario({ email: 'metricas-pedidos@ejemplo.cl' });
+    await crearPedido({ userId: cliente.id });
+    await crearPedido({ userId: cliente.id, status: 'en_preparacion' });
+    await crearPedido({ userId: cliente.id, status: 'rechazado' });
+
+    const respuesta = await metricas().expect(200);
+
+    expect(respuesta.body.ordersByStatus).toMatchObject({
+      [OrderStatus.CREADO]: 1,
+      [OrderStatus.EN_PREPARACION]: 1,
+      [OrderStatus.RECHAZADO]: 1,
+      [OrderStatus.ENTREGADO]: 0,
     });
   });
 

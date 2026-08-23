@@ -199,9 +199,8 @@ export type OrderLineDto = {
 };
 
 /**
- * Pedido tal como lo ven cliente y negocio (HU-01). No incluye el historial:
- * E2 lo escribe internamente (FR-042–FR-044) pero no lo publica (D-050); E4
- * añadirá su propio tipo cuando exista la consulta.
+ * Pedido tal como lo ven cliente y negocio en los listados (HU-01). No incluye
+ * el historial completo para evitar inflar cada fila (D-051).
  */
 export type OrderSummaryDto = {
   id: string;
@@ -211,6 +210,20 @@ export type OrderSummaryDto = {
   rejectionReason: string | null;
   lines: OrderLineDto[];
   createdAt: string;
+};
+
+/** Una entrada de solo lectura del historial append-only de un pedido (E4). */
+export type OrderStatusEventDto = {
+  previousStatus: OrderStatus | null;
+  resultingStatus: OrderStatus;
+  actorName: string;
+  actorRole: Role;
+  occurredAt: string;
+};
+
+/** El resumen del pedido más su historial cronológico completo (D-051). */
+export type OrderDetailDto = OrderSummaryDto & {
+  history: OrderStatusEventDto[];
 };
 
 /** Formato único de respuesta de error de la API (`contracts/api.md`). */

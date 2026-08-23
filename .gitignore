@@ -40,6 +40,8 @@ npm-debug.log*
 # Sistema operativo / editor
 .DS_Store
 Thumbs.db
+*.tmp
+*.swp
 .vscode/
 .idea/
 # Cobertura y caches de herramientas

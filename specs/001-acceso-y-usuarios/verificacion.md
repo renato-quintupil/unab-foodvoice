@@ -11,8 +11,16 @@ no lo hiciera convertiría «no se verificó» en «se verificó y salió bien»
 pendiente.** Las tres que exigían una persona —T122, T123 y T126— se recorrieron
 ese mismo día, T126 con las esperas reales de 15 y 30 minutos. Lo único que
 sigue fuera es lo que la propia spec excluye de v1: la auditoría formal de
-accesibilidad, las pruebas con lectores de pantalla reales y la verificación
-funcional de las métricas de pedidos, que dependen de E4/E2.
+accesibilidad y las pruebas con lectores de pantalla reales.
+
+**Actualización 2026-08-23**: la verificación funcional de las métricas y
+reportes de pedidos, condicionada a que existieran pedidos (E4/E2), quedó
+cerrada por los pasos V-11 y V-12 de
+[`specs/005-trazabilidad-pedido/verificacion.md`](../005-trazabilidad-pedido/verificacion.md):
+con dos pedidos reales (uno aceptado, uno rechazado), el panel mostró
+"En preparación: 1" y "Rechazado: 1" —coincidiendo exactamente— y el reporte
+filtrado por estado y por rango de fechas devolvió exactamente los pedidos
+esperados. FR-019, FR-020 y SC-006 quedan así verificados en su totalidad.
 
 ---
 
@@ -239,6 +247,8 @@ sección E. El paso E2 auditó por tanto el código corregido, no el anterior.
   reales**: FR-039 las excluye expresamente de v1. Lo que sí se recorrió son sus
   cuatro condiciones comprobables, incluido el manejo completo por teclado
   (A19, B25).
-- **Métricas y reportes de pedidos**: dependen de que existan pedidos (E4/E2).
-  La sección C se validó con las métricas de usuarios y con la superficie de
-  pedidos vacía por diseño, tal como declara la nota de entrega por fases.
+- **Métricas y reportes de pedidos**: dependían de que existieran pedidos
+  (E4/E2). En 2026-08-15 la sección C se validó con las métricas de usuarios y
+  con la superficie de pedidos vacía por diseño; la parte de pedidos quedó
+  cerrada el 2026-08-23 (ver actualización arriba), una vez que E4 y E2
+  entregaron pedidos reales con historial.

@@ -178,4 +178,6 @@ export type {
   AddressDto,
   OrderLineDto,
   OrderSummaryDto,
+  OrderStatusEventDto,
+  OrderDetailDto,
 } from './types/api';

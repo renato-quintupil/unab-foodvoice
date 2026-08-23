@@ -29,3 +29,16 @@ export function formatearFecha(iso: string): string {
 
   return `${valor('day')}/${valor('month')}/${valor('year')}`;
 }
+
+/** Fecha y hora visibles para un evento de la línea de tiempo del pedido. */
+export function formatearFechaHora(iso: string): string {
+  const fecha = formatearFecha(iso);
+  const hora = new Intl.DateTimeFormat('es-CL', {
+    timeZone: HUSO_REFERENCIA,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(iso));
+
+  return `${fecha}, ${hora}`;
+}

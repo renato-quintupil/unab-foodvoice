@@ -37,8 +37,8 @@ de componente en `apps/web/tests/*.test.tsx`. Sin dependencia ni variable de ent
 
 **Propósito**: crear las rutas nuevas y obtener una línea base verificable sin alterar E1/E2/E3/E9.
 
-- [ ] T001 [P] Crear las carpetas de ruta dinámica vacías `apps/web/src/app/cliente/pedidos/[id]/`, `apps/web/src/app/negocio/pedidos/[id]/` y `apps/web/src/app/admin/pedidos/[id]/`
-- [ ] T002 Ejecutar la línea base de `specs/005-trazabilidad-pedido/quickstart.md` —`pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el resultado y detener la implementación si existe un fallo preexistente
+- [X] T001 [P] Crear las carpetas de ruta dinámica vacías `apps/web/src/app/cliente/pedidos/[id]/`, `apps/web/src/app/negocio/pedidos/[id]/` y `apps/web/src/app/admin/pedidos/[id]/`
+- [X] T002 Ejecutar la línea base de `specs/005-trazabilidad-pedido/quickstart.md` —`pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el resultado y detener la implementación si existe un fallo preexistente
 
 ---
 
@@ -49,8 +49,8 @@ migración: `order_status_event` ya existe desde E2.
 
 **⚠️ CRÍTICO**: ninguna historia empieza hasta completar esta fase.
 
-- [ ] T003 [P] Añadir `OrderStatusEventDto` y `OrderDetailDto` (extendiendo `OrderSummaryDto` por composición, D-051) en `packages/shared/src/types/api.ts`, según `contracts/shared.md`
-- [ ] T004 Exportar los dos tipos nuevos desde `packages/shared/src/index.ts`
+- [X] T003 [P] Añadir `OrderStatusEventDto` y `OrderDetailDto` (extendiendo `OrderSummaryDto` por composición, D-051) en `packages/shared/src/types/api.ts`, según `contracts/shared.md`
+- [X] T004 Exportar los dos tipos nuevos desde `packages/shared/src/index.ts`
 
 **Punto de control**: `packages/shared` compila con los tipos nuevos. Las historias pueden
 comenzar.
@@ -69,15 +69,15 @@ SC-001, y comprobar que un pedido ajeno o inexistente da la misma respuesta 404.
 
 > **NOTA: escribir estas pruebas primero y comprobar que fallan antes de implementar.**
 
-- [ ] T005 [P] [US1] Crear las pruebas fallidas de `GET /orders/:id` en `services/api/test/orders-history-client.integration-spec.ts`: devuelve `OrderDetailDto` con la secuencia en orden cronológico ascendente, `previousStatus` nulo solo en la primera entrada, `actorName`/`actorRole` correctos, `404 NOT_FOUND` para un pedido de otro cliente y para uno inexistente (misma forma de respuesta en ambos casos, FR-005)
-- [ ] T006 [P] [US1] Crear las pruebas fallidas de la página de detalle en `apps/web/tests/pedidos-historial.test.tsx` (caso cliente): renderiza la línea de tiempo con fecha/hora de cada entrada y el motivo cuando la última es un rechazo
+- [X] T005 [P] [US1] Crear las pruebas fallidas de `GET /orders/:id` en `services/api/test/orders-history-client.integration-spec.ts`: devuelve `OrderDetailDto` con la secuencia en orden cronológico ascendente, `previousStatus` nulo solo en la primera entrada, `actorName`/`actorRole` correctos, `404 NOT_FOUND` para un pedido de otro cliente y para uno inexistente (misma forma de respuesta en ambos casos, FR-005)
+- [X] T006 [P] [US1] Crear las pruebas fallidas de la página de detalle en `apps/web/tests/pedidos-historial.test.tsx` (caso cliente): renderiza la línea de tiempo con fecha/hora de cada entrada y el motivo cuando la última es un rechazo
 
 ### Implementación de US1
 
-- [ ] T007 [US1] Añadir `detalleParaCliente(id, userId)` en `services/api/src/orders/orders.service.ts`: consulta el pedido y su `OrderStatusEvent[]` ordenado por `occurredAt, id`, arma `OrderDetailDto` reutilizando `A_COMPARTIDO`, y lanza `noEncontrado()` si el pedido no existe o `order.userId !== userId` (FR-003, FR-005)
-- [ ] T008 [US1] Añadir `GET /api/v1/orders/:id` en `services/api/src/orders/orders.controller.ts`, delegando a `detalleParaCliente` con el `userId` de la sesión (depende de T007)
-- [ ] T009 [US1] Crear `apps/web/src/app/cliente/pedidos/[id]/page.tsx`: pide `GET /orders/:id` vía `pedirALaApi`, exige sesión de rol `CLIENTE`, y muestra la línea de tiempo (estado, fecha/hora, motivo si corresponde) usando `ETIQUETA_ESTADO_PEDIDO` y `ETIQUETA_ROL` (depende de T008)
-- [ ] T010 [US1] Enlazar cada pedido de `apps/web/src/app/cliente/pedidos/page.tsx` al nuevo `/cliente/pedidos/[id]` (depende de T009)
+- [X] T007 [US1] Añadir `detalleParaCliente(id, userId)` en `services/api/src/orders/orders.service.ts`: consulta el pedido y su `OrderStatusEvent[]` ordenado por `occurredAt, id`, arma `OrderDetailDto` reutilizando `A_COMPARTIDO`, y lanza `noEncontrado()` si el pedido no existe o `order.userId !== userId` (FR-003, FR-005)
+- [X] T008 [US1] Añadir `GET /api/v1/orders/:id` en `services/api/src/orders/orders.controller.ts`, delegando a `detalleParaCliente` con el `userId` de la sesión (depende de T007)
+- [X] T009 [US1] Crear `apps/web/src/app/cliente/pedidos/[id]/page.tsx`: pide `GET /orders/:id` vía `pedirALaApi`, exige sesión de rol `CLIENTE`, y muestra la línea de tiempo (estado, fecha/hora, motivo si corresponde) usando `ETIQUETA_ESTADO_PEDIDO` y `ETIQUETA_ROL` (depende de T008)
+- [X] T010 [US1] Enlazar cada pedido de `apps/web/src/app/cliente/pedidos/page.tsx` al nuevo `/cliente/pedidos/[id]` (depende de T009)
 
 **Punto de control**: un cliente puede ver el historial completo de cualquiera de sus pedidos y
 recibe 404 ante uno ajeno o inexistente. US1 es demostrable por sí sola.
@@ -94,16 +94,16 @@ detalle desde la bandeja, desde rechazados, y de un pedido de cualquier cliente.
 
 ### Pruebas de US2
 
-- [ ] T011 [P] [US2] Crear las pruebas fallidas de `GET /business/orders/:id` en `services/api/test/orders-history-business.integration-spec.ts`: devuelve `OrderDetailDto` para cualquier pedido existente sin restricción de pertenencia (D-053), `404 NOT_FOUND` solo si no existe
-- [ ] T012 [P] [US2] Extender `apps/web/tests/pedidos-historial.test.tsx` (caso negocio): renderiza la misma línea de tiempo que el caso cliente, con nombre y rol del actor visibles
+- [X] T011 [P] [US2] Crear las pruebas fallidas de `GET /business/orders/:id` en `services/api/test/orders-history-business.integration-spec.ts`: devuelve `OrderDetailDto` para cualquier pedido existente sin restricción de pertenencia (D-053), `404 NOT_FOUND` solo si no existe
+- [X] T012 [P] [US2] Extender `apps/web/tests/pedidos-historial.test.tsx` (caso negocio): renderiza la misma línea de tiempo que el caso cliente, con nombre y rol del actor visibles
 
 ### Implementación de US2
 
-- [ ] T013 [US2] Añadir `detalleParaNegocio(id)` en `services/api/src/orders/orders.service.ts`: misma consulta que `detalleParaCliente` sin el filtro de `userId` (D-053); reutiliza el mapeo a `OrderDetailDto` y lanza `noEncontrado()` si el pedido no existe (depende de T007)
-- [ ] T014 [US2] Añadir `GET /api/v1/business/orders/:id` en `services/api/src/orders/business-orders.controller.ts`, delegando a `detalleParaNegocio` (depende de T013)
-- [ ] T015 [US2] Crear `apps/web/src/app/negocio/pedidos/[id]/page.tsx`: pide `GET /business/orders/:id`, exige sesión de rol `NEGOCIO`, y muestra la misma línea de tiempo que T009 (puede compartir un componente de presentación con la Fase 3 si no introduce diferencias de datos) (depende de T014)
-- [ ] T016 [US2] [P] Enlazar cada pedido de `apps/web/src/app/negocio/pedidos/page.tsx` al nuevo `/negocio/pedidos/[id]` (depende de T015)
-- [ ] T017 [US2] [P] Enlazar cada pedido de `apps/web/src/app/negocio/pedidos/rechazados/page.tsx` al nuevo `/negocio/pedidos/[id]` (depende de T015)
+- [X] T013 [US2] Añadir `detalleParaNegocio(id)` en `services/api/src/orders/orders.service.ts`: misma consulta que `detalleParaCliente` sin el filtro de `userId` (D-053); reutiliza el mapeo a `OrderDetailDto` y lanza `noEncontrado()` si el pedido no existe (depende de T007)
+- [X] T014 [US2] Añadir `GET /api/v1/business/orders/:id` en `services/api/src/orders/business-orders.controller.ts`, delegando a `detalleParaNegocio` (depende de T013)
+- [X] T015 [US2] Crear `apps/web/src/app/negocio/pedidos/[id]/page.tsx`: pide `GET /business/orders/:id`, exige sesión de rol `NEGOCIO`, y muestra la misma línea de tiempo que T009 (puede compartir un componente de presentación con la Fase 3 si no introduce diferencias de datos) (depende de T014)
+- [X] T016 [US2] [P] Enlazar cada pedido de `apps/web/src/app/negocio/pedidos/page.tsx` al nuevo `/negocio/pedidos/[id]` (depende de T015)
+- [X] T017 [US2] [P] Enlazar cada pedido de `apps/web/src/app/negocio/pedidos/rechazados/page.tsx` al nuevo `/negocio/pedidos/[id]` (depende de T015)
 
 **Punto de control**: un negocio ve el historial de cualquier pedido, incluidos los que no
 gestionó activamente. US1 y US2 funcionan de forma independiente.
@@ -120,15 +120,15 @@ puntual en no más de dos acciones (SC-004).
 
 ### Pruebas de US3
 
-- [ ] T018 [P] [US3] Crear las pruebas fallidas de `GET /admin/dashboard/orders/:id` en `services/api/test/orders-history-admin.integration-spec.ts`: devuelve `OrderDetailDto` para cualquier pedido sin restricción de pertenencia, `404 NOT_FOUND` solo si no existe
-- [ ] T019 [P] [US3] Extender `apps/web/tests/pedidos-historial.test.tsx` (caso admin): la fila del reporte enlaza al detalle y el detalle no exige que el pedido pertenezca a ningún rol en particular
+- [X] T018 [P] [US3] Crear las pruebas fallidas de `GET /admin/dashboard/orders/:id` en `services/api/test/orders-history-admin.integration-spec.ts`: devuelve `OrderDetailDto` para cualquier pedido sin restricción de pertenencia, `404 NOT_FOUND` solo si no existe
+- [X] T019 [P] [US3] Extender `apps/web/tests/pedidos-historial.test.tsx` (caso admin): la fila del reporte enlaza al detalle y el detalle no exige que el pedido pertenezca a ningún rol en particular
 
 ### Implementación de US3
 
-- [ ] T020 [US3] Añadir `detalle(id)` en `services/api/src/dashboard/dashboard.service.ts`: misma consulta y mapeo que T007/T013, sin restricción de pertenencia (FR-006), y lanza `noEncontrado()` si el pedido no existe
-- [ ] T021 [US3] Añadir `GET /api/v1/admin/dashboard/orders/:id` en `services/api/src/dashboard/dashboard.controller.ts`, delegando a `detalle` (depende de T020)
-- [ ] T022 [US3] Crear `apps/web/src/app/admin/pedidos/[id]/page.tsx`: pide `GET /admin/dashboard/orders/:id`, y muestra la misma línea de tiempo que T009/T015 (depende de T021)
-- [ ] T023 [US3] Enlazar cada fila de `apps/web/src/app/admin/pedidos/page.tsx` (columna "Pedido") al nuevo `/admin/pedidos/[id]` (depende de T022; cumple SC-004)
+- [X] T020 [US3] Añadir `detalle(id)` en `services/api/src/dashboard/dashboard.service.ts`: misma consulta y mapeo que T007/T013, sin restricción de pertenencia (FR-006), y lanza `noEncontrado()` si el pedido no existe
+- [X] T021 [US3] Añadir `GET /api/v1/admin/dashboard/orders/:id` en `services/api/src/dashboard/dashboard.controller.ts`, delegando a `detalle` (depende de T020)
+- [X] T022 [US3] Crear `apps/web/src/app/admin/pedidos/[id]/page.tsx`: pide `GET /admin/dashboard/orders/:id`, y muestra la misma línea de tiempo que T009/T015 (depende de T021)
+- [X] T023 [US3] Enlazar cada fila de `apps/web/src/app/admin/pedidos/page.tsx` (columna "Pedido") al nuevo `/admin/pedidos/[id]` (depende de T022; cumple SC-004)
 
 **Punto de control**: las tres historias funcionan de forma independiente y completa.
 
@@ -139,10 +139,10 @@ puntual en no más de dos acciones (SC-004).
 **Propósito**: cerrar la épica y la verificación pendiente de HU-10 que dependía de que existiera
 E4.
 
-- [ ] T024 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
-- [ ] T025 Recorrer V-01 a V-12 de `specs/005-trazabilidad-pedido/quickstart.md` con sesiones reales de cliente, negocio y administrador; registrar el resultado en `specs/005-trazabilidad-pedido/verificacion.md`
-- [ ] T026 Con V-11/V-12 verificados, actualizar `specs/001-acceso-y-usuarios/spec.md` (o su `verificacion.md`) para cerrar la validación funcional pendiente de FR-019, FR-020 y SC-006 de HU-10
-- [ ] T027 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E4 como terminada, con el mismo nivel de detalle que E1/E2/E3/E9
+- [X] T024 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
+- [X] T025 Recorrer V-01 a V-12 de `specs/005-trazabilidad-pedido/quickstart.md` con sesiones reales de cliente, negocio y administrador; registrar el resultado en `specs/005-trazabilidad-pedido/verificacion.md`
+- [X] T026 Con V-11/V-12 verificados, actualizar `specs/001-acceso-y-usuarios/spec.md` (o su `verificacion.md`) para cerrar la validación funcional pendiente de FR-019, FR-020 y SC-006 de HU-10
+- [X] T027 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E4 como terminada, con el mismo nivel de detalle que E1/E2/E3/E9
 
 ---
 

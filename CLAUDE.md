@@ -4,24 +4,26 @@ Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
-menú**, **E2 · Gestión de pedidos** y **E9 · Navegación y experiencia visual**
-están **construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
-`services/api` y `packages/shared`— están poblados, y las dos capas automáticas
-pasan en verde: **522 pruebas unitarias** con sus umbrales de cobertura (más
-las 5 suites nuevas de E9, 188 pruebas en total sobre `apps/web`) y **587 de integración
-en 73 baterías** contra PostgreSQL real — E9 no agrega baterías de integración
-porque no toca `services/api`.
+menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual** y
+**E4 · Trazabilidad del pedido** están **construidas y verificadas**. Los tres
+espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
+poblados, y las dos capas automáticas pasan en verde: **351 pruebas unitarias**
+de `services/api` (130) y `packages/shared` (221), más **191 pruebas** sobre
+`apps/web`, todas con sus umbrales de cobertura, y **595 de integración en 76
+baterías** contra PostgreSQL real — E9 no agrega baterías de integración
+porque no toca `services/api`; E4 agrega tres.
 
-Las cuatro validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las cinco validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
 2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
-enmiendas incluidas)— y su detalle está en el `verificacion.md` de cada spec.
+enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos— y su detalle está en el
+`verificacion.md` de cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
 ninguna prueba automática detectaba, siempre del mismo tipo —cada pieza
 funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
-**E9 es la primera que no encontró ninguno.**
+**E9 y E4 son las dos primeras que no encontraron ninguno.**
 
 - En E1: el error de formulario no quedaba asociado a su campo, y cuatro
   pantallas usaban un mensaje recortado en lugar del compartido (T133, T134).
@@ -42,6 +44,11 @@ funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
   lógica de negocio nueva— es más chico y más fácil de demostrar completo que
   el de las tres anteriores; no es evidencia de que la validación manual haya
   dejado de aportar valor en general.
+- En E4: tampoco encontró ningún defecto. Su alcance es igual de acotado que el
+  de E9 por una razón distinta —es una capa de solo lectura sobre datos que E2
+  ya escribe y protege a nivel de base de datos (Principio XII); no hay
+  máquina de estados nueva ni escritura que pueda salir mal—, así que
+  esperarlo era razonable, no una casualidad.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -55,12 +62,47 @@ corrección del primer defecto de E3 creó otro de su misma familia—. El detal
 está en el `verificacion.md` de E3.
 
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
-de pantalla reales (FR-039), y la verificación funcional de las métricas de
-pedidos, que espera a E4 (registra el historial sobre el que se miden). La
-siguiente épica del orden sugerido sigue siendo **E4** (el orden es E1 → E3 →
+de pantalla reales (FR-039). La verificación funcional de las métricas de
+pedidos, que esperaba a E4, ya está cerrada — ver "Lo que E4 añadió al código"
+abajo. La siguiente épica del orden sugerido es **E6** (el orden es E1 → E3 →
 E2 → E4 → E6 → E5 → E7 → E8); **E9 es transversal y no participa de ese
 orden** — se completó en paralelo, envolviendo con navegación las pantallas que
 E1+E3+E2 ya habían construido.
+
+### Lo que E4 añadió al código
+
+- **`packages/shared`**: dos tipos de solo lectura en `types/api.ts` —
+  `OrderStatusEventDto` (una entrada de la línea de tiempo: estado anterior,
+  estado resultante, nombre y rol del actor, fecha/hora) y `OrderDetailDto`
+  (`OrderSummaryDto` extendido por composición con `history`). **Sin enums,
+  esquemas Zod ni mensajes nuevos** — reutiliza `ETIQUETA_ROL` (E1) y
+  `ETIQUETA_ESTADO_PEDIDO` (E2) tal cual.
+- **`services/api`**: tres endpoints `GET` de solo lectura, uno por rol —
+  `GET /orders/:id` (cliente, solo pedidos propios), `GET
+  /business/orders/:id` (negocio, cualquier pedido — v1 es mono-local,
+  Principio VIII, sin filtro de "negocio propietario") y `GET
+  /admin/dashboard/orders/:id` (administrador, sin restricción, dentro de
+  `DashboardController` que ya exponía el reporte de HU-10). Los tres
+  construyen el mismo `OrderDetailDto` leyendo `OrderStatusEvent` —que E2 ya
+  escribe de forma append-only desde su propia transacción— sin escribir en
+  ninguna tabla. El 404 de "pedido ajeno" y "pedido inexistente" es
+  **intencionalmente el mismo** (FR-005): ninguno de los dos revela si el
+  pedido existe.
+- **Sin migración de base de datos**: `order_status_event` y su índice
+  (`order_id, occurred_at, id`) ya existían desde E2, pensados de antemano
+  para esta consulta.
+- **`apps/web`**: tres pantallas de detalle nuevas —`/cliente/pedidos/[id]`,
+  `/negocio/pedidos/[id]`, `/admin/pedidos/[id]`—, las tres renderizadas por
+  un único componente de presentación (`components/historial-pedido.tsx`,
+  D-051) para no triplicar la línea de tiempo. Enlazadas desde las pantallas
+  que ya existían (`/cliente/pedidos`, `/negocio/pedidos` y su vista de
+  rechazados, la columna "Pedido" del reporte de admin).
+- **Cierra una verificación pendiente de HU-10 (E1)**: las métricas y el
+  reporte de pedidos del panel de administrador solo podían probarse
+  funcionalmente una vez que existieran pedidos con historial real; con los
+  pedidos que E2 permite crear y el historial que E4 expone, esa validación
+  ya se hizo (`specs/001-acceso-y-usuarios/verificacion.md`, actualización
+  2026-08-23).
 
 ### Lo que E9 añadió al código
 

@@ -44,6 +44,9 @@ export default async function PaginaPedidosRechazados() {
                 ))}
               </ul>
               <p className="text-sm text-[var(--color-error)]">Motivo: {pedido.rejectionReason}</p>
+              <Link href={`/negocio/pedidos/${pedido.id}`} className="text-sm underline">
+                Ver historial
+              </Link>
             </li>
           ))}
         </ul>

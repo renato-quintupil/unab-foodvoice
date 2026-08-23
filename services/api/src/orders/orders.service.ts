@@ -5,6 +5,7 @@ import {
   PAGE_SIZE,
   type BusinessOrdersQuery,
   type ConfirmOrderInput,
+  type OrderDetailDto,
   type OrderLineDto,
   type OrderSummaryDto,
   type Paginated,
@@ -22,6 +23,15 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const CON_LINEAS = { lines: true } as const;
 type OrdenConLineas = Order & { lines: OrderLine[] };
+
+const CON_DETALLE = {
+  lines: true,
+  statusEvents: {
+    include: { actor: { select: { fullName: true } } },
+    orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+  },
+} satisfies Prisma.OrderInclude;
+type OrdenConDetalle = Prisma.OrderGetPayload<{ include: typeof CON_DETALLE }>;
 
 /**
  * `OrderStatus` de Prisma usa identificadores en mayúscula (`CREADO`) porque
@@ -178,6 +188,26 @@ export class OrdersService {
     return { items: filas.map(aDto) };
   }
 
+  /** `GET /orders/:id` (E4, FR-001–FR-003, FR-005). */
+  async detalleParaCliente(id: string, userId: string): Promise<OrderDetailDto> {
+    const pedido = await this.prisma.order.findUnique({
+      where: { id },
+      include: CON_DETALLE,
+    });
+    if (!pedido || pedido.userId !== userId) throw noEncontrado();
+    return aDetalleDto(pedido);
+  }
+
+  /** `GET /business/orders/:id` (E4, FR-004, D-053). */
+  async detalleParaNegocio(id: string): Promise<OrderDetailDto> {
+    const pedido = await this.prisma.order.findUnique({
+      where: { id },
+      include: CON_DETALLE,
+    });
+    if (!pedido) throw noEncontrado();
+    return aDetalleDto(pedido);
+  }
+
   /**
    * `GET /business/orders` (FR-038, FR-041, D-043). Sin `status`, combina
    * `creado` y `en_preparacion` en una sola paginación de 20, del más
@@ -301,6 +331,19 @@ function aDto(pedido: OrdenConLineas): OrderSummaryDto {
     rejectionReason: pedido.rejectionReason,
     lines: pedido.lines.map(aLineaDto),
     createdAt: pedido.createdAt.toISOString(),
+  };
+}
+
+function aDetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
+  return {
+    ...aDto(pedido),
+    history: pedido.statusEvents.map((evento) => ({
+      previousStatus: evento.previousStatus ? A_COMPARTIDO[evento.previousStatus] : null,
+      resultingStatus: A_COMPARTIDO[evento.resultingStatus],
+      actorName: evento.actor.fullName,
+      actorRole: evento.actorRole,
+      occurredAt: evento.occurredAt.toISOString(),
+    })),
   };
 }
 

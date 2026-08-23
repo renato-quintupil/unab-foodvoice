@@ -1,14 +1,19 @@
 /**
  * Reporte de pedidos (T107, FR-020, SC-009, api CHK018, api CHK026).
  *
- * En E1 la lista es **siempre vacía por construcción** (D-012): no existe la
- * entidad `Pedido`. Lo que estos casos verifican es la **forma** de la
- * superficie y la **semántica de los filtros**, que es lo que el contrato fija
- * por completo y lo que quedaría sin definir si se pospusiera.
+ * E1 fijó la forma y la semántica de los filtros; E2/E4 aportan los pedidos
+ * reales que ahora recorre esa misma superficie.
  */
 import { Role } from '@prisma/client';
 import { MSG_RANGO_FECHAS_INVALIDO, OrderStatus, PAGE_SIZE } from '@foodvoice/shared';
-import { conSesion, crearEntorno, crearUsuario, iniciarSesion, type Entorno } from './helpers';
+import {
+  conSesion,
+  crearEntorno,
+  crearPedido,
+  crearUsuario,
+  iniciarSesion,
+  type Entorno,
+} from './helpers';
 
 let entorno: Entorno;
 let sesionAdmin: string;
@@ -66,6 +71,40 @@ describe('Filtros combinables (FR-020)', () => {
       from: '2026-08-01',
       to: '2026-08-31',
     }).expect(200);
+  });
+
+  it('devuelve pedidos reales filtrados por estado y día local, con paginación compartida', async () => {
+    const cliente = await crearUsuario({ email: 'dashboard-orders-real@ejemplo.cl' });
+    const incluido = await crearPedido({
+      userId: cliente.id,
+      status: 'rechazado',
+      createdAt: new Date('2026-08-15T15:00:00.000Z'),
+    });
+    await crearPedido({
+      userId: cliente.id,
+      status: 'creado',
+      createdAt: new Date('2026-08-15T16:00:00.000Z'),
+    });
+    await crearPedido({
+      userId: cliente.id,
+      status: 'rechazado',
+      createdAt: new Date('2026-08-16T15:00:00.000Z'),
+    });
+
+    const respuesta = await pedidos({
+      status: OrderStatus.RECHAZADO,
+      from: '2026-08-15',
+      to: '2026-08-15',
+    }).expect(200);
+
+    expect(respuesta.body.items).toEqual([
+      {
+        id: incluido.id,
+        status: OrderStatus.RECHAZADO,
+        createdAt: '2026-08-15T15:00:00.000Z',
+      },
+    ]);
+    expect(respuesta.body).toMatchObject({ total: 1, page: 1, pageSize: PAGE_SIZE, totalPages: 1 });
   });
 
   it('acepta cada extremo por separado', async () => {

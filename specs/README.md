@@ -15,7 +15,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | **E1 · Acceso y usuarios** | HU-08, HU-09, HU-10 | [`001-acceso-y-usuarios/`](./001-acceso-y-usuarios/) | **Terminada** · 138 / 138 tareas · construida y verificada, incluida la validación funcional a mano |
 | **E3 · Administración de menú** | HU-02, HU-14 | [`002-administracion-menu-productos/`](./002-administracion-menu-productos/) | **Terminada** · 88 / 88 tareas · construida y verificada, incluidos los 56 pasos de validación funcional |
 | **E2 · Gestión de pedidos** | HU-01, HU-11, HU-12 | [`003-gestion-pedidos/`](./003-gestion-pedidos/) | **Terminada** · 108 / 108 tareas · construida y verificada, incluida la validación funcional a mano |
-| E4 · Trazabilidad del pedido | HU-03 | — | Borrador de HU en [`docs/epicas-hu/HU-03-trazabilidad-del-pedido.md`](../docs/epicas-hu/HU-03-trazabilidad-del-pedido.md) |
+| **E4 · Trazabilidad del pedido** | HU-03 | [`005-trazabilidad-pedido/`](./005-trazabilidad-pedido/) | **Terminada** · 27 / 27 tareas · construida y verificada, incluidos los 12 pasos de validación funcional |
 | E6 · Búsqueda por voz | HU-06, HU-13 | — | Sin especificar |
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
@@ -138,6 +138,45 @@ cubierto por una prueba nueva. El detalle está en
 No hay pantalla ni endpoint de consulta del historial de estados en E2, por
 diseño: lo incorpora E4. Sigue fuera de v1, heredado de E1/E3: la auditoría
 formal de accesibilidad y las pruebas con lectores de pantalla reales.
+
+## E4 · Trazabilidad del pedido
+
+Rama de trabajo: `005-trazabilidad-pedido`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./005-trazabilidad-pedido/spec.md) | Requisitos, escenarios y criterios de éxito de HU-03 |
+| [`plan.md`](./005-trazabilidad-pedido/plan.md) | Decisiones técnicas (D-051 a D-054) y fases de entrega |
+| [`data-model.md`](./005-trazabilidad-pedido/data-model.md) | `OrderStatusEventDto`/`OrderDetailDto`, sin cambio de esquema |
+| [`contracts/`](./005-trazabilidad-pedido/contracts/) | Los tres endpoints de detalle y el contrato compartido |
+| [`quickstart.md`](./005-trazabilidad-pedido/quickstart.md) | Puesta en marcha y los 12 pasos de validación funcional |
+| [`tasks.md`](./005-trazabilidad-pedido/tasks.md) | 27 tareas ordenadas por historia |
+| [`verificacion.md`](./005-trazabilidad-pedido/verificacion.md) | Resultado de la validación — sin defectos encontrados |
+
+Fases de entrega: **A** contrato compartido (habilitante) → **B** HU-03 cliente, el MVP → **C**
+HU-03 negocio → **D** HU-03 administrador, que extiende el reporte de HU-10 → **E** validación
+funcional, que también cierra la verificación pendiente de HU-10.
+
+**Por qué se da por terminada.** Las tres historias están construidas — tres endpoints `GET` de
+solo lectura (`/orders/:id`, `/business/orders/:id`, `/admin/dashboard/orders/:id`) y tres
+pantallas de detalle nuevas—, las dos capas automáticas pasan en verde —130 pruebas unitarias de
+`services/api` más la suite completa de `apps/web`, y 76 baterías de integración contra
+PostgreSQL real, incluidas las tres nuevas de esta épica—, y la **validación funcional se
+ejecutó el 2026-08-23**, los 12 pasos de `quickstart.md`. **No encontró ningún defecto**: el
+control de acceso (404 indistinguible para pedido ajeno o inexistente, mono-local sin filtro de
+"negocio propietario", administrador sin restricción de pertenencia) se comportó exactamente
+como especifica el contrato. El detalle está en
+[`verificacion.md`](./005-trazabilidad-pedido/verificacion.md).
+
+E4 no crea ninguna tabla ni escribe en el historial: expone por consulta lo que E2 ya escribe
+desde `OrderStatusEvent` (append-only, Principio XII). Con V-11 y V-12 verificados, esta épica
+también cierra la validación funcional que HU-10 (E1) tenía pendiente de las métricas y reportes
+de pedidos.
+
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9, y las
+transiciones que agreguen E5 (reparto) y E7 (cierre) — el mecanismo de esta épica ya queda
+preparado para mostrarlas sin cambios (FR-012), pero su verificación funcional espera a que esas
+épicas existan.
 
 ## E9 · Navegación y experiencia visual
 

@@ -1,14 +1,50 @@
 import { Injectable } from '@nestjs/common';
-import { Role, UserStatus } from '@prisma/client';
+import {
+  OrderLine,
+  OrderStatus as PrismaOrderStatus,
+  Prisma,
+  Role,
+  UserStatus,
+} from '@prisma/client';
 import {
   HUSO_REFERENCIA,
   OrderStatus,
   PAGE_SIZE,
+  type OrderDetailDto,
   type OrderDto,
+  type OrderLineDto,
   type OrdersQuery,
   type Paginated,
 } from '@foodvoice/shared';
+import { noEncontrado } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
+
+const CON_DETALLE = {
+  lines: true,
+  statusEvents: {
+    include: { actor: { select: { fullName: true } } },
+    orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+  },
+} satisfies Prisma.OrderInclude;
+type OrdenConDetalle = Prisma.OrderGetPayload<{ include: typeof CON_DETALLE }>;
+
+const ESTADO_A_COMPARTIDO: Record<PrismaOrderStatus, OrderStatus> = {
+  [PrismaOrderStatus.CREADO]: OrderStatus.CREADO,
+  [PrismaOrderStatus.EN_PREPARACION]: OrderStatus.EN_PREPARACION,
+  [PrismaOrderStatus.ASIGNADO_REPARTIDOR]: OrderStatus.ASIGNADO_REPARTIDOR,
+  [PrismaOrderStatus.ENTREGADO]: OrderStatus.ENTREGADO,
+  [PrismaOrderStatus.CERRADO]: OrderStatus.CERRADO,
+  [PrismaOrderStatus.RECHAZADO]: OrderStatus.RECHAZADO,
+};
+
+const ESTADO_A_PRISMA: Record<OrderStatus, PrismaOrderStatus> = {
+  [OrderStatus.CREADO]: PrismaOrderStatus.CREADO,
+  [OrderStatus.EN_PREPARACION]: PrismaOrderStatus.EN_PREPARACION,
+  [OrderStatus.ASIGNADO_REPARTIDOR]: PrismaOrderStatus.ASIGNADO_REPARTIDOR,
+  [OrderStatus.ENTREGADO]: PrismaOrderStatus.ENTREGADO,
+  [OrderStatus.CERRADO]: PrismaOrderStatus.CERRADO,
+  [OrderStatus.RECHAZADO]: PrismaOrderStatus.RECHAZADO,
+};
 
 export type Metricas = {
   activeUsersByRole: Record<Role, number>;
@@ -42,27 +78,36 @@ export class DashboardService {
    * panel con el listado filtrado: no se puede contrastar una cifra ausente.
    */
   async metricas(): Promise<Metricas> {
-    const agrupado = await this.prisma.user.groupBy({
-      by: ['role'],
-      where: { status: UserStatus.ACTIVO },
-      _count: { _all: true },
-    });
+    const [usuariosAgrupados, pedidosAgrupados] = await Promise.all([
+      this.prisma.user.groupBy({
+        by: ['role'],
+        where: { status: UserStatus.ACTIVO },
+        _count: { _all: true },
+      }),
+      this.prisma.order.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+    ]);
 
     const activeUsersByRole = Object.fromEntries(
       Object.values(Role).map((rol) => [rol, 0]),
     ) as Record<Role, number>;
 
-    for (const fila of agrupado) {
+    for (const fila of usuariosAgrupados) {
       activeUsersByRole[fila.role] = fila._count._all;
     }
 
-    // Los cinco estados son **los de la máquina compartida, sin definir ninguno
-    // propio** (FR-023). En E1 están todos en cero por definición: no existe la
-    // entidad `Pedido`, que pertenece a E4/E2 (D-012). No es un defecto
-    // pendiente sino el comportamiento correcto y esperado.
+    // Los estados son **los de la máquina compartida, sin definir ninguno
+    // propio** (FR-023). Se completan los ausentes con cero porque `GROUP BY`
+    // omite estados sin pedidos.
     const ordersByStatus = Object.fromEntries(
       Object.values(OrderStatus).map((estado) => [estado, 0]),
     ) as Record<OrderStatus, number>;
+
+    for (const fila of pedidosAgrupados) {
+      ordersByStatus[ESTADO_A_COMPARTIDO[fila.status]] = fila._count._all;
+    }
 
     return { activeUsersByRole, ordersByStatus };
   }
@@ -74,24 +119,84 @@ export class DashboardService {
    * de usuarios y el mismo `PAGE_SIZE`, de modo que la interfaz no necesite dos
    * componentes de paginación distintos.
    *
-   * En E1 devuelve siempre la lista vacía, por construcción. El intervalo se
-   * calcula igualmente —y se prueba— porque la conversión de días a instantes
-   * es la parte del contrato que no puede quedar sin definir: cuando E4/E2
-   * aporten pedidos, la regla ya estará fijada y verificada.
+   * Desde E2/E4 consulta los pedidos reales; conserva el contrato y la
+   * semántica de fechas que HU-10 dejó preparados en E1.
    */
   async pedidos(consulta: OrdersQuery): Promise<Paginated<OrderDto>> {
-    // Se calcula aunque no se use todavía: es lo que fija la semántica del
-    // filtro y lo que sus pruebas ejercen.
-    intervaloDeConsulta(consulta.from, consulta.to);
+    const { desde, hasta } = intervaloDeConsulta(consulta.from, consulta.to);
+    const where: Prisma.OrderWhereInput = {
+      status: consulta.status ? ESTADO_A_PRISMA[consulta.status] : undefined,
+      createdAt:
+        desde || hasta
+          ? {
+              gte: desde ?? undefined,
+              lte: hasta ?? undefined,
+            }
+          : undefined,
+    };
+
+    const [total, filas] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (consulta.page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        select: { id: true, status: true, createdAt: true },
+      }),
+    ]);
 
     return {
-      items: [],
-      total: 0,
+      items: filas.map((pedido) => ({
+        id: pedido.id,
+        status: ESTADO_A_COMPARTIDO[pedido.status],
+        createdAt: pedido.createdAt.toISOString(),
+      })),
+      total,
       page: consulta.page,
       pageSize: PAGE_SIZE,
-      totalPages: 1,
+      totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
     };
   }
+
+  /** `GET /admin/dashboard/orders/:id` (E4, FR-006, FR-009). */
+  async detalle(id: string): Promise<OrderDetailDto> {
+    const pedido = await this.prisma.order.findUnique({
+      where: { id },
+      include: CON_DETALLE,
+    });
+    if (!pedido) throw noEncontrado();
+    return pedidoADetalleDto(pedido);
+  }
+}
+
+function pedidoADetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
+  return {
+    id: pedido.id,
+    status: ESTADO_A_COMPARTIDO[pedido.status],
+    addressText: pedido.addressText,
+    rejectionReason: pedido.rejectionReason,
+    lines: pedido.lines.map(lineaADto),
+    createdAt: pedido.createdAt.toISOString(),
+    history: pedido.statusEvents.map((evento) => ({
+      previousStatus: evento.previousStatus
+        ? ESTADO_A_COMPARTIDO[evento.previousStatus]
+        : null,
+      resultingStatus: ESTADO_A_COMPARTIDO[evento.resultingStatus],
+      actorName: evento.actor.fullName,
+      actorRole: evento.actorRole,
+      occurredAt: evento.occurredAt.toISOString(),
+    })),
+  };
+}
+
+function lineaADto(linea: OrderLine): OrderLineDto {
+  return {
+    productId: linea.productId,
+    productName: linea.productName,
+    price: linea.productPrice,
+    quantity: linea.quantity,
+  };
 }
 
 /**

@@ -73,6 +73,9 @@ export default async function PaginaBandejaNegocio({
                     </li>
                   ))}
                 </ul>
+                <Link href={`/negocio/pedidos/${pedido.id}`} className="text-sm underline">
+                  Ver historial
+                </Link>
               </div>
 
               {pedido.status === OrderStatus.CREADO && (

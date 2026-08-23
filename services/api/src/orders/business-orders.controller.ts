@@ -4,6 +4,7 @@ import {
   BusinessOrdersQuerySchema,
   RejectOrderSchema,
   type BusinessOrdersQuery,
+  type OrderDetailDto,
   type OrderSummaryDto,
   type Paginated,
   type RejectOrderInput,
@@ -39,6 +40,12 @@ export class BusinessOrdersController {
   @Get('rejected')
   rechazados(): Promise<{ items: OrderSummaryDto[] }> {
     return this.pedidos.rechazadosDelNegocio();
+  }
+
+  /** `GET /api/v1/business/orders/:id` (E4, FR-004, D-053). */
+  @Get(':id')
+  detalle(@Param('id') id: string): Promise<OrderDetailDto> {
+    return this.pedidos.detalleParaNegocio(id);
   }
 
   /** `PUT /api/v1/business/orders/:id/accept` (FR-031, D-038). */

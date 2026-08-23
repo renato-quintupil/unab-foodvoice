@@ -74,7 +74,11 @@ export default async function PaginaPedidos({
             <tbody>
               {pagina.items.map((pedido) => (
                 <tr key={pedido.id} className="border-b border-[var(--color-borde)]">
-                  <td className="py-3 pr-3">{pedido.id}</td>
+                  <td className="py-3 pr-3">
+                    <Link href={`/admin/pedidos/${pedido.id}`} className="underline">
+                      {pedido.id}
+                    </Link>
+                  </td>
                   <td className="py-3 pr-3">{ETIQUETA_ESTADO_PEDIDO[pedido.status]}</td>
                   {/* DD/MM/AAAA, nunca el formato interno (ux CHK021). */}
                   <td className="py-3">{formatearFecha(pedido.createdAt)}</td>
