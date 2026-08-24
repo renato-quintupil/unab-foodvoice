@@ -161,7 +161,7 @@ actualizar el estado del producto.
 - [X] T036 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
 - [X] T037 Recorrer V-01 a V-16 de `specs/006-busqueda-por-voz/quickstart.md` con sesiones reales de cliente y negocio; registrar el resultado en `specs/006-busqueda-por-voz/verificacion.md`
 - [X] T038 Ejecutar la evaluación con el modelo real de `quickstart.md` § Evaluación con el modelo real: correr el corpus de frases de aceptación (Principio XI) contra Claude Haiku 4.5, medir el p95 de `search_log.latency_ms` (SC-004) y proyectar el costo mensual desde `search_log.tokens_used` (SC-007); documentar el resultado y, si no se cumple el SLO, ajustar `LLM_TIMEOUT_MS` antes de continuar
-- [ ] T039 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E6 como terminada, con el mismo nivel de detalle que E1/E2/E3/E4/E9
+- [X] T039 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E6 como terminada, con el mismo nivel de detalle que E1/E2/E3/E4/E9
 
 **Nota sobre T036–T039 (2026-08-24)**: T036 corrió completo dos veces sobre el monorepo real
 —`pnpm typecheck`, `pnpm lint`, `pnpm test` (233 + 143 + 210 = 586 unitarios, todos con sus
