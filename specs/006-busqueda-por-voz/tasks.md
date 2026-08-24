@@ -159,7 +159,7 @@ V-12 de `quickstart.md`.
 actualizar el estado del producto.
 
 - [X] T036 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
-- [ ] T037 Recorrer V-01 a V-15 de `specs/006-busqueda-por-voz/quickstart.md` con sesiones reales de cliente y negocio; registrar el resultado en `specs/006-busqueda-por-voz/verificacion.md`
+- [X] T037 Recorrer V-01 a V-16 de `specs/006-busqueda-por-voz/quickstart.md` con sesiones reales de cliente y negocio; registrar el resultado en `specs/006-busqueda-por-voz/verificacion.md`
 - [X] T038 Ejecutar la evaluación con el modelo real de `quickstart.md` § Evaluación con el modelo real: correr el corpus de frases de aceptación (Principio XI) contra Claude Haiku 4.5, medir el p95 de `search_log.latency_ms` (SC-004) y proyectar el costo mensual desde `search_log.tokens_used` (SC-007); documentar el resultado y, si no se cumple el SLO, ajustar `LLM_TIMEOUT_MS` antes de continuar
 - [ ] T039 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E6 como terminada, con el mismo nivel de detalle que E1/E2/E3/E4/E9
 
@@ -189,9 +189,15 @@ frase en vez de dictarla mostró que "Agregar al carrito por voz" **siempre** ac
 (nunca reenvía el texto ya escrito, decisión deliberada de `1b5ea02`) y dispara un
 `window.confirm()` de consentimiento (FR-018) que bloquea la pestaña hasta que una persona lo
 cierra a mano — no es simulable por herramientas de automatización de navegador, a diferencia de
-la Historia 1, donde el campo de texto sí es un canal completo. Detalle, hallazgo y los 8 pasos
-verificados en `specs/006-busqueda-por-voz/verificacion.md`. T037 sigue sin cerrar: faltan esos 7
-pasos con una persona y un micrófono real.
+la Historia 1, donde el campo de texto sí es un canal completo.
+
+**Cierre de T037 (2026-08-24)**: se agregó V-16 (FR-028, botón manual "Agregar" en los resultados
+de búsqueda, pedido explícito del usuario tras probar la aplicación) y se verificó junto con los
+8 pasos anteriores — 9 de 16 recorridos por Claude contra la aplicación real. Los 7 restantes
+(V-06, V-07 a V-11, V-13), que exigen micrófono real y no son simulables por automatización, los
+recorrió directamente el usuario (renato-quintupil) con micrófono real, confirmando que toda la
+funcionalidad de audio funcionó correctamente, sin defectos. **Los 16 pasos quedan verificados,
+T037 cerrado.** Detalle completo en `specs/006-busqueda-por-voz/verificacion.md`.
 
 ---
 

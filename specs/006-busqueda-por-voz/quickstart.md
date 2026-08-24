@@ -73,6 +73,7 @@ Una sesión de **cliente**, con el catálogo de E3 ya cargado y al menos:
 | **V-04** | Buscar una combinación sin ningún producto que la cumpla (p. ej. un tramo de precio y una categoría que no coexisten en el catálogo de prueba) | El sistema comunica que no encontró resultados y qué entendió, sin sustituir por productos que cumplen solo una condición |
 | **V-05** | Marcar como agotado, desde otra sesión de negocio, un producto que cumplía la búsqueda de V-01, y repetir esa búsqueda | Ese producto ya no aparece entre los resultados |
 | **V-06** | Repetir la frase de V-01 usando el micrófono (si el navegador lo soporta) en vez de escribirla | Mismo tipo de resultado que V-01 — no dos comportamientos distintos por canal |
+| **V-16** | Sobre los resultados de una búsqueda (p. ej. V-01), hacer clic en el botón "Agregar" de una de las tarjetas, sin dictar ni escribir una frase de agregado | El producto queda en el carrito con cantidad 1, sin pasar por la pantalla de confirmación de la Historia 2 (FR-028) |
 
 ### B · Cliente agrega al carrito por voz (Historia 2, P2)
 
@@ -129,3 +130,6 @@ medición que se corre antes de dar el SLO por definitivo (HU-06 §8, `revision_
 | SC-006 (100% de agregados muestran confirmación con precio vigente) | V-07 |
 | SC-007 (costo mensual < $15.000 CLP) | Evaluación con el modelo real |
 | SC-008 (aptitud vegana correcta al 100%/0%) | V-12 |
+
+FR-028 (agregar manualmente un resultado de búsqueda, con un clic) no tiene un criterio de éxito
+numerado propio — se cubre con V-16.

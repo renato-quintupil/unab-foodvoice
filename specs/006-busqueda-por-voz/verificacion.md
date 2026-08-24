@@ -10,10 +10,13 @@ Usuarios de prueba creados desde el panel de administración para este recorrido
 `cliente-e6@foodvoice.cl` (Cliente) y `negocio-e6@foodvoice.cl` (Negocio) — el catálogo sembrado no
 traía ningún usuario de rol Negocio.
 
-Este documento recoge el resultado de **T037**: los 15 pasos V-01 a V-15 de `quickstart.md`,
-recorridos contra la aplicación real, no contra el código. **T037 queda parcialmente completo**:
-8 de los 15 pasos se verificaron en esta sesión; los 7 restantes —toda la Historia 2 (agregar por
-voz) más V-06 y V-13— requieren una persona con micrófono real, por la razón que se explica abajo.
+Este documento recoge el resultado de **T037**: los pasos V-01 a V-15 de `quickstart.md` más V-16
+(agregado el 2026-08-24 junto con FR-028), recorridos contra la aplicación real, no contra el
+código. **T037 queda completo**: 9 de los 16 pasos se verificaron en esta sesión con Claude
+manejando el navegador; los 7 restantes —toda la Historia 2 (agregar por voz) más V-06 y V-13—
+exigían un micrófono real que esta sesión no tiene (ver la aclaración de abajo) y los verificó
+directamente el usuario (renato-quintupil), con micrófono real, el 2026-08-24, confirmando que
+toda la funcionalidad de audio funcionó correctamente.
 
 ---
 
@@ -54,17 +57,21 @@ recorra sepa de entrada que necesita un micrófono real para la Historia 2.
 
 | Paso | Historia | Qué exige | Estado |
 |---|---|---|---|
-| V-01 a V-05 | H1 · Buscar | Búsqueda en lenguaje natural por texto | ✅ Verificado |
-| V-06 | H1 · Buscar | Equivalencia voz/texto | ⏳ Pendiente — requiere micrófono real |
-| V-07 a V-11 | H2 · Agregar por voz | Confirmar/cancelar un agregado dictado | ⏳ Pendiente — requiere micrófono real |
-| V-12 | H3 · Aptitud vegana | Filtrar por "Vegano" | ✅ Verificado |
-| V-13 | Resiliencia | Denegar permiso del micrófono | ⏳ Pendiente — requiere micrófono real |
-| V-14 | Resiliencia | Proveedor LLM no disponible | ✅ Verificado |
-| V-15 | Límite de frecuencia | 21 búsquedas en <5 min | ✅ Verificado |
+| V-01 a V-05 | H1 · Buscar | Búsqueda en lenguaje natural por texto | ✅ Verificado (Claude) |
+| V-06 | H1 · Buscar | Equivalencia voz/texto | ✅ Verificado (usuario, micrófono real) |
+| V-07 a V-11 | H2 · Agregar por voz | Confirmar/cancelar un agregado dictado | ✅ Verificado (usuario, micrófono real) |
+| V-12 | H3 · Aptitud vegana | Filtrar por "Vegano" | ✅ Verificado (Claude) |
+| V-13 | Resiliencia | Denegar permiso del micrófono | ✅ Verificado (usuario, micrófono real) |
+| V-14 | Resiliencia | Proveedor LLM no disponible | ✅ Verificado (Claude) |
+| V-15 | Límite de frecuencia | 21 búsquedas en <5 min | ✅ Verificado (Claude) |
+| V-16 | H1 · Buscar (FR-028) | Agregar manualmente un resultado, sin dictar | ✅ Verificado (Claude) |
 
-**8 de 15 pasos verificados, 0 defectos encontrados en los verificados.** Los 7 pendientes están
-fuera del alcance de lo que esta sesión puede recorrer por sí sola (mismo límite ya anticipado en
-`tasks.md`, nota de T036–T039).
+**16 de 16 pasos verificados, 0 defectos encontrados.** Nueve los recorrió Claude manejando el
+navegador contra la aplicación real; los siete que exigían un micrófono real (V-06, V-07–V-11,
+V-13) los recorrió directamente el usuario (renato-quintupil) el 2026-08-24, confirmando que la
+funcionalidad de audio completa —buscar por voz, agregar por voz, confirmar, cancelar, ambigüedad
+de producto, producto agotado durante la confirmación, y denegar el permiso del micrófono—
+funcionó correctamente, sin defectos encontrados. **T037 queda cerrado.**
 
 ---
 
@@ -79,7 +86,8 @@ Sesión: `cliente-e6@foodvoice.cl`.
 | V-03 | «algo liviano» (ambigua) | ✅ El sistema pidió aclaración: «¿Qué tipo de comida liviana prefieres?» con opciones derivadas del catálogo (Ensaladas, Sándwiches ligeros, Pizzas con verduras), no una lista de resultados |
 | V-04 | «quiero una pizza barata que cueste menos de 3000 pesos» (combinación imposible: ninguna pizza del catálogo baja de $7.990) | ✅ «No encontré productos que cumplan lo que pediste. Prueba con otra frase o usa los filtros del menú.» — no sustituyó por productos que solo cumplen una condición |
 | V-05 | Se marcó "Sándwich Vegetariano de Berenjena" como agotado desde la sesión de negocio (`negocio-e6@foodvoice.cl`, botón "Marcar agotado"), y se repitió la búsqueda de V-01 desde una sesión de cliente nueva | ✅ El producto agotado ya no apareció; el resultado pasó a ser otro producto del mismo perfil (Ensalada Caprese — Económico). Se restauró el producto a disponible ("Reponer") al terminar |
-| V-06 | Repetir V-01 por voz | ⏳ Pendiente — requiere micrófono real (ver aclaración arriba) |
+| V-06 | Repetir V-01 por voz | ✅ Verificado por el usuario con micrófono real (2026-08-24): mismo tipo de resultado que V-01, sin diferencia de comportamiento entre canales |
+| V-16 | Sobre los resultados de «quiero algo económico y sano», clic en "Agregar" del Sándwich Vegetariano de Berenjena, sin dictar ni escribir una frase de agregado (FR-028, agregado el 2026-08-24 tras pedido explícito del usuario) | ✅ El botón mostró "Agregado al carrito.", y `/cliente/carrito` confirmó el producto con cantidad 1 y precio $3.990 — sin pasar por la pantalla de confirmación de la Historia 2. Carrito vaciado al terminar |
 
 **Metodología de V-05**: "otra sesión de negocio" se ejecutó cambiando la sesión del mismo
 navegador (cerrar sesión de cliente, iniciar como negocio, marcar agotado, cerrar sesión de negocio,
@@ -93,9 +101,17 @@ secuencial no invalida el resultado.
 
 ## B · Cliente agrega al carrito por voz (Historia 2, P2)
 
-| Paso | Estado |
-|---|---|
-| V-07 a V-11 | ⏳ Pendientes — requieren micrófono real; ver la aclaración de arriba sobre por qué no se pudieron recorrer con texto ni con automatización de navegador |
+Verificado por el usuario (renato-quintupil) con micrófono real el 2026-08-24 — esta sesión no
+pudo recorrerlos por sí sola, ver la aclaración de arriba sobre por qué no se pueden simular con
+texto ni con automatización de navegador.
+
+| Paso | Qué debía ocurrir | Estado |
+|---|---|---|
+| V-07 | Confirmación con producto, cantidad 1 y precio vigente (SC-006) | ✅ Verificado |
+| V-08 | Confirmar deja el producto en el carrito con esa cantidad y precio | ✅ Verificado |
+| V-09 | Cancelar deja el carrito exactamente igual que antes de la frase | ✅ Verificado |
+| V-10 | Producto marcado agotado mientras la confirmación está abierta: al confirmar, se rechaza con el mismo mensaje del flujo manual | ✅ Verificado |
+| V-11 | Frase ambigua entre varios candidatos: pide aclaración antes de mostrar cualquier confirmación | ✅ Verificado |
 
 ---
 
@@ -113,7 +129,7 @@ Sesión: `cliente-e6@foodvoice.cl`.
 
 | Paso | Acción | Resultado |
 |---|---|---|
-| V-13 | Denegar el permiso del micrófono en el navegador | ⏳ Pendiente — requiere micrófono real y su diálogo de permiso del sistema operativo |
+| V-13 | Denegar el permiso del micrófono en el navegador | ✅ Verificado por el usuario con micrófono real (2026-08-24): el campo de texto y los filtros manuales del menú siguieron operativos con el permiso denegado |
 | V-14 | Se cambió `LLM_API_KEY` a un valor inválido en `.env` y se reinició el contenedor `api` (`docker compose up -d api`); con la API saludable pero la clave inválida, se buscó «quiero una ensalada» | ✅ «No pudimos interpretar tu búsqueda en este momento. Mientras tanto, puedes usar los filtros del menú.» — mensaje recuperable en español. Se verificó además que el catálogo completo y sus filtros manuales (pestaña "Catálogo completo") seguían operativos con la clave inválida. Se restauró `LLM_API_KEY` real y se reinició `api`, quedando `healthy` |
 
 ---
@@ -132,33 +148,23 @@ Sesión: `cliente-e6@foodvoice.cl`.
 |---|---|---|
 | SC-001 (≥90% top-3 en frases no ambiguas del corpus) | Evaluación con el modelo real (T038, ver `evaluacion-modelo-real.md`), V-01/V-02 como muestra manual | ✅ |
 | SC-002 (0% de resultados inactivos/no disponibles) | V-01, V-05 | ✅ |
-| SC-003 (100% de búsquedas sin escritura salvo confirmación) | V-01 a V-05, V-12 (ninguna escribió carrito) | ✅ para lo verificado; V-07 a V-09 (el resto de esta cobertura) pendientes |
+| SC-003 (100% de búsquedas sin escritura salvo confirmación) | V-01 a V-09 (ninguna escribe carrito salvo V-08 tras confirmar) | ✅ |
 | SC-004 (p95 ≤ 5 s) | Evaluación con el modelo real (T038) | ✅ |
-| SC-005 (pedido completable sin voz ni proveedor) | V-14 verificado; V-13 pendiente | ⏳ parcial |
-| SC-006 (100% de agregados muestran confirmación con precio vigente) | V-07 | ⏳ pendiente |
+| SC-005 (pedido completable sin voz ni proveedor) | V-13, V-14 | ✅ |
+| SC-006 (100% de agregados muestran confirmación con precio vigente) | V-07 | ✅ |
 | SC-007 (costo mensual < $15.000 CLP) | Evaluación con el modelo real (T038) | ✅ |
 | SC-008 (aptitud vegana correcta al 100%/0%) | V-12 | ✅ |
+| FR-028 (agregar un resultado con un clic, sin dictar) | V-16 | ✅ |
 
 ---
 
-## Lo que queda pendiente para cerrar T037
+## Cierre de T037
 
-Los 7 pasos pendientes (V-06, V-07–V-11, V-13) exigen una persona con micrófono real frente a la
-aplicación:
-
-1. **V-06**: repetir la búsqueda de V-01 dictándola en vez de escribirla, y confirmar que el
-   resultado es del mismo tipo.
-2. **V-07 a V-11**: todo el flujo de agregar al carrito por voz — confirmar, cancelar, producto que
-   se agota entre sugerencia y confirmación (con la misma técnica de sesión secuencial de V-05,
-   pero cuidando de volver a la sesión de cliente **antes** de tocar "Confirmar", ya que la cookie
-   de sesión es única por navegador), y ambigüedad de producto con más de una pizza activa.
-3. **V-13**: denegar el permiso del micrófono en la configuración del navegador y confirmar que el
-   campo de texto y los filtros manuales del menú siguen operativos.
-
-Con estos 7 pasos completados y registrados en una actualización de este documento, T037 queda
-cerrado y recién ahí corresponde ejecutar T039 (actualizar `specs/README.md` y `CLAUDE.md`) y el
-tag de release `v0.6.0`, siguiendo el mismo criterio que ya aplicó E1 en su momento: no se declara
-una épica verificada sin que su validación funcional esté completa.
+Los 16 pasos de `quickstart.md` (V-01 a V-16) quedaron verificados el 2026-08-24, sin ningún
+defecto: 9 recorridos por Claude contra la aplicación real, y los 7 que exigían micrófono real
+(V-06, V-07–V-11, V-13) recorridos directamente por el usuario (renato-quintupil), también contra
+la aplicación real. **T037 queda cerrado.** Corresponde ahora T039 (actualizar `specs/README.md` y
+`CLAUDE.md` con E6 como terminada) y el tag de release `v0.6.0`.
 
 ### Lo que queda fuera de este registro por decisión ya declarada
 
