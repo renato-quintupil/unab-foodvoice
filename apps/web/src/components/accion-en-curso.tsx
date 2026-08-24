@@ -15,6 +15,12 @@ import { Button, type ButtonProps } from '@/components/ui/button';
  */
 export type AccionEnCursoProps = Omit<ButtonProps, 'disabled'> & {
   enCurso: boolean;
+  /**
+   * Deshabilita el control por una razón **distinta** a estar en curso —p.
+   * ej. no hay todavía nada sobre lo que la acción tenga sentido—, sin
+   * anunciarlo como `aria-busy` (eso queda reservado a `enCurso`).
+   */
+  disabled?: boolean;
   /** Qué se está haciendo, en español. Se anuncia a los lectores de pantalla. */
   textoEnCurso?: string;
   children: ReactNode;
@@ -22,6 +28,7 @@ export type AccionEnCursoProps = Omit<ButtonProps, 'disabled'> & {
 
 export function AccionEnCurso({
   enCurso,
+  disabled = false,
   textoEnCurso = 'Procesando…',
   children,
   ...props
@@ -32,7 +39,7 @@ export function AccionEnCurso({
         {...props}
         // Inutiliza el control que disparó la acción hasta que llega la
         // respuesta: es lo que impide que un doble clic produzca dos efectos.
-        disabled={enCurso}
+        disabled={enCurso || disabled}
         aria-busy={enCurso}
       >
         {enCurso ? textoEnCurso : children}

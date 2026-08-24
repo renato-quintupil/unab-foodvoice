@@ -90,6 +90,34 @@ function dictar(transcripcion: string): void {
   });
 }
 
+const RESPUESTA_BUSQUEDA_CON_NAPOLITANA = respuesta(200, {
+  status: 'RESULTS',
+  interpretation: {
+    priceTier: null,
+    foodTypeCategoryId: null,
+    healthProfileCategoryId: null,
+    vegan: null,
+    productTerms: [],
+    openRecommendation: false,
+  },
+  items: [PRODUCTO],
+});
+
+/**
+ * "Agregar al carrito por voz" empieza deshabilitado y solo se habilita
+ * sobre una búsqueda con productos ya en pantalla — así que toda prueba de
+ * agregar por voz necesita buscar primero (FR-020, la misma condición que
+ * el botón exige en la interfaz real).
+ */
+async function buscarPrimero(usuario: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await usuario.type(
+    screen.getByLabelText('Busca o pide algo con tus propias palabras'),
+    'quiero pizza',
+  );
+  await usuario.click(screen.getByRole('button', { name: 'Buscar' }));
+  await waitFor(() => expect(screen.getByText('Pizza Napolitana')).toBeInTheDocument());
+}
+
 describe('BusquedaPorVoz · texto (HU-06)', () => {
   it('funciona escribiendo texto, sin usar el micrófono', async () => {
     const usuario = userEvent.setup();
@@ -232,6 +260,44 @@ describe('BusquedaPorVoz · texto (HU-06)', () => {
 });
 
 describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
+  it('empieza deshabilitado y solo se habilita con una búsqueda con datos en pantalla', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(RESPUESTA_BUSQUEDA_CON_NAPOLITANA);
+
+    render(<BusquedaPorVoz />);
+    expect(screen.getByRole('button', { name: /Agregar al carrito por voz/ })).toBeDisabled();
+
+    await buscarPrimero(usuario);
+    expect(screen.getByRole('button', { name: /Agregar al carrito por voz/ })).toBeEnabled();
+  });
+
+  it('sigue deshabilitado si la búsqueda no trajo productos (CLARIFICATION o NO_RESULTS)', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(
+      respuesta(200, {
+        status: 'NO_RESULTS',
+        interpretation: {
+          priceTier: null,
+          foodTypeCategoryId: null,
+          healthProfileCategoryId: null,
+          vegan: null,
+          productTerms: ['hamburguesa'],
+          openRecommendation: false,
+        },
+      }),
+    );
+
+    render(<BusquedaPorVoz />);
+    await usuario.type(
+      screen.getByLabelText('Busca o pide algo con tus propias palabras'),
+      'hamburguesa',
+    );
+    await usuario.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    await waitFor(() => expect(screen.getByText(/No encontré productos/)).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Agregar al carrito por voz/ })).toBeDisabled();
+  });
+
   it('activa el micrófono en vez de reenviar lo que hubiera en el campo de texto', async () => {
     const usuario = userEvent.setup();
     fetchSimulado.mockResolvedValue(
@@ -308,8 +374,10 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
 
   it('muestra un mensaje si el reconocimiento falla, en vez de no hacer nada (sin feedback)', async () => {
     const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA);
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
 
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     act(() => {
@@ -321,26 +389,30 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('No alcancé a escucharte');
     // El botón vuelve a estar disponible: no queda atascado en "Escuchando…".
     expect(screen.getByRole('button', { name: /Agregar al carrito por voz/ })).toBeEnabled();
-    expect(fetchSimulado).not.toHaveBeenCalled();
+    // Ninguna llamada nueva: el fallo ocurrió en el reconocimiento, antes de
+    // llegar a pedirle nada al servidor. La única llamada previa fue la búsqueda.
+    expect(fetchSimulado).toHaveBeenCalledTimes(1);
   });
 
   it('muestra la confirmación con producto, cantidad y precio antes de tocar el carrito', async () => {
     const usuario = userEvent.setup();
-    fetchSimulado.mockResolvedValue(
-      respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }),
-    );
+    fetchSimulado
+      .mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA)
+      .mockResolvedValue(respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }));
 
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     dictar('agrégame una napolitana');
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Confirmar agregado al carrito' })).toBeInTheDocument();
     });
-    // Ninguna escritura todavía: la única llamada fue la de intent ADD.
-    expect(fetchSimulado).toHaveBeenCalledTimes(1);
-    const [, opciones] = fetchSimulado.mock.calls[0]!;
+    // Ninguna escritura todavía: solo la búsqueda previa y la llamada de intent ADD.
+    expect(fetchSimulado).toHaveBeenCalledTimes(2);
+    const [, opciones] = fetchSimulado.mock.calls[1]!;
     expect(JSON.parse(opciones.body as string)).toMatchObject({
       query: 'agrégame una napolitana',
       channel: 'VOICE',
@@ -350,49 +422,56 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
 
   it('cancelar no llama a ningún endpoint de carrito (FR-023)', async () => {
     const usuario = userEvent.setup();
-    fetchSimulado.mockResolvedValue(
-      respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }),
-    );
+    fetchSimulado
+      .mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA)
+      .mockResolvedValue(respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }));
 
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     dictar('agrégame una napolitana');
     await waitFor(() => screen.getByRole('dialog'));
 
     await usuario.click(screen.getByRole('button', { name: 'Cancelar' }));
 
-    expect(fetchSimulado).toHaveBeenCalledTimes(1);
+    expect(fetchSimulado).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('muestra varios productos en una sola confirmación cuando la frase nombra más de uno (D-066)', async () => {
     const usuario = userEvent.setup();
-    fetchSimulado.mockResolvedValue(
-      respuesta(200, {
-        status: 'RESOLVED',
-        items: [
-          { item: PRODUCTO, quantity: 1 },
-          { item: PRODUCTO_2, quantity: 2 },
-        ],
-      }),
-    );
+    fetchSimulado
+      .mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA)
+      .mockResolvedValue(
+        respuesta(200, {
+          status: 'RESOLVED',
+          items: [
+            { item: PRODUCTO, quantity: 1 },
+            { item: PRODUCTO_2, quantity: 2 },
+          ],
+        }),
+      );
 
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     dictar('agrégame una napolitana y dos cuatro quesos');
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Confirmar agregado al carrito' })).toBeInTheDocument();
     });
-    expect(screen.getByText('Pizza Napolitana')).toBeInTheDocument();
+    expect(screen.getAllByText('Pizza Napolitana').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Pizza Cuatro Quesos')).toBeInTheDocument();
   });
 
   it('confirmar con varios productos agrega cada uno al carrito', async () => {
     const usuario = userEvent.setup();
     fetchSimulado
+      .mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA)
       .mockResolvedValueOnce(
         respuesta(200, {
           status: 'RESOLVED',
@@ -408,15 +487,17 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
 
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     dictar('agrégame una napolitana y dos cuatro quesos');
     await waitFor(() => screen.getByRole('dialog'));
 
     await usuario.click(screen.getByRole('button', { name: 'Confirmar' }));
 
-    // 1 (ADD) + 2 x POST /cart/lines + 1 PATCH de cantidad para el segundo producto.
-    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(4));
-    const rutas = fetchSimulado.mock.calls.slice(1).map(([ruta]) => ruta);
+    // Búsqueda + ADD + 2 x POST /cart/lines + 1 PATCH de cantidad para el segundo producto.
+    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(5));
+    const rutas = fetchSimulado.mock.calls.slice(2).map(([ruta]) => ruta);
     expect(rutas).toEqual([
       '/api/cart/lines',
       '/api/cart/lines',
@@ -427,19 +508,24 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
   it('confirmar llama a POST /cart/lines', async () => {
     const usuario = userEvent.setup();
     fetchSimulado
-      .mockResolvedValueOnce(respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }))
+      .mockResolvedValueOnce(RESPUESTA_BUSQUEDA_CON_NAPOLITANA)
+      .mockResolvedValueOnce(
+        respuesta(200, { status: 'RESOLVED', items: [{ item: PRODUCTO, quantity: 1 }] }),
+      )
       .mockResolvedValueOnce(respuesta(200, { lines: [] }));
 
     conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
     await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
     dictar('agrégame una napolitana');
     await waitFor(() => screen.getByRole('dialog'));
 
     await usuario.click(screen.getByRole('button', { name: 'Confirmar' }));
 
-    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(2));
-    const [ruta] = fetchSimulado.mock.calls[1]!;
+    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(3));
+    const [ruta] = fetchSimulado.mock.calls[2]!;
     expect(ruta).toBe('/api/cart/lines');
   });
 });

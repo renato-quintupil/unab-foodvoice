@@ -59,6 +59,11 @@ export function BusquedaPorVoz() {
   );
   const canalRef = useRef<(typeof SearchChannel)[keyof typeof SearchChannel]>(SearchChannel.TEXT);
 
+  // "Agregar al carrito por voz" solo tiene sentido sobre una búsqueda con
+  // productos ya visibles en pantalla: agregar a ciegas, sin nada que el
+  // cliente haya visto primero, no tiene contra qué confirmar lo que dijo.
+  const haySearchConDatos = resultado?.status === 'RESULTS' && resultado.items.length > 0;
+
   /**
    * `consulta` es explícito y no se lee de `texto` (estado) porque el
    * autodisparo por voz llama a esta función en el mismo evento que recibe la
@@ -226,6 +231,7 @@ export function BusquedaPorVoz() {
           type="button"
           size="sm"
           enCurso={enCurso || escuchando}
+          disabled={!haySearchConDatos}
           textoEnCurso="Escuchando…"
           onClick={() => activarMicrofono(SearchIntent.ADD)}
         >
