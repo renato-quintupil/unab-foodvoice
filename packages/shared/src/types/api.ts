@@ -127,6 +127,12 @@ export type ProductDto = {
    */
   priceTier: PriceTier | null;
   createdAt: string;
+  /**
+   * Nombres de las aptitudes dietéticas marcadas por el negocio (E6). `[]`
+   * cuando no tiene ninguna — **nunca** significa "no apto", significa "no
+   * declarado" (data-model.md de 006-busqueda-por-voz).
+   */
+  dietaryTags: string[];
 };
 
 /**
@@ -225,6 +231,59 @@ export type OrderStatusEventDto = {
 export type OrderDetailDto = OrderSummaryDto & {
   history: OrderStatusEventDto[];
 };
+
+// ---------------------------------------------------------------------------
+// E6 · Búsqueda por voz (contracts/shared.md de 006-busqueda-por-voz)
+// ---------------------------------------------------------------------------
+
+/**
+ * Lo que el proveedor de lenguaje entendió de la frase — **nunca** productos
+ * completos (FR-004). Las cinco categorías de intención del Principio VII,
+ * ni una más.
+ *
+ * `vegan: true` significa que la frase pidió explícitamente aptitud vegana;
+ * `null` significa que la frase no mencionó ninguna aptitud dietética — nunca
+ * `false` (FR-013: no hay negación útil de "vegano" en este contrato).
+ */
+export type SearchInterpretation = {
+  priceTier: PriceTier | null;
+  foodTypeCategoryId: string | null;
+  healthProfileCategoryId: string | null;
+  vegan: boolean | null;
+  productTerms: string[];
+  openRecommendation: boolean;
+};
+
+/**
+ * Respuesta de `POST /menu/search` con `intent: 'SEARCH'` (Historia 1 y 3 de
+ * `spec.md`). `items` son `ProductDto` reales, reconsultados al responder
+ * (FR-006, FR-007) — nunca la forma que devolvió el proveedor.
+ */
+export type SemanticSearchResponse =
+  | { status: 'RESULTS'; interpretation: SearchInterpretation; items: ProductDto[] }
+  | { status: 'CLARIFICATION'; question: string; options: string[] }
+  | { status: 'NO_RESULTS'; interpretation: SearchInterpretation };
+
+/** Un producto resuelto para agregar, con la cantidad que le corresponde. */
+export type ItemResuelto = { item: ProductDto; quantity: number };
+
+/**
+ * Respuesta de `POST /menu/search` con `intent: 'ADD'` (Historia 2). **Nunca**
+ * agrega nada al carrito (FR-008, FR-019–FR-021): es responsabilidad de quien
+ * llama, tras la confirmación explícita del cliente, invocar los endpoints de
+ * carrito ya existentes de E2 (D-063).
+ *
+ * `items` puede traer más de un producto: una frase puede nombrar varios
+ * ("una napolitana y una cuatro quesos"), y el cliente confirma todos juntos
+ * con una sola acción (D-066). Cada `quantity` es siempre ≥ 1 (FR-024).
+ * Aunque `status: 'RESOLVED'` ya pasó la reconsulta de disponibilidad
+ * (FR-021), no es una promesa de que los productos sigan disponibles al
+ * confirmar — el carrito vuelve a validar cada uno (FR-022).
+ */
+export type AddResolutionResponse =
+  | { status: 'RESOLVED'; items: ItemResuelto[] }
+  | { status: 'CLARIFICATION'; question: string; options: string[] }
+  | { status: 'NOT_FOUND' };
 
 /** Formato único de respuesta de error de la API (`contracts/api.md`). */
 export type ApiError = {

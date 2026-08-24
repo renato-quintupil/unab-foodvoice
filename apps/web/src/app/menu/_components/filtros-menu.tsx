@@ -112,7 +112,14 @@ export function FiltrosMenu({ categorias }: { categorias: CategoryDto[] }) {
         </div>
 
         {hayFiltros && (
-          <Button type="button" variant="ghost" onClick={() => router.push('/menu')}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              const tab = parametros.get('tab');
+              router.push(tab ? `/menu?tab=${tab}` : '/menu');
+            }}
+          >
             Quitar filtros
           </Button>
         )}

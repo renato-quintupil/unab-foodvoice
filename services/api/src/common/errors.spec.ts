@@ -18,9 +18,12 @@ import {
   MSG_PRECIO_CAMBIO,
   MSG_SESION_EXPIRADA,
   MSG_SIN_PERMISO,
+  MSG_LIMITE_BUSQUEDAS,
+  MSG_BUSQUEDA_NO_DISPONIBLE,
 } from '@foodvoice/shared';
 import {
   autoproteccion,
+  busquedaNoDisponible,
   carritoConLineasNoDisponibles,
   carritoDesactualizado,
   carritoVacio,
@@ -28,6 +31,7 @@ import {
   credencialesInvalidas,
   cuentaBloqueada,
   cuerpoDemasiadoGrande,
+  demasiadasBusquedas,
   direccionEnUso,
   direccionNecesitaNuevaPredeterminada,
   direccionRequerida,
@@ -41,7 +45,7 @@ import {
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los veintitrés códigos y ninguno más', () => {
+  it('declara los veinticinco códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -69,6 +73,9 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         'ADDRESS_NEEDS_NEW_DEFAULT',
         'ADDRESS_IN_USE',
         'ORDER_NOT_PENDING',
+        // Los dos que suma E6 (contracts/api.md § Códigos de error que E6 añade).
+        'TOO_MANY_REQUESTS',
+        'SEARCH_UNAVAILABLE',
       ].sort(),
     );
   });
@@ -113,6 +120,13 @@ describe('Cada error lleva su código, su estado y su mensaje en español', () =
     },
     { crear: direccionEnUso, status: 409, code: 'ADDRESS_IN_USE', mensaje: MSG_DIRECCION_EN_USO },
     { crear: pedidoNoPendiente, status: 409, code: 'ORDER_NOT_PENDING', mensaje: MSG_PEDIDO_NO_PENDIENTE },
+    { crear: demasiadasBusquedas, status: 429, code: 'TOO_MANY_REQUESTS', mensaje: MSG_LIMITE_BUSQUEDAS },
+    {
+      crear: busquedaNoDisponible,
+      status: 503,
+      code: 'SEARCH_UNAVAILABLE',
+      mensaje: MSG_BUSQUEDA_NO_DISPONIBLE,
+    },
   ];
 
   it.each(CASOS)('$code', ({ crear, status, code, mensaje }) => {

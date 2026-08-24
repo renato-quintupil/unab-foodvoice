@@ -15,6 +15,15 @@
 /** Las que la API necesita para arrancar. `web` valida las suyas por su cuenta. */
 const OBLIGATORIAS = ['DATABASE_URL'] as const;
 
+/**
+ * Solo el servidor HTTP las necesita, no la semilla (D-064, E6): `LLM_API_KEY`
+ * habilita la búsqueda por voz, que la semilla nunca invoca. Mismo criterio de
+ * "sin arranque degradado" que `DATABASE_URL`, pero acotado a quien de verdad
+ * la usa — exigirla también para `db:seed` obligaría a configurar un proveedor
+ * de IA solo para cargar el catálogo de ejemplo.
+ */
+const OBLIGATORIAS_SERVIDOR = ['LLM_API_KEY'] as const;
+
 /** Las que solo la semilla necesita, comprobadas cuando se la ejecuta (D-010). */
 const OBLIGATORIAS_SEMILLA = ['ADMIN_SEED_EMAIL', 'ADMIN_SEED_PASSWORD'] as const;
 
@@ -33,6 +42,12 @@ export type EnvValidada = {
    * local, que es el que se usa a diario.
    */
   HOST_API: string | undefined;
+  /** Clave de la API de Anthropic (E6, D-064). Nunca se expone en logs. */
+  LLM_API_KEY: string;
+  /** Modelo fijo, sin cambio silencioso ni valor de reserva (HU-06 §5.3). */
+  LLM_MODEL: string;
+  /** Milisegundos antes de abandonar la llamada al proveedor (D-065). */
+  LLM_TIMEOUT_MS: number;
 };
 
 class ErrorDeConfiguracion extends Error {}
@@ -53,7 +68,7 @@ function exigir(nombres: readonly string[], entorno: NodeJS.ProcessEnv): void {
 
 /** Valida lo que la API necesita para atender peticiones. */
 export function validarEntorno(entorno: NodeJS.ProcessEnv = process.env): EnvValidada {
-  exigir(OBLIGATORIAS, entorno);
+  exigir([...OBLIGATORIAS, ...OBLIGATORIAS_SERVIDOR], entorno);
 
   const puerto = Number(entorno.PORT_API ?? 3001);
   if (!Number.isInteger(puerto) || puerto < 1 || puerto > 65535) {
@@ -62,11 +77,19 @@ export function validarEntorno(entorno: NodeJS.ProcessEnv = process.env): EnvVal
 
   const host = entorno.HOST_API?.trim();
 
+  const timeoutLlm = Number(entorno.LLM_TIMEOUT_MS ?? 4000);
+  if (!Number.isInteger(timeoutLlm) || timeoutLlm < 1) {
+    throw new ErrorDeConfiguracion(`LLM_TIMEOUT_MS no es válido: ${entorno.LLM_TIMEOUT_MS}`);
+  }
+
   return {
     DATABASE_URL: entorno.DATABASE_URL as string,
     NODE_ENV: entorno.NODE_ENV ?? 'development',
     PORT_API: puerto,
     HOST_API: host === undefined || host === '' ? undefined : host,
+    LLM_API_KEY: entorno.LLM_API_KEY as string,
+    LLM_MODEL: entorno.LLM_MODEL ?? 'claude-haiku-4-5-20251001',
+    LLM_TIMEOUT_MS: timeoutLlm,
   };
 }
 

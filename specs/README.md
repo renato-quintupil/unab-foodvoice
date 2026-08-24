@@ -16,7 +16,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | **E3 · Administración de menú** | HU-02, HU-14 | [`002-administracion-menu-productos/`](./002-administracion-menu-productos/) | **Terminada** · 88 / 88 tareas · construida y verificada, incluidos los 56 pasos de validación funcional |
 | **E2 · Gestión de pedidos** | HU-01, HU-11, HU-12 | [`003-gestion-pedidos/`](./003-gestion-pedidos/) | **Terminada** · 108 / 108 tareas · construida y verificada, incluida la validación funcional a mano |
 | **E4 · Trazabilidad del pedido** | HU-03 | [`005-trazabilidad-pedido/`](./005-trazabilidad-pedido/) | **Terminada** · 27 / 27 tareas · construida y verificada, incluidos los 12 pasos de validación funcional |
-| E6 · Búsqueda por voz | HU-06, HU-13 | — | Sin especificar |
+| **E6 · Búsqueda por voz** | HU-06, HU-13 | [`006-busqueda-por-voz/`](./006-busqueda-por-voz/) | **Terminada** · 39 / 39 tareas · construida y verificada, incluidos los 16 pasos de validación funcional |
 | E5 · Reparto | HU-04 | — | Sin especificar |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
@@ -177,6 +177,69 @@ Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E
 transiciones que agreguen E5 (reparto) y E7 (cierre) — el mecanismo de esta épica ya queda
 preparado para mostrarlas sin cambios (FR-012), pero su verificación funcional espera a que esas
 épicas existan.
+
+## E6 · Búsqueda por voz
+
+Rama de trabajo: `006-busqueda-por-voz`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./006-busqueda-por-voz/spec.md) | Requisitos, escenarios y criterios de éxito de HU-06/HU-13 |
+| [`plan.md`](./006-busqueda-por-voz/plan.md) | Decisiones técnicas y fases de entrega |
+| [`research.md`](./006-busqueda-por-voz/research.md) | Las decisiones D-054 a D-065 con su fundamento |
+| [`data-model.md`](./006-busqueda-por-voz/data-model.md) | `DietaryTag`, `SearchLog` y el esquema Prisma nuevo |
+| [`contracts/`](./006-busqueda-por-voz/contracts/) | `POST /menu/search` y los contratos compartidos |
+| [`quickstart.md`](./006-busqueda-por-voz/quickstart.md) | Puesta en marcha y los 16 pasos de validación funcional |
+| [`tasks.md`](./006-busqueda-por-voz/tasks.md) | 39 tareas ordenadas por historia |
+| [`verificacion.md`](./006-busqueda-por-voz/verificacion.md) | Resultado de la validación — sin defectos encontrados |
+| [`corpus-aceptacion.md`](./006-busqueda-por-voz/corpus-aceptacion.md) | Las 15 frases del corpus de aceptación (Principio XI) |
+| [`evaluacion-modelo-real.md`](./006-busqueda-por-voz/evaluacion-modelo-real.md) | Latencia (SC-004) y costo (SC-007) medidos contra Claude Haiku 4.5 real |
+| [`checklists/`](./006-busqueda-por-voz/checklists/) | Calidad de requisitos |
+
+Fases de entrega: **A** contratos y esquema (`DietaryTag`, `SearchLog`, habilitante) → **B**
+proveedor de interpretación semántica y proyección del catálogo (habilitante) → **C** HU-06
+Historia 1, buscar (P1, MVP) → **D** HU-13 Historia 2, agregar por voz (P2) → **E** HU-06
+Historia 3, aptitud vegana (P3) → **F** validación funcional y evaluación con el modelo real.
+
+**Por qué se da por terminada.** Las tres historias están construidas — interpretación semántica
+contra un proveedor externo (Claude Haiku 4.5 vía API de Anthropic) que nunca toca la base de
+datos directamente, allowlist contra los IDs realmente enviados (FR-005), reconsulta de
+disponibilidad antes de responder (FR-006/FR-007), rate limiting de 20 solicitudes/5min por sesión
+(FR-014) y aptitud dietética "Vegano" como vocabulario controlado (FR-012/FR-013)—, las dos capas
+automáticas pasan en verde —587 pruebas unitarias (`services/api` 143, `packages/shared` 233,
+`apps/web` 211, todas con sus umbrales de cobertura) y 613 pruebas de integración en 80 baterías
+contra PostgreSQL real, incluidas las cuatro nuevas de esta épica—, y la evaluación con el modelo
+real (T038) dio p95 = 3,1 s (SC-004 cumple) y una proyección de costo muy por debajo de $15.000
+CLP/mes (SC-007 cumple), documentado en
+[`evaluacion-modelo-real.md`](./006-busqueda-por-voz/evaluacion-modelo-real.md). La **validación
+funcional se completó el 2026-08-24**, los 16 pasos de `quickstart.md` (V-01 a V-16, el último
+agregado durante la propia validación — ver abajo). **No encontró ningún defecto**: la primera
+corrida de la evaluación con el modelo real sí encontró uno —un reintento duplicado entre el SDK de
+Anthropic y el reintento explícito de D-065 que empujaba la cola de latencia por encima del SLO—,
+corregido con `maxRetries: 0` antes de dar el SLO por definitivo. El detalle está en
+[`verificacion.md`](./006-busqueda-por-voz/verificacion.md).
+
+Ocho de los 16 pasos (búsqueda por texto, aptitud vegana, resiliencia sin proveedor, límite de
+frecuencia, el nuevo botón manual de agregar) se recorrieron contra la aplicación real en un
+navegador automatizado. Los siete restantes —todo el flujo de agregar por voz más la equivalencia
+voz/texto y denegar el permiso del micrófono— exigen un micrófono real y el diálogo nativo de
+consentimiento del navegador (FR-018), que bloquea la automatización de navegador por diseño; los
+verificó directamente una persona, sin encontrar defectos.
+
+**Un hallazgo de la propia validación cambió el alcance construido**: los resultados de una
+búsqueda no tenían ninguna forma de agregarse al carrito salvo dictando una frase nueva de
+agregado. Se agregó **FR-028** —un botón "Agregar" manual, de un clic, sobre cada resultado,
+reutilizando el mismo componente que ya usa el catálogo completo (FR-002 de E3), sin escritura
+nueva ni paralela (D-063)— con una enmienda chica a la spec antes de tocar el código, mismo
+criterio que ya aplicó E9. Se aprovechó el mismo hallazgo para documentar, sin cambio de código,
+por qué el agregado por voz no entiende referencias al contenido en pantalla ("agrega la que está
+en pantalla"): exigiría memoria conversacional entre solicitudes, que la spec excluye
+explícitamente desde su primera versión (Assumptions).
+
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4. La apuesta
+central de E3 —que una descripción en prosa bien escrita baste para la búsqueda por voz, sin
+diccionario de sinónimos— queda **confirmada**: SC-001 se cumplió con el corpus de aceptación
+contra el modelo real, sin necesidad de enriquecer las descripciones del catálogo.
 
 ## E9 · Navegación y experiencia visual
 

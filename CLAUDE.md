@@ -4,20 +4,22 @@ Aplicación web para pedir comida a un local por voz o de forma manual, con
 trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
-menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual** y
-**E4 · Trazabilidad del pedido** están **construidas y verificadas**. Los tres
-espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
-poblados, y las dos capas automáticas pasan en verde: **351 pruebas unitarias**
-de `services/api` (130) y `packages/shared` (221), más **191 pruebas** sobre
-`apps/web`, todas con sus umbrales de cobertura, y **595 de integración en 76
-baterías** contra PostgreSQL real — E9 no agrega baterías de integración
-porque no toca `services/api`; E4 agrega tres.
+menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual**,
+**E4 · Trazabilidad del pedido** y **E6 · Búsqueda por voz** están
+**construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
+`services/api` y `packages/shared`— están poblados, y las dos capas
+automáticas pasan en verde: **587 pruebas unitarias** de `services/api` (143)
+y `packages/shared` (233), más **211 pruebas** sobre `apps/web`, todas con sus
+umbrales de cobertura, y **613 de integración en 80 baterías** contra
+PostgreSQL real — E9 no agrega baterías de integración porque no toca
+`services/api`; E4 agrega tres; E6 agrega cuatro.
 
-Las cinco validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las seis validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
 2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
-enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos— y su detalle está en el
-`verificacion.md` de cada spec.
+enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos; E6 el 2026-08-24, sus 16
+pasos (nueve por Claude contra la aplicación real, siete por una persona con
+micrófono real)— y su detalle está en el `verificacion.md` de cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
@@ -49,6 +51,14 @@ funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
   ya escribe y protege a nivel de base de datos (Principio XII); no hay
   máquina de estados nueva ni escritura que pueda salir mal—, así que
   esperarlo era razonable, no una casualidad.
+- En E6: tampoco encontró ningún defecto en los 16 pasos de `quickstart.md`,
+  pero sí un defecto real antes de darla por cerrada, en la evaluación con el
+  modelo real (T038): el SDK de Anthropic reintentaba por su cuenta encima
+  del reintento explícito de D-065, empujando la cola de latencia muy por
+  encima de los 5s de SC-004 — corregido con `maxRetries: 0`. Y, al usar la
+  aplicación durante la propia validación, se agregó FR-028 (botón manual
+  "Agregar" en los resultados de búsqueda) con una enmienda chica a la spec
+  antes de tocar el código, mismo patrón que ya usó E9.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -64,10 +74,13 @@ está en el `verificacion.md` de E3.
 Fuera de v1 por decisión declarada: auditoría formal de accesibilidad y lectores
 de pantalla reales (FR-039). La verificación funcional de las métricas de
 pedidos, que esperaba a E4, ya está cerrada — ver "Lo que E4 añadió al código"
-abajo. La siguiente épica del orden sugerido es **E6** (el orden es E1 → E3 →
-E2 → E4 → E6 → E5 → E7 → E8); **E9 es transversal y no participa de ese
-orden** — se completó en paralelo, envolviendo con navegación las pantallas que
-E1+E3+E2 ya habían construido.
+abajo. La apuesta central de E3 —que una descripción en prosa bien escrita
+baste para la búsqueda por voz, sin diccionario de sinónimos— **la confirmó
+E6**: SC-001 se cumplió contra el modelo real sin enriquecer el catálogo. La
+siguiente épica del orden sugerido es **E5** (el orden es E1 → E3 → E2 → E4 →
+E6 → E5 → E7 → E8); **E9 es transversal y no participa de ese orden** — se
+completó en paralelo, envolviendo con navegación las pantallas que E1+E3+E2 ya
+habían construido.
 
 ### Lo que E4 añadió al código
 
@@ -141,6 +154,57 @@ E1+E3+E2 ya habían construido.
   `/admin` es prefijo de toda ruta administrativa, así que "Panel" necesita
   comparación exacta, no `startsWith`, o queda marcado activo en
   `/admin/usuarios` también.
+
+### Lo que E6 añadió al código
+
+- **`packages/shared`**: enums `SearchChannel`/`SearchIntent`; esquema
+  `SearchRequestSchema` (`query` 1–300 caracteres); tipos `SearchInterpretation`,
+  `SemanticSearchResponse`, `AddResolutionResponse`, y `dietaryTags: string[]`
+  en `ProductDto`; los cuatro mensajes fijos de E6.
+- **`services/api`**: el módulo `menu-search`, con `SemanticIntentProvider`
+  como interfaz y `AnthropicSemanticIntentProvider` como única implementación
+  (usa `@anthropic-ai/sdk`, tool use forzado, timeout de `LLM_TIMEOUT_MS` y un
+  reintento explícito ante JSON inválido, D-057/D-065). Un único endpoint,
+  `POST /menu/search`, despacha por `intent` (`SEARCH` o `ADD`) dentro del
+  mismo servicio (D-056) — no hay dos endpoints ni dos caminos de escritura.
+  `SearchThrottlerGuard` extiende `ThrottlerModule` con `getTracker()` sobre
+  `sesion.id` en vez de IP (D-058, 20 solicitudes/300s).
+- **Garantías de solo lectura hasta la confirmación** (FR-008, FR-020 a
+  FR-023): la interpretación del modelo se valida contra un `Set` de los IDs
+  realmente enviados en la proyección (allowlist, FR-005), se reconsulta
+  `active && available` inmediatamente antes de responder (FR-006/FR-007), y
+  agregar al carrito reutiliza el servicio de carrito ya existente de E2 —sin
+  endpoint de escritura nuevo y paralelo (FR-022, D-063)—, con `intent: 'ADD'`
+  aceptando más de un producto por frase (D-066, corrección post-implementación:
+  la primera versión resolvía solo el primero y descartaba el resto en
+  silencio).
+- **Migración nueva**: `dietary_tag` (vocabulario controlado, en v1 solo
+  "Vegano", precargado por semilla, sin pantalla de administración) y
+  `search_log` (metadatos técnicos únicamente —sesión, canal, estado final,
+  latencia, tokens, modelo, código de error—, **nunca la frase textual del
+  cliente ni audio**, FR-017/FR-027), más la tabla de unión implícita
+  `Product`↔`DietaryTag`.
+- **`apps/web`**: `menu/_components/busqueda-por-voz.tsx` (campo de texto +
+  micrófono con `SpeechRecognition`, consentimiento explícito vía
+  `window.confirm` antes de activarlo, FR-018) y `confirmacion-agregado.tsx`,
+  integrados en `/menu` junto a los filtros manuales de E3 sin ocultarlos
+  (Principio VI). El checkbox "Apto para veganos" se agregó al formulario de
+  producto de E3, reutilizado por alta y edición.
+- **Decisión deliberada, no un defecto**: "Agregar al carrito por voz" activa
+  el micrófono en cada clic y nunca reenvía texto ya escrito en el campo —la
+  primera versión reenviaba la última *búsqueda*, no una instrucción real de
+  agregar (commit `1b5ea02`)—, así que la Historia 2 completa exige dictado
+  real y no es simulable escribiendo texto ni por automatización de
+  navegador; se verificó con una persona y un micrófono real.
+- **FR-028, agregada durante la propia validación funcional**: cada resultado
+  de búsqueda tiene su propio botón "Agregar" de un clic, reutilizando
+  `AgregarAlCarrito` (mismo componente que ya usa el catálogo completo,
+  FR-002 de E3) — sin memoria conversacional entre solicitudes: el agregado
+  por voz sigue sin entender referencias al contenido en pantalla ("la que
+  está en pantalla"), decisión ya tomada en Assumptions y confirmada, no
+  revertida, por este hallazgo.
+- **Semilla**: `catalogo.ts` crea la fila `DietaryTag` "Vegano" y marca dos
+  productos (Sándwich Vegetariano de Berenjena, Ensalada de Quinoa y Palta).
 
 ### Lo que E2 añadió al código
 

@@ -8,6 +8,7 @@ import { CommonModule } from './common/common.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { MenuModule } from './menu/menu.module';
+import { MenuSearchModule } from './menu-search/menu-search.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     CategoriesModule,
     ProductsModule,
     MenuModule,
+    MenuSearchModule,
     CartModule,
     AddressesModule,
     OrdersModule,

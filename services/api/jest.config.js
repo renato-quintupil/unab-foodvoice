@@ -56,6 +56,16 @@ module.exports = {
     '!src/config/**',
     '!src/common/interceptors/**',
     '!src/common/filters/**',
+    // E6 · Búsqueda por voz, mismo criterio que `menu/**` y `cart/**`: la
+    // allowlist, la reconsulta de disponibilidad, el rate limiting por sesión
+    // y la escritura de `search_log` son garantías verificadas enteramente
+    // por integración (`test/menu-search-*.integration-spec.ts`), con el
+    // proveedor sustituido por un doble (D-009). `anthropic-semantic-intent
+    // .provider.ts` sí tiene unitario propio: es lógica pura (validación Zod,
+    // reintento) que no depende de PostgreSQL ni de la red real.
+    '!src/menu-search/menu-search.service.ts',
+    '!src/menu-search/menu-search.controller.ts',
+    '!src/menu-search/search-throttler.guard.ts',
   ],
   coverageDirectory: 'coverage',
   coverageThreshold: {

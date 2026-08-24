@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Category, Dimension, Prisma, Product } from '@prisma/client';
+import { Category, Dimension, DietaryTag, Prisma, Product } from '@prisma/client';
 import {
   ETIQUETA_DIMENSION,
   PAGE_SIZE,
@@ -20,16 +20,40 @@ import { calcularCortes, tramoDe, type Cortes } from './price-tier';
 /** Código de PostgreSQL para violación de restricción única. */
 const VIOLACION_DE_UNICIDAD = 'P2002';
 
-/** Producto con sus dos categorías cargadas, que es lo que `ProductDto` necesita. */
+/** Producto con sus dos categorías y sus aptitudes dietéticas cargadas (E6), que es lo que `ProductDto` necesita. */
 type ProductoConCategorias = Product & {
   foodTypeCategory: Category;
   healthProfileCategory: Category;
+  dietaryTags: DietaryTag[];
 };
 
 const CON_CATEGORIAS = {
   foodTypeCategory: true,
   healthProfileCategory: true,
+  dietaryTags: true,
 } as const;
+
+/** El único elemento del vocabulario controlado que administra v1 (D-059). */
+const VEGANO = { where: { name: 'Vegano' }, create: { name: 'Vegano' } } as const;
+
+/**
+ * Traduce el booleano `vegan` del formulario a la relación real, para el alta
+ * (E6, D-059). Un `create` de Prisma no admite `set` —no hay nada que
+ * resetear en una fila nueva—, a diferencia de `editar`.
+ */
+function dietaryTagsParaCrear(vegan: boolean): Prisma.ProductCreateInput['dietaryTags'] {
+  return vegan ? { connectOrCreate: [VEGANO] } : undefined;
+}
+
+/**
+ * Traduce el booleano `vegan` del formulario a la relación real, para la
+ * edición (E6, D-059). `set: []` primero, para que pasar de `true` a `false`
+ * desconecte la aptitud — en v1, con una única aptitud dietética, el conjunto
+ * de `dietaryTags` de un producto se deriva enteramente de este booleano.
+ */
+function dietaryTagsParaEditar(vegan: boolean): Prisma.ProductUpdateInput['dietaryTags'] {
+  return vegan ? { set: [], connectOrCreate: [VEGANO] } : { set: [] };
+}
 
 /**
  * Administración del catálogo de productos (HU-02).
@@ -114,6 +138,7 @@ export class ProductsService {
             // (RN-007): nadie tiene que «publicarlo» ni marcarlo disponible.
             active: true,
             available: true,
+            dietaryTags: dietaryTagsParaCrear(datos.vegan),
           },
           include: CON_CATEGORIAS,
         });
@@ -155,6 +180,7 @@ export class ProductsService {
             price: datos.price,
             foodTypeCategoryId: datos.foodTypeCategoryId,
             healthProfileCategoryId: datos.healthProfileCategoryId,
+            dietaryTags: dietaryTagsParaEditar(datos.vegan),
           },
           include: CON_CATEGORIAS,
         });
@@ -363,6 +389,7 @@ function aDto(producto: ProductoConCategorias, cortes: Cortes): ProductDto {
     status: derivarEstadoProducto(producto),
     priceTier: tramoDe(producto.price, cortes),
     createdAt: producto.createdAt.toISOString(),
+    dietaryTags: producto.dietaryTags.map((aptitud) => aptitud.name),
   };
 }
 

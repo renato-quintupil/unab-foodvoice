@@ -21,5 +21,8 @@ import { MenuService } from './menu.service';
   imports: [AuthModule, CategoriesModule],
   controllers: [MenuController],
   providers: [MenuService],
+  /// Exportado para que `MenuSearchModule` (E6) reutilice
+  /// `candidatosParaBusqueda()` sin duplicar la consulta (D-061).
+  exports: [MenuService],
 })
 export class MenuModule {}

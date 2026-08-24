@@ -49,6 +49,8 @@ type ProductoSemilla = {
   price: number;
   foodType: string;
   healthProfile: string;
+  /** Aptitud dietética declarada por el negocio (E6, D-059). Por omisión, `false`. */
+  vegan?: boolean;
 };
 
 /** Tres categorías activas por dimensión, el mínimo exigible de FR-036. */
@@ -115,6 +117,8 @@ const PRODUCTOS: readonly ProductoSemilla[] = [
     price: 3990,
     foodType: 'Sándwiches',
     healthProfile: 'Saludable',
+    // Sin ningún componente de origen animal: candidato natural para E6.
+    vegan: true,
   },
   {
     name: 'Sándwich de Pollo Grillado',
@@ -162,6 +166,7 @@ const PRODUCTOS: readonly ProductoSemilla[] = [
     price: 6490,
     foodType: 'Ensaladas',
     healthProfile: 'Saludable',
+    vegan: true,
   },
   {
     name: 'Sándwich Barros Luco',
@@ -286,6 +291,11 @@ export async function sembrarCatalogo(prisma: PrismaClient): Promise<void> {
         // tiene que ser consultable sin ninguna acción previa (RN-007).
         active: true,
         available: true,
+        // E6: al menos un producto vegano en la semilla, para que la búsqueda
+        // por aptitud dietética se pueda demostrar sin cargar datos a mano.
+        ...(producto.vegan
+          ? { dietaryTags: { connectOrCreate: [{ where: { name: 'Vegano' }, create: { name: 'Vegano' } }] } }
+          : {}),
       },
     });
     console.log(`Semilla del catálogo: producto «${producto.name}» creado.`);

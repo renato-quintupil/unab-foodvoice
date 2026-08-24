@@ -15,6 +15,7 @@ export {
   ProductStatus,
   derivarEstadoProducto,
 } from './enums/dimension';
+export { SearchChannel, SearchIntent } from './enums/search';
 
 export { PasswordSchema } from './schemas/password';
 export { LoginSchema, type LoginInput } from './schemas/auth';
@@ -95,6 +96,7 @@ export {
   type ConfirmOrderInput,
   type RejectOrderInput,
 } from './schemas/order';
+export { SearchRequestSchema, type SearchRequest } from './schemas/search';
 
 export { formatearPrecio, PRECIO_MINIMO, PRECIO_MAXIMO } from './format/precio';
 export { recortarDescripcion, MAX_DESCRIPCION_LISTADO } from './format/texto';
@@ -144,6 +146,10 @@ export {
   MSG_PEDIDO_NO_PENDIENTE,
   MSG_SIN_PEDIDOS_PENDIENTES,
   MSG_SIN_PEDIDOS_RECHAZADOS,
+  MSG_BUSQUEDA_VACIA,
+  MSG_BUSQUEDA_MUY_LARGA,
+  MSG_LIMITE_BUSQUEDAS,
+  MSG_BUSQUEDA_NO_DISPONIBLE,
 } from './messages/es';
 export {
   ETIQUETA_ROL,
@@ -180,4 +186,8 @@ export type {
   OrderSummaryDto,
   OrderStatusEventDto,
   OrderDetailDto,
+  SearchInterpretation,
+  SemanticSearchResponse,
+  AddResolutionResponse,
+  ItemResuelto,
 } from './types/api';

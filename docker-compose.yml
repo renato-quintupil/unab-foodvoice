@@ -40,6 +40,11 @@ services:
       # Vacío: Node elige la interfaz. Solo se fija en plataformas con red
       # interna únicamente IPv6.
       HOST_API: ${HOST_API:-}
+      # Búsqueda por voz (E6, D-064): sin interruptor operativo, el arranque
+      # falla nombrando la variable si falta, igual que con DATABASE_URL.
+      LLM_API_KEY: ${LLM_API_KEY:?define LLM_API_KEY en .env}
+      LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5-20251001}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-4000}
     depends_on:
       postgres:
         condition: service_healthy

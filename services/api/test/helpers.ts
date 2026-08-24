@@ -17,6 +17,13 @@ import { ClockService } from '../src/common/clock.service';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { DateInterceptor } from '../src/common/interceptors/date.interceptor';
 import { COOKIE_SESION } from '../src/auth/session.service';
+import {
+  SEMANTIC_INTENT_PROVIDER,
+  type ContextoBusqueda,
+  type ResultadoInterpretacionAgregado,
+  type ResultadoInterpretacionBusqueda,
+  type SemanticIntentProvider,
+} from '../src/menu-search/providers/semantic-intent.provider';
 import { prisma } from './setup';
 
 export { COOKIE_SESION };
@@ -46,18 +53,71 @@ export class RelojDePrueba extends ClockService {
   }
 }
 
+/**
+ * Doble de prueba de `SemanticIntentProvider` (E6, D-009): la capa de
+ * integración no llama al proveedor real —sin red, sin costo, sin
+ * `LLM_API_KEY`—, solo verifica lo que el propio servidor garantiza
+ * (allowlist, reconsulta, rate limiting, `search_log`).
+ *
+ * Por omisión responde `NO_RESULTS`/`NOT_FOUND` para que las pruebas ajenas a
+ * la búsqueda —la enorme mayoría— ni siquiera adviertan que este doble existe.
+ * Los tests de `menu-search-*.integration-spec.ts` lo configuran con
+ * `configurarBusqueda`/`configurarAgregado` antes de cada caso.
+ */
+export class ProveedorDeIntencionDePrueba implements SemanticIntentProvider {
+  readonly nombreModelo = 'fake-model-test';
+
+  private busqueda: (contexto: ContextoBusqueda) => ResultadoInterpretacionBusqueda = () => ({
+    kind: 'NO_RESULTS',
+    interpretation: {
+      priceTier: null,
+      foodTypeCategoryId: null,
+      healthProfileCategoryId: null,
+      vegan: null,
+      productTerms: [],
+      openRecommendation: false,
+    },
+    tokensUsed: 10,
+  });
+
+  private agregado: (contexto: ContextoBusqueda) => ResultadoInterpretacionAgregado = () => ({
+    kind: 'NOT_FOUND',
+    tokensUsed: 10,
+  });
+
+  configurarBusqueda(fn: (contexto: ContextoBusqueda) => ResultadoInterpretacionBusqueda): void {
+    this.busqueda = fn;
+  }
+
+  configurarAgregado(fn: (contexto: ContextoBusqueda) => ResultadoInterpretacionAgregado): void {
+    this.agregado = fn;
+  }
+
+  async interpretarBusqueda(contexto: ContextoBusqueda): Promise<ResultadoInterpretacionBusqueda> {
+    return this.busqueda(contexto);
+  }
+
+  async interpretarAgregado(contexto: ContextoBusqueda): Promise<ResultadoInterpretacionAgregado> {
+    return this.agregado(contexto);
+  }
+}
+
 export type Entorno = {
   app: INestApplication;
   reloj: RelojDePrueba;
+  proveedorLlm: ProveedorDeIntencionDePrueba;
   http: () => request.Agent;
 };
 
 export async function crearEntorno(): Promise<Entorno> {
   const reloj = new RelojDePrueba();
+  const proveedorLlm = new ProveedorDeIntencionDePrueba();
 
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ClockService)
     .useValue(reloj)
+    .overrideProvider(SEMANTIC_INTENT_PROVIDER)
+    .useValue(proveedorLlm)
     .compile();
 
   const app = modulo.createNestApplication();
@@ -67,7 +127,7 @@ export async function crearEntorno(): Promise<Entorno> {
   app.useGlobalInterceptors(new DateInterceptor());
   await app.init();
 
-  return { app, reloj, http: () => request(app.getHttpServer()) };
+  return { app, reloj, proveedorLlm, http: () => request(app.getHttpServer()) };
 }
 
 export const CONTRASENA = 'contrasena8';
@@ -187,6 +247,8 @@ export async function crearProducto(datos: {
   price?: number;
   active?: boolean;
   available?: boolean;
+  /** Nombres de aptitudes dietéticas (E6). Se crean si no existen (D-059). */
+  dietaryTags?: string[];
 }) {
   return prisma.product.create({
     data: {
@@ -202,6 +264,14 @@ export async function crearProducto(datos: {
       healthProfileCategoryId: datos.healthProfileCategoryId,
       active: datos.active ?? true,
       available: datos.available ?? true,
+      dietaryTags: datos.dietaryTags
+        ? {
+            connectOrCreate: datos.dietaryTags.map((name) => ({
+              where: { name },
+              create: { name },
+            })),
+          }
+        : undefined,
     },
   });
 }
