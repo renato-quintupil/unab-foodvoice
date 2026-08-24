@@ -182,6 +182,17 @@ micrófono (V-13), que esta sesión no puede completar por sí sola. T039 queda 
 mismo criterio que ya aplicó E1 (`CLAUDE.md` § Releases): no se marca la épica como terminada sin
 la validación manual.
 
+**Actualización de T037 (2026-08-24)**: se recorrieron 8 de los 15 pasos contra la aplicación real
+en un navegador (V-01 a V-05, V-12, V-14, V-15), todos correctos — cero defectos. Los 7 restantes
+(V-06, V-07 a V-11, V-13) no se pudieron recorrer por automatización: intentar V-07 escribiendo la
+frase en vez de dictarla mostró que "Agregar al carrito por voz" **siempre** activa el micrófono
+(nunca reenvía el texto ya escrito, decisión deliberada de `1b5ea02`) y dispara un
+`window.confirm()` de consentimiento (FR-018) que bloquea la pestaña hasta que una persona lo
+cierra a mano — no es simulable por herramientas de automatización de navegador, a diferencia de
+la Historia 1, donde el campo de texto sí es un canal completo. Detalle, hallazgo y los 8 pasos
+verificados en `specs/006-busqueda-por-voz/verificacion.md`. T037 sigue sin cerrar: faltan esos 7
+pasos con una persona y un micrófono real.
+
 ---
 
 ## Dependencias y orden de ejecución
