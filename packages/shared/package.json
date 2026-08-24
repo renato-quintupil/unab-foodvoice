@@ -1,6 +1,6 @@
 {
   "name": "@foodvoice/shared",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Contratos de dominio de FoodVoice: enums, esquemas Zod, mensajes en español y máquina de estados del pedido (D-005)",
   "main": "./dist/index.js",
