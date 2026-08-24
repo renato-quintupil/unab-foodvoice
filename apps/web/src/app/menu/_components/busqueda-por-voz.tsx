@@ -72,7 +72,10 @@ export function BusquedaPorVoz() {
   ) {
     if (consulta.trim().length === 0) return;
     setError(null);
-    setResultado(null);
+    // `resultado` (la lista de la última búsqueda) **no** se toca aquí: un
+    // "agregar" no debería borrar lo que el cliente ya había encontrado antes
+    // de que la respuesta llegue. Cada rama decide por su cuenta si tiene
+    // algo nuevo que mostrar en su lugar.
     setAgregado(null);
     setEnCurso(true);
     try {
@@ -84,15 +87,12 @@ export function BusquedaPorVoz() {
         });
         if (respuesta.status === 'RESOLVED') {
           setAgregado(respuesta);
+        } else if (respuesta.status === 'CLARIFICATION') {
+          setResultado({ status: 'CLARIFICATION', question: respuesta.question, options: respuesta.options });
         } else {
-          setResultado(
-            respuesta.status === 'CLARIFICATION'
-              ? { status: 'CLARIFICATION', question: respuesta.question, options: respuesta.options }
-              : null,
-          );
-          if (respuesta.status === 'NOT_FOUND') {
-            setError('No encontré ese producto entre lo disponible ahora.');
-          }
+          // NOT_FOUND: la búsqueda anterior, si la había, sigue visible —
+          // solo se informa que esta frase puntual no encontró qué agregar.
+          setError('No encontré ese producto entre lo disponible ahora.');
         }
       } else {
         const respuesta = await api.post<SemanticSearchResponse>('/menu/search', {
@@ -142,9 +142,28 @@ export function BusquedaPorVoz() {
     reconocimiento.interimResults = false;
     reconocimiento.maxAlternatives = 1;
 
-    reconocimiento.onstart = () => setEscuchando(true);
+    reconocimiento.onstart = () => {
+      setError(null);
+      setEscuchando(true);
+    };
     reconocimiento.onend = () => setEscuchando(false);
-    reconocimiento.onerror = () => setEscuchando(false);
+    // Sin esto, un fallo del reconocimiento (micrófono ocupado por la sesión
+    // anterior, sin habla detectada, permiso revocado) volvía todo a la
+    // normalidad en silencio: el botón "no hacía nada" a los ojos de quien lo
+    // usaba, sin ninguna pista de qué pasó ni cómo seguir.
+    reconocimiento.onerror = (evento) => {
+      setEscuchando(false);
+      if (evento.error === 'no-speech') {
+        setError('No alcancé a escucharte. Inténtalo de nuevo.');
+      } else if (evento.error === 'not-allowed' || evento.error === 'service-not-allowed') {
+        setError('No tengo permiso para usar el micrófono. Revisa los permisos del navegador.');
+      } else if (evento.error === 'aborted') {
+        // Cancelado a propósito (p. ej. por el propio navegador al iniciar
+        // una sesión nueva demasiado rápido): no hace falta alarmar.
+      } else {
+        setError('No pude escucharte esta vez. Inténtalo de nuevo.');
+      }
+    };
     reconocimiento.onresult = (evento) => {
       const transcripcion = evento.results[0]?.[0]?.transcript ?? '';
       // Transcripción visible y editable en el campo (HU-06 §8) — y, a la
@@ -155,7 +174,14 @@ export function BusquedaPorVoz() {
       void ejecutar(intent, transcripcion, SearchChannel.VOICE);
     };
 
-    reconocimiento.start();
+    try {
+      reconocimiento.start();
+    } catch {
+      // Algunos navegadores lanzan de inmediato si todavía están liberando el
+      // micrófono de una sesión anterior, en vez de disparar `onerror`.
+      setEscuchando(false);
+      setError('El micrófono todavía estaba ocupado. Espera un segundo e inténtalo de nuevo.');
+    }
   }
 
   return (
@@ -215,8 +241,7 @@ export function BusquedaPorVoz() {
 
       {agregado && (
         <ConfirmacionAgregado
-          item={agregado.item}
-          quantity={agregado.quantity}
+          items={agregado.items}
           onCancelar={() => setAgregado(null)}
           onConfirmado={() => setAgregado(null)}
         />

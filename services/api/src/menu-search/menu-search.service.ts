@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SearchIntent as SearchIntentPrisma, SearchOutcome } from '@prisma/client';
 import type {
   AddResolutionResponse,
+  ItemResuelto,
   ProductDto,
   SearchRequest,
   SemanticSearchResponse,
@@ -121,9 +122,7 @@ export class MenuSearchService {
       return { status: 'CLARIFICATION', question: resultado.question, options: resultado.options };
     }
 
-    if (resultado.kind === 'NOT_FOUND' || !idsPermitidos.has(resultado.productId)) {
-      // Un `productId` fuera de la allowlist se trata como "no encontrado":
-      // nunca se consulta fuera de los IDs que el servidor mismo envió (D-062).
+    if (resultado.kind === 'NOT_FOUND') {
       await this.registrar(
         sesion,
         datos,
@@ -134,9 +133,23 @@ export class MenuSearchService {
       return { status: 'NOT_FOUND' };
     }
 
+    // Un `productId` fuera de la allowlist se descarta: nunca se consulta
+    // fuera de los IDs que el servidor mismo envió (D-062).
+    const solicitados = resultado.items.filter((item) => idsPermitidos.has(item.productId));
+
     // RESOLVED: revalidar disponibilidad inmediatamente antes de responder (FR-021).
-    const [vigente] = await this.reconsultarVigentes([resultado.productId], null);
-    if (!vigente) {
+    const vigentes = await this.reconsultarVigentes(
+      solicitados.map((item) => item.productId),
+      null,
+    );
+    const items: ItemResuelto[] = solicitados
+      .map((solicitado) => {
+        const vigente = vigentes.find((producto) => producto.id === solicitado.productId);
+        return vigente ? { item: vigente, quantity: solicitado.quantity } : undefined;
+      })
+      .filter((item): item is ItemResuelto => item !== undefined);
+
+    if (items.length === 0) {
       await this.registrar(
         sesion,
         datos,
@@ -148,7 +161,7 @@ export class MenuSearchService {
     }
 
     await this.registrar(sesion, datos, SearchOutcome.RESOLVED, Date.now() - inicio, resultado.tokensUsed);
-    return { status: 'RESOLVED', item: vigente, quantity: resultado.quantity };
+    return { status: 'RESOLVED', items };
   }
 
   /** Proyección de solo lectura + allowlist en memoria (D-061, D-062). */

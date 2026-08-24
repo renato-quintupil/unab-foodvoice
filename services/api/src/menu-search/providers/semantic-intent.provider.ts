@@ -49,11 +49,17 @@ export type ResultadoInterpretacionBusqueda = {
   | { kind: 'NO_RESULTS'; interpretation: SearchInterpretation }
 );
 
-/** Resultado crudo de resolver un agregado por voz (`intent: 'ADD'`). */
+/**
+ * Resultado crudo de resolver un agregado por voz (`intent: 'ADD'`).
+ *
+ * `RESOLVED` trae **una lista**, no un único producto (D-066): una frase
+ * puede nombrar varios ("una napolitana y una cuatro quesos"), y el modelo
+ * debe enumerar cada uno con su propia cantidad.
+ */
 export type ResultadoInterpretacionAgregado = {
   tokensUsed: number | null;
 } & (
-  | { kind: 'RESOLVED'; productId: string; quantity: number }
+  | { kind: 'RESOLVED'; items: { productId: string; quantity: number }[] }
   | { kind: 'CLARIFICATION'; question: string; options: string[] }
   | { kind: 'NOT_FOUND' }
 );

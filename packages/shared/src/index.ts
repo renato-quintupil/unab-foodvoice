@@ -189,4 +189,5 @@ export type {
   SearchInterpretation,
   SemanticSearchResponse,
   AddResolutionResponse,
+  ItemResuelto,
 } from './types/api';

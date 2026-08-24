@@ -33,8 +33,7 @@ describe('POST /menu/search · intent ADD', () => {
 
     entorno.proveedorLlm.configurarAgregado(() => ({
       kind: 'RESOLVED',
-      productId: napolitana.id,
-      quantity: 1,
+      items: [{ productId: napolitana.id, quantity: 1 }],
       tokensUsed: 20,
     }));
 
@@ -49,8 +48,7 @@ describe('POST /menu/search · intent ADD', () => {
 
     expect(respuesta.body).toMatchObject({
       status: 'RESOLVED',
-      quantity: 1,
-      item: { id: napolitana.id },
+      items: [{ quantity: 1, item: { id: napolitana.id } }],
     });
 
     // Ninguna llamada a este endpoint agrega nada al carrito (FR-008, D-063).
@@ -110,8 +108,7 @@ describe('POST /menu/search · intent ADD', () => {
 
     entorno.proveedorLlm.configurarAgregado(() => ({
       kind: 'RESOLVED',
-      productId: agotada.id,
-      quantity: 1,
+      items: [{ productId: agotada.id, quantity: 1 }],
       tokensUsed: 8,
     }));
 
@@ -127,5 +124,84 @@ describe('POST /menu/search · intent ADD', () => {
     // El producto no formaba parte de la proyección permitida (no estaba
     // active && available), así que ya se descarta por allowlist (D-062).
     expect(respuesta.body).toEqual({ status: 'NOT_FOUND' });
+  });
+
+  it('resuelve varios productos mencionados en una sola frase (D-066)', async () => {
+    const { foodType, healthProfile } = await crearClasificacionMinima('-add-e');
+    const napolitana = await crearProducto({
+      name: 'Pizza Napolitana Add E',
+      foodTypeCategoryId: foodType.id,
+      healthProfileCategoryId: healthProfile.id,
+    });
+    const cuatroQuesos = await crearProducto({
+      name: 'Pizza Cuatro Quesos Add E',
+      foodTypeCategoryId: foodType.id,
+      healthProfileCategoryId: healthProfile.id,
+    });
+
+    entorno.proveedorLlm.configurarAgregado(() => ({
+      kind: 'RESOLVED',
+      items: [
+        { productId: napolitana.id, quantity: 1 },
+        { productId: cuatroQuesos.id, quantity: 2 },
+      ],
+      tokensUsed: 25,
+    }));
+
+    const { cookie } = await sesionCliente(entorno, 'menu-add-e@foodvoice.test');
+
+    const respuesta = await entorno
+      .http()
+      .post('/api/v1/menu/search')
+      .set('Cookie', cookie)
+      .send({
+        query: 'agrégame una napolitana y dos cuatro quesos',
+        channel: 'VOICE',
+        intent: 'ADD',
+      })
+      .expect(200);
+
+    expect(respuesta.body).toMatchObject({
+      status: 'RESOLVED',
+      items: [
+        { quantity: 1, item: { id: napolitana.id } },
+        { quantity: 2, item: { id: cuatroQuesos.id } },
+      ],
+    });
+
+    const carrito = await prisma.cart.findMany();
+    expect(carrito).toHaveLength(0);
+  });
+
+  it('descarta solo los productos ajenos a la allowlist y resuelve los demás', async () => {
+    const { foodType, healthProfile } = await crearClasificacionMinima('-add-f');
+    const napolitana = await crearProducto({
+      name: 'Pizza Napolitana Add F',
+      foodTypeCategoryId: foodType.id,
+      healthProfileCategoryId: healthProfile.id,
+    });
+
+    entorno.proveedorLlm.configurarAgregado(() => ({
+      kind: 'RESOLVED',
+      items: [
+        { productId: napolitana.id, quantity: 1 },
+        { productId: 'id-inventado-fuera-de-la-proyeccion', quantity: 1 },
+      ],
+      tokensUsed: 25,
+    }));
+
+    const { cookie } = await sesionCliente(entorno, 'menu-add-f@foodvoice.test');
+
+    const respuesta = await entorno
+      .http()
+      .post('/api/v1/menu/search')
+      .set('Cookie', cookie)
+      .send({ query: 'agrégame una napolitana y otra cosa', channel: 'VOICE', intent: 'ADD' })
+      .expect(200);
+
+    expect(respuesta.body).toMatchObject({
+      status: 'RESOLVED',
+      items: [{ quantity: 1, item: { id: napolitana.id } }],
+    });
   });
 });

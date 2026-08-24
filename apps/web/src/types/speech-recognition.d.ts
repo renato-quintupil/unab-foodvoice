@@ -24,13 +24,23 @@ declare global {
     readonly results: SpeechRecognitionResultList;
   }
 
+  /**
+   * `error` es la razón concreta del fallo — "no-speech", "not-allowed",
+   * "audio-capture", "network", "aborted", etc. Sin leerla, un fallo del
+   * reconocimiento no se distingue de "no dijiste nada" ni se puede explicar
+   * al cliente por qué no funcionó.
+   */
+  interface SpeechRecognitionErrorEvent extends Event {
+    readonly error: string;
+  }
+
   interface SpeechRecognition extends EventTarget {
     lang: string;
     interimResults: boolean;
     maxAlternatives: number;
     onstart: (() => void) | null;
     onend: (() => void) | null;
-    onerror: (() => void) | null;
+    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
     onresult: ((event: SpeechRecognitionEvent) => void) | null;
     start(): void;
     stop(): void;

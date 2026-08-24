@@ -147,11 +147,35 @@ describe('AnthropicSemanticIntentProvider', () => {
   describe('interpretarAgregado', () => {
     it('mapea RESOLVED', async () => {
       mockCreate.mockResolvedValueOnce(
-        respuestaConTool({ status: 'RESOLVED', productId: 'p1', quantity: 2 }),
+        respuestaConTool({ status: 'RESOLVED', items: [{ productId: 'p1', quantity: 2 }] }),
       );
 
       const resultado = await proveedor.interpretarAgregado(CONTEXTO);
-      expect(resultado).toMatchObject({ kind: 'RESOLVED', productId: 'p1', quantity: 2 });
+      expect(resultado).toMatchObject({
+        kind: 'RESOLVED',
+        items: [{ productId: 'p1', quantity: 2 }],
+      });
+    });
+
+    it('mapea RESOLVED con varios productos en una sola frase', async () => {
+      mockCreate.mockResolvedValueOnce(
+        respuestaConTool({
+          status: 'RESOLVED',
+          items: [
+            { productId: 'p1', quantity: 1 },
+            { productId: 'p2', quantity: 1 },
+          ],
+        }),
+      );
+
+      const resultado = await proveedor.interpretarAgregado(CONTEXTO);
+      expect(resultado).toMatchObject({
+        kind: 'RESOLVED',
+        items: [
+          { productId: 'p1', quantity: 1 },
+          { productId: 'p2', quantity: 1 },
+        ],
+      });
     });
 
     it('mapea NOT_FOUND', async () => {

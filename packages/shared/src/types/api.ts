@@ -264,18 +264,24 @@ export type SemanticSearchResponse =
   | { status: 'CLARIFICATION'; question: string; options: string[] }
   | { status: 'NO_RESULTS'; interpretation: SearchInterpretation };
 
+/** Un producto resuelto para agregar, con la cantidad que le corresponde. */
+export type ItemResuelto = { item: ProductDto; quantity: number };
+
 /**
  * Respuesta de `POST /menu/search` con `intent: 'ADD'` (Historia 2). **Nunca**
  * agrega nada al carrito (FR-008, FR-019–FR-021): es responsabilidad de quien
  * llama, tras la confirmación explícita del cliente, invocar los endpoints de
  * carrito ya existentes de E2 (D-063).
  *
- * `quantity` es siempre ≥ 1 (FR-024). Aunque `status: 'RESOLVED'` ya pasó la
- * reconsulta de disponibilidad (FR-021), no es una promesa de que el producto
- * siga disponible al confirmar — el carrito vuelve a validarlo (FR-022).
+ * `items` puede traer más de un producto: una frase puede nombrar varios
+ * ("una napolitana y una cuatro quesos"), y el cliente confirma todos juntos
+ * con una sola acción (D-066). Cada `quantity` es siempre ≥ 1 (FR-024).
+ * Aunque `status: 'RESOLVED'` ya pasó la reconsulta de disponibilidad
+ * (FR-021), no es una promesa de que los productos sigan disponibles al
+ * confirmar — el carrito vuelve a validar cada uno (FR-022).
  */
 export type AddResolutionResponse =
-  | { status: 'RESOLVED'; item: ProductDto; quantity: number }
+  | { status: 'RESOLVED'; items: ItemResuelto[] }
   | { status: 'CLARIFICATION'; question: string; options: string[] }
   | { status: 'NOT_FOUND' };
 
