@@ -35,11 +35,17 @@ import { ConfirmacionAgregado } from './confirmacion-agregado';
  * reconocimiento — sin esperar un clic en "Buscar". Es seguro porque buscar
  * es de solo lectura (FR-008): una transcripción mal entendida como mucho da
  * resultados equivocados, nunca escribe nada, y el cliente puede corregir el
- * texto y volver a intentar. "Agregar al carrito por voz" **no** se
- * autodispara: sigue exigiendo el clic explícito, porque encadena una
- * pantalla de confirmación (HU-13) que sí puede terminar escribiendo en el
- * carrito, y disparar ese camino solo por haber dictado algo ambiguo sería
- * sorprender al cliente con una acción que no pidió.
+ * texto y volver a intentar.
+ *
+ * **"Agregar al carrito por voz" activa el micrófono por su cuenta** en vez
+ * de reenviar lo que ya hubiera en el campo de texto. La primera versión
+ * reenviaba el contenido actual del campo, que casi siempre era la última
+ * *búsqueda* —no una instrucción de agregar— porque el cliente no tenía por
+ * qué volver a escribir algo antes de tocar este botón: terminaba
+ * "agregando" en base a una frase vieja y genérica ("quiero pizza") en vez de
+ * la intención real. Como el botón promete "por voz", debe escuchar una
+ * frase nueva cada vez que se toca, igual que el ícono del micrófono junto al
+ * campo, solo que con `intent: 'ADD'` en vez de `'SEARCH'`.
  */
 export function BusquedaPorVoz() {
   const [texto, setTexto] = useState('');
@@ -107,7 +113,13 @@ export function BusquedaPorVoz() {
     }
   }
 
-  function activarMicrofono() {
+  /**
+   * Dictado con un destino fijo: `SEARCH` desde el ícono del micrófono,
+   * `ADD` desde "Agregar al carrito por voz". Cada llamada escucha una frase
+   * nueva y la dispara sola — nunca reutiliza lo que hubiera quedado escrito
+   * de un dictado o búsqueda anterior.
+   */
+  function activarMicrofono(intent: (typeof SearchIntent)[keyof typeof SearchIntent]) {
     const Reconocimiento =
       typeof window !== 'undefined'
         ? (window.SpeechRecognition ?? window.webkitSpeechRecognition)
@@ -136,12 +148,11 @@ export function BusquedaPorVoz() {
     reconocimiento.onresult = (evento) => {
       const transcripcion = evento.results[0]?.[0]?.transcript ?? '';
       // Transcripción visible y editable en el campo (HU-06 §8) — y, a la
-      // vez, ya disparada: buscar es de solo lectura, así que no hay razón
-      // para hacer esperar un clic. Si la transcripción salió mal, el
-      // cliente la corrige y vuelve a buscar; "Agregar" sigue siendo manual.
+      // vez, ya disparada: no hay razón para hacer esperar un clic extra
+      // sobre una frase que el cliente recién terminó de decir.
       setTexto(transcripcion);
       canalRef.current = SearchChannel.VOICE;
-      void ejecutar(SearchIntent.SEARCH, transcripcion, SearchChannel.VOICE);
+      void ejecutar(intent, transcripcion, SearchChannel.VOICE);
     };
 
     reconocimiento.start();
@@ -165,7 +176,8 @@ export function BusquedaPorVoz() {
         />
         <button
           type="button"
-          onClick={activarMicrofono}
+          onClick={() => activarMicrofono(SearchIntent.SEARCH)}
+          disabled={enCurso || escuchando}
           aria-pressed={escuchando}
           aria-label="Dictar la búsqueda por voz"
           className="rounded-md border border-[var(--color-borde)] px-3 py-2 text-sm"
@@ -178,7 +190,7 @@ export function BusquedaPorVoz() {
         <AccionEnCurso
           type="button"
           size="sm"
-          enCurso={enCurso}
+          enCurso={enCurso || escuchando}
           textoEnCurso="Buscando…"
           onClick={() => void ejecutar(SearchIntent.SEARCH, texto, canalRef.current)}
         >
@@ -187,11 +199,11 @@ export function BusquedaPorVoz() {
         <AccionEnCurso
           type="button"
           size="sm"
-          enCurso={enCurso}
-          textoEnCurso="Agregando…"
-          onClick={() => void ejecutar(SearchIntent.ADD, texto, canalRef.current)}
+          enCurso={enCurso || escuchando}
+          textoEnCurso="Escuchando…"
+          onClick={() => activarMicrofono(SearchIntent.ADD)}
         >
-          Agregar al carrito por voz
+          🎙️ Agregar al carrito por voz
         </AccionEnCurso>
       </div>
 

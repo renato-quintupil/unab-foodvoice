@@ -44,6 +44,46 @@ const PRODUCTO: ProductDto = {
   dietaryTags: [],
 };
 
+/** Doble de `SpeechRecognition`, controlado desde el test vía `.instancia`. */
+class FakeSpeechRecognition extends EventTarget implements SpeechRecognition {
+  static instancia: FakeSpeechRecognition | undefined;
+  lang = '';
+  interimResults = false;
+  maxAlternatives = 1;
+  onstart: (() => void) | null = null;
+  onend: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null = null;
+  constructor() {
+    super();
+    FakeSpeechRecognition.instancia = this;
+  }
+  start() {
+    this.onstart?.();
+  }
+  stop() {
+    this.onend?.();
+  }
+}
+
+/**
+ * Registra el doble **antes** de que el componente compruebe si hay soporte
+ * de voz (se llama antes del clic que activa el micrófono, nunca después).
+ */
+function conReconocimientoDeVozSimulado(): void {
+  vi.stubGlobal('SpeechRecognition', FakeSpeechRecognition);
+}
+
+/** Simula que el reconocimiento ya activado devuelve `transcripcion`. */
+function dictar(transcripcion: string): void {
+  const resultadoFalso = {
+    results: [[{ transcript: transcripcion }]],
+  } as unknown as SpeechRecognitionEvent;
+  act(() => {
+    FakeSpeechRecognition.instancia?.onresult?.(resultadoFalso);
+  });
+}
+
 describe('BusquedaPorVoz · texto (HU-06)', () => {
   it('funciona escribiendo texto, sin usar el micrófono', async () => {
     const usuario = userEvent.setup();
@@ -168,37 +208,10 @@ describe('BusquedaPorVoz · texto (HU-06)', () => {
       }),
     );
 
-    class FakeSpeechRecognition extends EventTarget implements SpeechRecognition {
-      static instancia: FakeSpeechRecognition | undefined;
-      lang = '';
-      interimResults = false;
-      maxAlternatives = 1;
-      onstart: (() => void) | null = null;
-      onend: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      onresult: ((event: SpeechRecognitionEvent) => void) | null = null;
-      constructor() {
-        super();
-        FakeSpeechRecognition.instancia = this;
-      }
-      start() {
-        this.onstart?.();
-      }
-      stop() {
-        this.onend?.();
-      }
-    }
-    vi.stubGlobal('SpeechRecognition', FakeSpeechRecognition);
-
+    conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
     await usuario.click(screen.getByLabelText('Dictar la búsqueda por voz'));
-
-    const resultadoFalso = {
-      results: [[{ transcript: 'quiero una pizza' }]],
-    } as unknown as SpeechRecognitionEvent;
-    act(() => {
-      FakeSpeechRecognition.instancia?.onresult?.(resultadoFalso);
-    });
+    dictar('quiero una pizza');
 
     // Ningún clic en "Buscar": la transcripción sola disparó la solicitud.
     await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(1));
@@ -213,24 +226,63 @@ describe('BusquedaPorVoz · texto (HU-06)', () => {
 });
 
 describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
+  it('activa el micrófono en vez de reenviar lo que hubiera en el campo de texto', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(
+      respuesta(200, {
+        status: 'RESULTS',
+        interpretation: {
+          priceTier: null,
+          foodTypeCategoryId: null,
+          healthProfileCategoryId: null,
+          vegan: null,
+          productTerms: [],
+          openRecommendation: false,
+        },
+        items: [PRODUCTO],
+      }),
+    );
+
+    conReconocimientoDeVozSimulado();
+    render(<BusquedaPorVoz />);
+    // Una búsqueda previa deja "quiero pizza" en el campo — no debe ser lo
+    // que se agregue si el cliente toca "Agregar" sin dictar algo nuevo.
+    await usuario.type(
+      screen.getByLabelText('Busca o pide algo con tus propias palabras'),
+      'quiero pizza',
+    );
+    await usuario.click(screen.getByRole('button', { name: 'Buscar' }));
+    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(1));
+
+    await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
+
+    // No se reenvió "quiero pizza": tocar el botón solo abrió el micrófono.
+    expect(fetchSimulado).toHaveBeenCalledTimes(1);
+    expect(FakeSpeechRecognition.instancia).toBeDefined();
+  });
+
   it('muestra la confirmación con producto, cantidad y precio antes de tocar el carrito', async () => {
     const usuario = userEvent.setup();
     fetchSimulado.mockResolvedValue(
       respuesta(200, { status: 'RESOLVED', item: PRODUCTO, quantity: 1 }),
     );
 
+    conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
-    await usuario.type(
-      screen.getByLabelText('Busca o pide algo con tus propias palabras'),
-      'agrégame una napolitana',
-    );
-    await usuario.click(screen.getByRole('button', { name: 'Agregar al carrito por voz' }));
+    await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
+    dictar('agrégame una napolitana');
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Confirmar agregado al carrito' })).toBeInTheDocument();
     });
     // Ninguna escritura todavía: la única llamada fue la de intent ADD.
     expect(fetchSimulado).toHaveBeenCalledTimes(1);
+    const [, opciones] = fetchSimulado.mock.calls[0]!;
+    expect(JSON.parse(opciones.body as string)).toMatchObject({
+      query: 'agrégame una napolitana',
+      channel: 'VOICE',
+      intent: 'ADD',
+    });
   });
 
   it('cancelar no llama a ningún endpoint de carrito (FR-023)', async () => {
@@ -239,12 +291,10 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
       respuesta(200, { status: 'RESOLVED', item: PRODUCTO, quantity: 1 }),
     );
 
+    conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
-    await usuario.type(
-      screen.getByLabelText('Busca o pide algo con tus propias palabras'),
-      'agrégame una napolitana',
-    );
-    await usuario.click(screen.getByRole('button', { name: 'Agregar al carrito por voz' }));
+    await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
+    dictar('agrégame una napolitana');
     await waitFor(() => screen.getByRole('dialog'));
 
     await usuario.click(screen.getByRole('button', { name: 'Cancelar' }));
@@ -259,12 +309,10 @@ describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {
       .mockResolvedValueOnce(respuesta(200, { status: 'RESOLVED', item: PRODUCTO, quantity: 1 }))
       .mockResolvedValueOnce(respuesta(200, { lines: [] }));
 
+    conReconocimientoDeVozSimulado();
     render(<BusquedaPorVoz />);
-    await usuario.type(
-      screen.getByLabelText('Busca o pide algo con tus propias palabras'),
-      'agrégame una napolitana',
-    );
-    await usuario.click(screen.getByRole('button', { name: 'Agregar al carrito por voz' }));
+    await usuario.click(screen.getByRole('button', { name: /Agregar al carrito por voz/ }));
+    dictar('agrégame una napolitana');
     await waitFor(() => screen.getByRole('dialog'));
 
     await usuario.click(screen.getByRole('button', { name: 'Confirmar' }));
