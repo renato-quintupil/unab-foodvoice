@@ -61,6 +61,18 @@ export default async function PaginaMenu({
   }
   const hayFiltros = consulta.toString() !== '';
 
+  // Dos pestañas, solo para CLIENTE (el único rol con búsqueda por voz):
+  // "voz" y "catalogo" en la URL para que la pestaña activa sea compartible
+  // y sobreviva a una recarga, igual que los filtros. Los filtros viajan en
+  // ambas pestañas para que cambiar de una a otra no los pierda.
+  const pestanaParam = parametros.tab;
+  const pestana = pestanaParam === 'catalogo' ? 'catalogo' : 'voz';
+  const hrefPestana = (destino: 'voz' | 'catalogo') => {
+    const siguientes = new URLSearchParams(consulta);
+    siguientes.set('tab', destino);
+    return `/menu?${siguientes.toString()}`;
+  };
+
   const direcciones =
     sesion.role === Role.CLIENTE
       ? pedirALaApi<{ items: AddressDto[] }>('/addresses')
@@ -93,33 +105,74 @@ export default async function PaginaMenu({
         <h1 className="text-2xl font-semibold">Menú</h1>
 
         {/* Solo CLIENTE (FR-002, RN-11 de HU-06): negocio, admin y
-            repartidor siguen con el menú manual, sin búsqueda por voz. */}
-        {sesion.role === Role.CLIENTE && <BusquedaPorVoz />}
+            repartidor siguen con el menú manual, sin pestaña de voz. */}
+        {sesion.role === Role.CLIENTE && (
+          <div role="tablist" aria-label="Formas de encontrar productos" className="flex gap-2">
+            <PestanaMenu href={hrefPestana('voz')} activa={pestana === 'voz'}>
+              🎙️ Buscar por voz
+            </PestanaMenu>
+            <PestanaMenu href={hrefPestana('catalogo')} activa={pestana === 'catalogo'}>
+              Catálogo completo
+            </PestanaMenu>
+          </div>
+        )}
 
-        <FiltrosMenu categorias={categorias.items} />
-
-        {menu.items.length === 0 ? (
-          <p className="rounded-md border border-[var(--color-borde)] px-4 py-6 text-sm">
-            {/* Sin filtros aplicados, un menú vacío significa que el catálogo no
-              tiene ningún producto activo; con filtros, que esa combinación no
-              devuelve nada. Ni error, ni pantalla en blanco, ni carga
-              permanente (SC-018, SC-022). */}
-            {hayFiltros ? MSG_SIN_RESULTADOS_CATALOGO : MSG_MENU_VACIO}
-          </p>
+        {sesion.role === Role.CLIENTE && pestana === 'voz' ? (
+          <BusquedaPorVoz />
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {menu.items.map((producto) => (
-              <li key={producto.id}>
-                <TarjetaDeProducto
-                  producto={producto}
-                  esCliente={sesion.role === Role.CLIENTE}
-                />
-              </li>
-            ))}
-          </ul>
+          <>
+            <FiltrosMenu categorias={categorias.items} />
+
+            {menu.items.length === 0 ? (
+              <p className="rounded-md border border-[var(--color-borde)] px-4 py-6 text-sm">
+                {/* Sin filtros aplicados, un menú vacío significa que el catálogo no
+                  tiene ningún producto activo; con filtros, que esa combinación no
+                  devuelve nada. Ni error, ni pantalla en blanco, ni carga
+                  permanente (SC-018, SC-022). */}
+                {hayFiltros ? MSG_SIN_RESULTADOS_CATALOGO : MSG_MENU_VACIO}
+              </p>
+            ) : (
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {menu.items.map((producto) => (
+                  <li key={producto.id}>
+                    <TarjetaDeProducto
+                      producto={producto}
+                      esCliente={sesion.role === Role.CLIENTE}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </main>
     </div>
+  );
+}
+
+/** Un enlace de pestaña: navega por `href` (App Router), sin estado de cliente. */
+function PestanaMenu({
+  href,
+  activa,
+  children,
+}: {
+  href: string;
+  activa: boolean;
+  children: string;
+}) {
+  return (
+    <Link
+      href={href}
+      role="tab"
+      aria-selected={activa}
+      className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+        activa
+          ? 'border-[var(--color-primario)] bg-[var(--color-borde)] text-[var(--color-primario)]'
+          : 'border-[var(--color-borde)] text-[var(--color-tenue)] hover:text-[var(--color-texto)]'
+      }`}
+    >
+      {children}
+    </Link>
   );
 }
 
