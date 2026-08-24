@@ -158,20 +158,29 @@ V-12 de `quickstart.md`.
 **Propósito**: cerrar la épica con los 15 pasos manuales, la evaluación con el modelo real, y
 actualizar el estado del producto.
 
-- [ ] T036 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
+- [X] T036 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`; deben pasar en verde antes de la validación manual
 - [ ] T037 Recorrer V-01 a V-15 de `specs/006-busqueda-por-voz/quickstart.md` con sesiones reales de cliente y negocio; registrar el resultado en `specs/006-busqueda-por-voz/verificacion.md`
-- [ ] T038 Ejecutar la evaluación con el modelo real de `quickstart.md` § Evaluación con el modelo real: correr el corpus de frases de aceptación (Principio XI) contra Claude Haiku 4.5, medir el p95 de `search_log.latency_ms` (SC-004) y proyectar el costo mensual desde `search_log.tokens_used` (SC-007); documentar el resultado y, si no se cumple el SLO, ajustar `LLM_TIMEOUT_MS` antes de continuar
+- [X] T038 Ejecutar la evaluación con el modelo real de `quickstart.md` § Evaluación con el modelo real: correr el corpus de frases de aceptación (Principio XI) contra Claude Haiku 4.5, medir el p95 de `search_log.latency_ms` (SC-004) y proyectar el costo mensual desde `search_log.tokens_used` (SC-007); documentar el resultado y, si no se cumple el SLO, ajustar `LLM_TIMEOUT_MS` antes de continuar
 - [ ] T039 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E6 como terminada, con el mismo nivel de detalle que E1/E2/E3/E4/E9
 
-**Nota sobre T036–T039 (2026-08-23)**: T036 se ejecutó por partes durante la implementación
-—unitarios de `packages/shared` (100% cobertura) y `services/api` (142/142, con doble propio del
-adaptador Anthropic), integración completa de `services/api` (incluidas las tres baterías nuevas
-de `menu-search-*` y `products-dietary-tags`, todas en verde), `pnpm lint`/`typecheck`/`build` a
-nivel de monorepo vía Turborepo— todo en verde. **T037 y T038 requieren una `LLM_API_KEY` real y
-una persona ejecutando la aplicación en un navegador**, que esta sesión no tiene: quedan
-explícitamente pendientes para quien continúe, junto con T039 (que solo corresponde una vez
-verificados). No se marca la épica como terminada sin esa validación, siguiendo el mismo criterio
-que ya aplicó E1 (`CLAUDE.md` § Releases).
+**Nota sobre T036–T039 (2026-08-24)**: T036 corrió completo dos veces sobre el monorepo real
+—`pnpm typecheck`, `pnpm lint`, `pnpm test` (233 + 143 + 210 = 586 unitarios, todos con sus
+umbrales de cobertura) y `pnpm test:integration` (613 pruebas de integración contra PostgreSQL
+efímera)—, la primera corrida encontró un test desactualizado
+(`products-price-forward.integration-spec.ts`, que no conocía las tablas `dietary_tag`,
+`_productDietaryTags` y `search_log` que E6 agregó al esquema) y se corrigió antes de la segunda
+corrida, que quedó en verde. T038 corrió el corpus de `corpus-aceptacion.md` (15 frases) dos
+veces contra Claude Haiku 4.5 real: la primera detectó un defecto real de latencia de cola
+(p95 = 6,0 s, `502` del proxy en la frase más lenta) causado por el reintento propio del SDK de
+Anthropic sumado al reintento explícito de D-065; corregido con `maxRetries: 0` en el cliente. La
+segunda corrida, ya con la corrección, dio p95 = 3,1 s (SC-004 cumple) y una proyección de costo
+muy por debajo de $15.000 CLP/mes para el volumen esperado de un entorno de referencia (SC-007
+cumple). Detalle completo en `specs/006-busqueda-por-voz/evaluacion-modelo-real.md`. **T037 sigue
+pendiente**: requiere una persona ejecutando la aplicación en un navegador con micrófono real,
+incluidos los casos de dos sesiones simultáneas (V-05, V-10) y de denegar el permiso del
+micrófono (V-13), que esta sesión no puede completar por sí sola. T039 queda para después de T037,
+mismo criterio que ya aplicó E1 (`CLAUDE.md` § Releases): no se marca la épica como terminada sin
+la validación manual.
 
 ---
 

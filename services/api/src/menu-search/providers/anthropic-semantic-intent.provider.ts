@@ -172,7 +172,16 @@ export class AnthropicSemanticIntentProvider implements SemanticIntentProvider {
 
   constructor() {
     const entorno = validarEntorno();
-    this.cliente = new Anthropic({ apiKey: entorno.LLM_API_KEY });
+    // `maxRetries: 0`: el SDK reintenta por su cuenta (2 veces, con backoff)
+    // por omisión, encima del único reintento explícito que ya hace
+    // `llamarConReintento` (D-065). Las dos capas juntas —detectado al medir
+    // p95 real contra el modelo real (T038)— podían encadenar hasta 3
+    // intentos del SDK por cada uno de los 2 nuestros, empujando la cola de
+    // latencia muy por encima de los 5s de SC-004 sin que ningún log lo
+    // explicara como "reintento": solo un tiempo de respuesta anormalmente
+    // alto. Con el SDK sin reintento propio, el peor caso queda acotado a
+    // `2 × timeoutMs`, que es exactamente lo que D-065 documenta.
+    this.cliente = new Anthropic({ apiKey: entorno.LLM_API_KEY, maxRetries: 0 });
     this.nombreModelo = entorno.LLM_MODEL;
     this.timeoutMs = entorno.LLM_TIMEOUT_MS;
   }

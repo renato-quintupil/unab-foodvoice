@@ -147,16 +147,22 @@ describe('Un cambio de precio no reescribe nada (FR-024, SC-023)', () => {
     expect(nombres.sort()).toEqual(
       [
         '_prisma_migrations',
+        // E6 · Búsqueda por voz: aptitudes dietéticas y bitácora de búsquedas
+        // (data-model.md de 006-busqueda-por-voz), ninguna de las dos es un
+        // histórico de precios.
+        '_productDietaryTags',
         'address',
         'admin_audit_log',
         'cart',
         'cart_line',
         'category',
+        'dietary_tag',
         'login_attempt_control',
         'order',
         'order_line',
         'order_status_event',
         'product',
+        'search_log',
         'session',
         'user',
       ].sort(),

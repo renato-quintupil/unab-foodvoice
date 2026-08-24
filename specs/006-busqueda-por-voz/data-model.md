@@ -67,7 +67,7 @@ enum SearchOutcome {
   RESULTS
   CLARIFICATION
   NO_RESULTS
-  RESOLVED   // solo intent=ADD: se resolvió un único producto candidato
+  RESOLVED   // solo intent=ADD: se resolvió al menos un producto candidato (D-066: puede ser más de uno)
   NOT_FOUND  // solo intent=ADD: ningún candidato razonable
   ERROR      // timeout, JSON inválido tras el reintento, o error del proveedor
 
