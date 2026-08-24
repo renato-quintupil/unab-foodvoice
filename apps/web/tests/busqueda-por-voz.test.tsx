@@ -257,6 +257,22 @@ describe('BusquedaPorVoz · texto (HU-06)', () => {
     });
     await waitFor(() => expect(screen.getByText('Pizza Napolitana')).toBeInTheDocument());
   });
+
+  it('cada resultado tiene un botón "Agregar" manual, de un clic (FR-028)', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(RESPUESTA_BUSQUEDA_CON_NAPOLITANA);
+
+    render(<BusquedaPorVoz />);
+    await buscarPrimero(usuario);
+
+    fetchSimulado.mockResolvedValueOnce(respuesta(201, {}));
+    await usuario.click(screen.getByRole('button', { name: 'Agregar' }));
+
+    await waitFor(() => expect(screen.getByText('Agregado al carrito.')).toBeInTheDocument());
+    const [url, opciones] = fetchSimulado.mock.calls.at(-1)!;
+    expect(String(url)).toContain('/cart/lines');
+    expect(JSON.parse(opciones.body as string)).toMatchObject({ productId: PRODUCTO.id });
+  });
 });
 
 describe('BusquedaPorVoz · agregar por voz (HU-13)', () => {

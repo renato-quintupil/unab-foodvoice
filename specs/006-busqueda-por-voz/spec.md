@@ -15,6 +15,10 @@
 - Q: ¿Las aptitudes dietéticas (como "Vegano") son administrables por el negocio, o "Vegano" es el único valor fijo de v1? → A: Fija en v1 — solo "Vegano", precargada por semilla, sin pantalla de administración; el negocio solo marca/desmarca la aptitud en cada producto.
 - Q: ¿Qué datos de cada búsqueda por voz o texto debe registrar el sistema? → A: Solo metadatos técnicos (sesión, canal, estado final, latencia, tokens, modelo, código de error) — nunca la frase textual del cliente ni el audio.
 
+### Session 2026-08-24
+
+- Q: Los resultados de una búsqueda por voz/texto (Historia 1) no tenían ninguna forma de agregarlos al carrito salvo dictando una frase nueva de agregado (Historia 2); detectado al usar la aplicación, junto con el hallazgo de que "Agregar al carrito por voz" no entiende referencias al contenido en pantalla ("agrega la única pizza que está en pantalla") porque la interpretación de agregar no recibe qué se mostró en la búsqueda anterior, solo el catálogo completo — decisión ya tomada en Assumptions ("Continuidad de una aclaración... no existe memoria conversacional persistente entre búsquedas"). ¿Se agrega un botón manual "Agregar" a cada resultado, y se intenta que el agregado por voz entienda referencias al pantalla? → A: Se agrega el botón manual, reutilizando el mismo componente de un clic que ya usa el catálogo completo (FR-002 de `002-administracion-menu-productos`), sin endpoint nuevo. La comprensión de referencias en pantalla ("la que está en pantalla", "esa") queda fuera de alcance de v1: exigiría que el agregado por voz cargara el resultado de la búsqueda anterior como contexto adicional, lo que contradice la decisión ya tomada de no mantener memoria conversacional entre solicitudes: cada frase debe seguir siendo autosuficiente (nombrar el producto), igual que ya exige Assumptions para una aclaración.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Cliente busca comida hablando o escribiendo en lenguaje natural (Priority: P1)
@@ -110,6 +114,7 @@ Un cliente vegano quiere pedir «algo para vegano» y recibir solo productos que
 - **FR-025**: Si al confirmar el producto ya no está disponible, el sistema DEBE mostrar el mismo mensaje de rechazo en español que usa el flujo manual de carrito, no un mensaje distinto para la vía de voz.
 - **FR-026**: Si una frase de agregar puede referirse a más de un producto candidato razonable, el sistema DEBE pedir una aclaración antes de construir cualquier pantalla de confirmación.
 - **FR-027**: El sistema DEBE registrar de cada búsqueda únicamente metadatos técnicos —identificador de sesión, canal (voz o texto), estado final (resultados, aclaración o sin resultados), latencia, tokens consumidos, modelo usado y código de error si corresponde—; NUNCA la frase textual del cliente ni el audio.
+- **FR-028**: Cada producto entre los resultados de una búsqueda por voz/texto DEBE poder agregarse al carrito con un clic manual, sin pasar por el agregado por voz — el mismo control de un solo paso que ya ofrece el catálogo completo (Clarifications 2026-08-24).
 
 ### Key Entities
 

@@ -13,6 +13,7 @@ import {
   type SemanticSearchResponse,
 } from '@foodvoice/shared';
 import { AccionEnCurso } from '@/components/accion-en-curso';
+import { AgregarAlCarrito } from '@/components/agregar-al-carrito';
 import { Input } from '@/components/ui/input';
 import { api, ErrorDeApi } from '@/lib/api-client';
 import { ConfirmacionAgregado } from './confirmacion-agregado';
@@ -305,6 +306,15 @@ function ResultadoBusqueda({
   );
 }
 
+/**
+ * Un resultado de búsqueda por voz/texto, con su propio botón "Agregar"
+ * (FR-028, Clarifications 2026-08-24) — el mismo control de un clic del
+ * catálogo completo, no un camino nuevo. `BusquedaPorVoz` solo se monta para
+ * `Role.CLIENTE` (`menu/page.tsx`), así que no hace falta repetir esa
+ * condición acá. FR-006/FR-007 ya garantizan que todo producto que llega
+ * aquí está activo y disponible, por lo que —a diferencia de
+ * `TarjetaDeProducto` del catálogo— no hay estado "agotado" que ocultar.
+ */
 function TarjetaDeResultado({ producto }: { producto: ProductDto }) {
   return (
     <article className="flex flex-col gap-1 rounded-md border border-[var(--color-borde)] p-3">
@@ -318,6 +328,9 @@ function TarjetaDeResultado({ producto }: { producto: ProductDto }) {
         {producto.priceTier && ` · ${ETIQUETA_TRAMO[producto.priceTier]}`}
         {producto.dietaryTags.length > 0 && ` · ${producto.dietaryTags.join(', ')}`}
       </p>
+      <div className="mt-auto pt-2">
+        <AgregarAlCarrito productId={producto.id} />
+      </div>
     </article>
   );
 }
