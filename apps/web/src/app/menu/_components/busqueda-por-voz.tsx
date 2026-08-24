@@ -30,6 +30,16 @@ import { ConfirmacionAgregado } from './confirmacion-agregado';
  * carrito por voz" (`intent: ADD`, HU-13). El servidor decide qué significa
  * la frase; este componente no adivina la intención por su cuenta
  * (Principio VII).
+ *
+ * **Al dictar por voz, la búsqueda se dispara sola** en cuanto termina el
+ * reconocimiento — sin esperar un clic en "Buscar". Es seguro porque buscar
+ * es de solo lectura (FR-008): una transcripción mal entendida como mucho da
+ * resultados equivocados, nunca escribe nada, y el cliente puede corregir el
+ * texto y volver a intentar. "Agregar al carrito por voz" **no** se
+ * autodispara: sigue exigiendo el clic explícito, porque encadena una
+ * pantalla de confirmación (HU-13) que sí puede terminar escribiendo en el
+ * carrito, y disparar ese camino solo por haber dictado algo ambiguo sería
+ * sorprender al cliente con una acción que no pidió.
  */
 export function BusquedaPorVoz() {
   const [texto, setTexto] = useState('');
@@ -43,8 +53,18 @@ export function BusquedaPorVoz() {
   );
   const canalRef = useRef<(typeof SearchChannel)[keyof typeof SearchChannel]>(SearchChannel.TEXT);
 
-  async function ejecutar(intent: (typeof SearchIntent)[keyof typeof SearchIntent]) {
-    if (texto.trim().length === 0) return;
+  /**
+   * `consulta` es explícito y no se lee de `texto` (estado) porque el
+   * autodisparo por voz llama a esta función en el mismo evento que recibe la
+   * transcripción: leer el estado ahí encontraría el valor anterior, todavía
+   * no actualizado por el `setTexto` de ese mismo turno.
+   */
+  async function ejecutar(
+    intent: (typeof SearchIntent)[keyof typeof SearchIntent],
+    consulta: string,
+    canal: (typeof SearchChannel)[keyof typeof SearchChannel],
+  ) {
+    if (consulta.trim().length === 0) return;
     setError(null);
     setResultado(null);
     setAgregado(null);
@@ -52,8 +72,8 @@ export function BusquedaPorVoz() {
     try {
       if (intent === SearchIntent.ADD) {
         const respuesta = await api.post<AddResolutionResponse>('/menu/search', {
-          query: texto,
-          channel: canalRef.current,
+          query: consulta,
+          channel: canal,
           intent,
         });
         if (respuesta.status === 'RESOLVED') {
@@ -70,8 +90,8 @@ export function BusquedaPorVoz() {
         }
       } else {
         const respuesta = await api.post<SemanticSearchResponse>('/menu/search', {
-          query: texto,
-          channel: canalRef.current,
+          query: consulta,
+          channel: canal,
           intent,
         });
         setResultado(respuesta);
@@ -115,10 +135,13 @@ export function BusquedaPorVoz() {
     reconocimiento.onerror = () => setEscuchando(false);
     reconocimiento.onresult = (evento) => {
       const transcripcion = evento.results[0]?.[0]?.transcript ?? '';
-      // Transcripción editable (HU-06 §8): se llena el campo, no se envía
-      // sola. El cliente puede corregirla antes de "Buscar" o "Agregar".
+      // Transcripción visible y editable en el campo (HU-06 §8) — y, a la
+      // vez, ya disparada: buscar es de solo lectura, así que no hay razón
+      // para hacer esperar un clic. Si la transcripción salió mal, el
+      // cliente la corrige y vuelve a buscar; "Agregar" sigue siendo manual.
       setTexto(transcripcion);
       canalRef.current = SearchChannel.VOICE;
+      void ejecutar(SearchIntent.SEARCH, transcripcion, SearchChannel.VOICE);
     };
 
     reconocimiento.start();
@@ -157,7 +180,7 @@ export function BusquedaPorVoz() {
           size="sm"
           enCurso={enCurso}
           textoEnCurso="Buscando…"
-          onClick={() => void ejecutar(SearchIntent.SEARCH)}
+          onClick={() => void ejecutar(SearchIntent.SEARCH, texto, canalRef.current)}
         >
           Buscar
         </AccionEnCurso>
@@ -166,7 +189,7 @@ export function BusquedaPorVoz() {
           size="sm"
           enCurso={enCurso}
           textoEnCurso="Agregando…"
-          onClick={() => void ejecutar(SearchIntent.ADD)}
+          onClick={() => void ejecutar(SearchIntent.ADD, texto, canalRef.current)}
         >
           Agregar al carrito por voz
         </AccionEnCurso>

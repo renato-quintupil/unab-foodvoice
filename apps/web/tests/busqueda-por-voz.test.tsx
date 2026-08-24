@@ -2,7 +2,7 @@
  * Búsqueda por voz (E6, HU-06, HU-13, FR-001, FR-009 a FR-011, FR-016,
  * FR-019, FR-020, FR-023).
  */
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Dimension, ProductStatus, type ProductDto } from '@foodvoice/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -149,6 +149,66 @@ describe('BusquedaPorVoz · texto (HU-06)', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/no soporta reconocimiento de voz/);
     expect(fetchSimulado).not.toHaveBeenCalled();
+  });
+
+  it('busca sola en cuanto termina el dictado, sin esperar un clic en Buscar', async () => {
+    const usuario = userEvent.setup();
+    fetchSimulado.mockResolvedValue(
+      respuesta(200, {
+        status: 'RESULTS',
+        interpretation: {
+          priceTier: null,
+          foodTypeCategoryId: null,
+          healthProfileCategoryId: null,
+          vegan: null,
+          productTerms: [],
+          openRecommendation: false,
+        },
+        items: [PRODUCTO],
+      }),
+    );
+
+    class FakeSpeechRecognition extends EventTarget implements SpeechRecognition {
+      static instancia: FakeSpeechRecognition | undefined;
+      lang = '';
+      interimResults = false;
+      maxAlternatives = 1;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      onresult: ((event: SpeechRecognitionEvent) => void) | null = null;
+      constructor() {
+        super();
+        FakeSpeechRecognition.instancia = this;
+      }
+      start() {
+        this.onstart?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+    }
+    vi.stubGlobal('SpeechRecognition', FakeSpeechRecognition);
+
+    render(<BusquedaPorVoz />);
+    await usuario.click(screen.getByLabelText('Dictar la búsqueda por voz'));
+
+    const resultadoFalso = {
+      results: [[{ transcript: 'quiero una pizza' }]],
+    } as unknown as SpeechRecognitionEvent;
+    act(() => {
+      FakeSpeechRecognition.instancia?.onresult?.(resultadoFalso);
+    });
+
+    // Ningún clic en "Buscar": la transcripción sola disparó la solicitud.
+    await waitFor(() => expect(fetchSimulado).toHaveBeenCalledTimes(1));
+    const [, opciones] = fetchSimulado.mock.calls[0]!;
+    expect(JSON.parse(opciones.body as string)).toMatchObject({
+      query: 'quiero una pizza',
+      channel: 'VOICE',
+      intent: 'SEARCH',
+    });
+    await waitFor(() => expect(screen.getByText('Pizza Napolitana')).toBeInTheDocument());
   });
 });
 
