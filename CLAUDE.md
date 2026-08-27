@@ -5,29 +5,32 @@ trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
 menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual**,
-**E4 · Trazabilidad del pedido**, **E6 · Búsqueda por voz** y **E5 · Reparto**
-están **construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
-`services/api` y `packages/shared`— están poblados, y las dos capas
-automáticas pasan en verde: **604 pruebas unitarias** de `services/api` (146)
-y `packages/shared` (238), más **220 pruebas** sobre `apps/web`, todas con sus
-umbrales de cobertura, y **633 de integración en 86 baterías** contra
-PostgreSQL real — E9 no agrega baterías de integración porque no toca
-`services/api`; E4 agrega tres; E6 agrega cuatro; E5 agrega seis, incluida la
-concurrencia real de "un repartidor, un pedido a la vez".
+**E4 · Trazabilidad del pedido**, **E6 · Búsqueda por voz**, **E5 · Reparto** y
+**E7 · Cierre del servicio** están **construidas y verificadas**. Los tres
+espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
+poblados, y las dos capas automáticas pasan en verde: **615 pruebas
+unitarias** de `services/api` (147) y `packages/shared` (239), más **229
+pruebas** sobre `apps/web`, todas con sus umbrales de cobertura, y **657 de
+integración en 92 baterías** contra PostgreSQL real — E9 no agrega baterías
+de integración porque no toca `services/api`; E4 agrega tres; E6 agrega
+cuatro; E5 agrega seis, incluida la concurrencia real de "un repartidor, un
+pedido a la vez"; E7 agrega seis más, incluida la concurrencia real de
+confirmar/reclamar simultáneos.
 
-Las siete validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las ocho validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
 2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
 enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos; E6 el 2026-08-24, sus 16
 pasos (nueve por Claude contra la aplicación real, siete por una persona con
 micrófono real); E5 el 2026-08-27, sus 14 pasos, con Claude manejando el
-navegador real— y su detalle está en el `verificacion.md` de cada spec.
+navegador real; E7 el 2026-08-27, sus 10 pasos, también con Claude manejando
+el navegador real— y su detalle está en el `verificacion.md` de cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
 ninguna prueba automática detectaba, siempre del mismo tipo —cada pieza
 funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
-**E9 y E4 son las dos únicas que no encontraron ninguno**; E6 encontró uno
+**E9, E4 y E7 son las únicas que no encontraron ninguno**; E6 encontró uno
 fuera de los 16 pasos y E5 encontró uno dentro de ellos.
 
 - En E1: el error de formulario no quedaba asociado a su campo, y cuatro
@@ -67,6 +70,10 @@ fuera de los 16 pasos y E5 encontró uno dentro de ellos.
   repartidor que ya tenía un pedido en curso; el servidor lo rechazaba con
   `409`, pero la interfaz nunca debió ofrecer la acción (FR-004). Corregido
   antes de dar la épica por cerrada.
+- En E7: tampoco encontró ningún defecto en los 10 pasos de `quickstart.md`.
+  Su único hallazgo real —la ausencia de un camino del negocio hacia un
+  pedido `cerrado`— se encontró y corrigió durante `/speckit.analyze`, antes
+  de programar, no durante la validación funcional.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -92,10 +99,45 @@ constitucional que no vino de escribir una spec nueva, sino de diseñar
 contra una ya redactada: la constitución pasó a **v3.0.0** para permitir la
 única transición de retroceso del sistema (`asignado_repartidor →
 en_preparacion`), ver el Sync Impact Report de
-`.specify/memory/constitution.md`. La siguiente épica del orden sugerido es
-**E7** (el orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8); **E9 es
-transversal y no participa de ese orden** — se completó en paralelo,
-envolviendo con navegación las pantallas que E1+E3+E2 ya habían construido.
+`.specify/memory/constitution.md`. **E7 llenó las dos últimas transiciones
+que quedaban sin camino** (`asignado_repartidor → entregado`,
+`entregado → cerrado`) — a diferencia de E5, no necesitó ninguna enmienda
+constitucional nueva: ambas ya estaban declaradas en el Principio XII desde
+su redacción original. La siguiente épica del orden sugerido es **E8** (el
+orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8); **E9 es transversal y no
+participa de ese orden** — se completó en paralelo, envolviendo con
+navegación las pantallas que E1+E3+E2 ya habían construido.
+
+### Lo que E7 añadió al código
+
+- **`packages/shared`**: `complaintReason: string | null` en `OrderSummaryDto`, presente solo
+  cuando `status === 'cerrado'` por un reclamo del cliente. `ComplainOrderSchema` (`reason` de 10 a
+  500 caracteres). Tres mensajes nuevos —motivo de reclamo obligatorio, pedido no entregado, sin
+  pedidos cerrados. `machine.ts` no necesitó ningún cambio: las dos transiciones ya estaban
+  declaradas en el Principio XII desde su redacción original, a diferencia de E5.
+- **`services/api`**: dos métodos nuevos en `OrdersService` —`entregar` (repartidor,
+  `asignado_repartidor → entregado`) y `cerrar` (cliente, `entregado → cerrado`, con
+  `complaintReason` nulo o con texto según confirme o reclame)—, **ambos reutilizando el mismo
+  mecanismo transaccional** que tomar/soltar de E5: `updateMany` condicionado dentro de una
+  transacción, con `registrarEvento` (E2) en la misma operación. Tres endpoints nuevos —
+  `PUT /delivery/orders/:id/deliver`, `PUT /orders/:id/confirm`, `PUT /orders/:id/complain`— y uno
+  de solo lectura, `GET /business/orders/closed`, agregado durante `/speckit.analyze` (hallazgo
+  C1: sin él, el negocio no tenía ningún camino hacia el detalle de un pedido `cerrado`). El 409
+  de "pedido no entregado" y el 404 de "pedido ajeno o inexistente" siguen el mismo criterio que
+  ya usa E4: el segundo nunca revela si el pedido existe.
+- **Sin cambio de contrato en E4**: `OrderDetailDto` no cambió — solo se sumó
+  `complaintReason` a `OrderSummaryDto`, que `OrderDetailDto` ya extiende por composición desde
+  E4. La única corrección necesaria fue en `dashboard.service.ts`, que construye su propio DTO de
+  detalle por separado en vez de reutilizar el de `orders.service.ts` (riesgo de duplicación ya
+  señalado en el `plan.md` de E4).
+- **`apps/web`**: "Marcar como entregado" junto a "Soltar pedido" en `/repartidor` (E5); "Todo
+  bien" y "Reclamar" (con el mismo patrón de diálogo que el rechazo de E2) en `/cliente/pedidos`
+  sobre un pedido `entregado`; el motivo del reclamo se muestra donde ya se muestra el de rechazo,
+  y en el detalle de E4 sin ningún cambio en `historial-pedido.tsx` más que un bloque condicional
+  nuevo. `/negocio/pedidos/cerrados` (D-081) es la pantalla que agregó el hallazgo de
+  `/speckit.analyze`.
+- **Migración nueva**: `complaint_reason` (nulable) en `Order`, mismo patrón que
+  `rejection_reason` de E2. Sin tabla nueva.
 
 ### Lo que E5 añadió al código
 

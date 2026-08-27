@@ -235,10 +235,10 @@ producto.
   corresponde, el motivo del reclamo — sin ningún cambio de contrato de E4 (FR-014, SC-006)
 - [X] T034 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
-- [ ] T035 Recorrer V-01 a V-10 de `specs/008-cierre-servicio/quickstart.md` con sesiones reales
+- [X] T035 Recorrer V-01 a V-10 de `specs/008-cierre-servicio/quickstart.md` con sesiones reales
   de cliente, negocio y repartidor; registrar el resultado en
   `specs/008-cierre-servicio/verificacion.md`
-- [ ] T036 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E7
+- [X] T036 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E7
   como terminada, con el mismo nivel de detalle que E1–E6
 
 ---

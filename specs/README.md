@@ -18,7 +18,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | **E4 · Trazabilidad del pedido** | HU-03 | [`005-trazabilidad-pedido/`](./005-trazabilidad-pedido/) | **Terminada** · 27 / 27 tareas · construida y verificada, incluidos los 12 pasos de validación funcional |
 | **E6 · Búsqueda por voz** | HU-06, HU-13 | [`006-busqueda-por-voz/`](./006-busqueda-por-voz/) | **Terminada** · 39 / 39 tareas · construida y verificada, incluidos los 16 pasos de validación funcional |
 | **E5 · Reparto** | HU-04 | [`007-reparto-repartidor/`](./007-reparto-repartidor/) | **Terminada** · 33 / 33 tareas · construida y verificada, incluidos los 14 pasos de validación funcional |
-| E7 · Cierre del servicio | HU-05 | — | Sin especificar |
+| **E7 · Cierre del servicio** | HU-05 | [`008-cierre-servicio/`](./008-cierre-servicio/) | **Terminada** · 36 / 36 tareas · construida y verificada, incluidos los 10 pasos de validación funcional |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
 | **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 35 / 35 tareas · construida y verificada, incluidos los 26 pasos de validación funcional |
 
@@ -175,9 +175,9 @@ de pedidos.
 
 Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9. La transición
 que E5 agrega (`en_preparacion → asignado_repartidor`, y su retroceso) ya se mostró sin ningún
-cambio de contrato, exactamente como FR-012 lo dejó preparado — ver la verificación de E5. Falta
-únicamente la que agregue E7 (`asignado_repartidor → entregado → cerrado`), que espera a que esa
-épica exista.
+cambio de contrato, exactamente como FR-012 lo dejó preparado — ver la verificación de E5. Lo
+mismo ocurrió con las dos que agregó E7 (`asignado_repartidor → entregado → cerrado`): la
+pantalla de trazabilidad no necesitó ningún cambio — ver la verificación de E7.
 
 ## E6 · Búsqueda por voz
 
@@ -284,9 +284,52 @@ continuar el plan, agregando esa transición como la única excepción de retroc
 restringida al repartidor dueño del pedido. El detalle está en el Sync Impact Report de
 `.specify/memory/constitution.md`.
 
-Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4/E6. Deja
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4/E6. Dejó
 preparada la transición `en_preparacion → asignado_repartidor` (y su historial) para que E7
-(Cierre del servicio) construya `asignado_repartidor → entregado → cerrado` sin tocar esta épica.
+(Cierre del servicio) construyera `asignado_repartidor → entregado → cerrado` sin tocar esta
+épica — y así ocurrió.
+
+## E7 · Cierre del servicio
+
+Rama de trabajo: `008-cierre-servicio`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./008-cierre-servicio/spec.md) | Requisitos, escenarios y criterios de éxito de HU-05 |
+| [`plan.md`](./008-cierre-servicio/plan.md) | Decisiones técnicas (D-073 a D-081) y fases de entrega |
+| [`research.md`](./008-cierre-servicio/research.md) | Las nueve decisiones con su fundamento |
+| [`data-model.md`](./008-cierre-servicio/data-model.md) | `Order.complaintReason`, migración y esquema Zod nuevo |
+| [`contracts/`](./008-cierre-servicio/contracts/) | Los cuatro endpoints de cierre y el contrato compartido |
+| [`quickstart.md`](./008-cierre-servicio/quickstart.md) | Puesta en marcha y los 10 pasos de validación funcional |
+| [`tasks.md`](./008-cierre-servicio/tasks.md) | 36 tareas ordenadas por historia |
+| [`verificacion.md`](./008-cierre-servicio/verificacion.md) | Resultado de la validación — sin defectos encontrados |
+| [`checklists/`](./008-cierre-servicio/checklists/) | Calidad de requisitos |
+
+Fases de entrega: **A** cimientos (`complaintReason`, mensajes y esquema, habilitante) → **B**
+HU-05 Historia 1, repartidor marca entregado (P1, MVP) → **C** HU-05 Historia 2, cliente confirma
+→ **D** HU-05 Historia 3, cliente reclama → **E** pantalla "Ver cerrados" del negocio (D-081,
+hallazgo de `/speckit.analyze`) → **F** validación funcional.
+
+**Por qué se da por terminada.** Las tres historias están construidas — las dos últimas
+transiciones de la máquina de estados del pedido (`asignado_repartidor → entregado`,
+`entregado → cerrado` en sus variantes confirmar/reclamar), ambas reutilizando el mismo mecanismo
+transaccional que tomar/soltar de E5, y el reclamo como texto libre visible al negocio con el
+mismo patrón exacto que `rejectionReason` de E2—, las dos capas automáticas pasan en verde —
+unitarios con sus umbrales de cobertura en los tres paquetes, y **657 pruebas de integración en 92
+baterías contra PostgreSQL real**, incluidas las seis nuevas de esta épica con concurrencia real—,
+y la **validación funcional se ejecutó el 2026-08-27**, los 10 pasos de `quickstart.md`. **No
+encontró ningún defecto**, igual que E9 y E4: el único hallazgo real de la épica —la ausencia de
+un camino del negocio hacia un pedido `cerrado`— se encontró y corrigió durante
+`/speckit.analyze`, antes de programar, no durante la validación. El detalle está en
+[`verificacion.md`](./008-cierre-servicio/verificacion.md).
+
+**Ninguna enmienda constitucional nueva**: a diferencia de E5, las dos transiciones de E7 ya
+estaban declaradas en el Principio XII desde su redacción original.
+
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4/E6/E5.
+Cualquier estado nuevo para "reclamo pendiente", clasificación del feedback, notificaciones,
+calificación numérica, reabrir un pedido cerrado o confirmación por proximidad — declarado como
+fuera de alcance desde la propia especificación.
 
 ## E9 · Navegación y experiencia visual
 
