@@ -32,4 +32,5 @@
 ## Notes
 
 - Las tres ambigüedades reales del alcance (autoservicio vs. asignación explícita, uno o varios pedidos por repartidor, si se puede soltar un pedido tomado) se resolvieron con el usuario antes de escribir la spec — ver sección "Clarifications" en `spec.md` — en vez de dejarse como marcadores `[NEEDS CLARIFICATION]` sin resolver.
-- Todos los ítems pasan en la primera iteración.
+- `/speckit.clarify` (2026-08-27) resolvió una cuarta ambigüedad de alto impacto: qué datos de contacto del cliente ve el repartidor (teléfono, solo en el pedido en curso; sin nombre). Integrada en FR-007, Historia 2, Key Entities, Edge Cases, Assumptions y SC-007.
+- Todos los ítems pasan tras la integración.

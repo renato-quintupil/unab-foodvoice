@@ -18,6 +18,10 @@
 - Q: ¿Puede un repartidor tener más de un pedido asignado a la vez? → A: No; mientras tenga un pedido en `asignado_repartidor` sin entregar, el sistema no le ofrece tomar otro. Debe esperar a que E7 (Cierre del servicio) lo marque como entregado.
 - Q: ¿Puede un repartidor devolver (soltar) un pedido que ya tomó, antes de entregarlo? → A: Sí; una acción explícita libera el pedido, que vuelve a `en_preparacion` sin repartidor asignado y queda disponible para cualquier repartidor, incluido el mismo que lo soltó.
 
+### Session 2026-08-27 (`/speckit.clarify`)
+
+- Q: ¿Qué datos de contacto del cliente debe ver el repartidor sobre el pedido que tiene asignado? → A: Solo el teléfono del cliente, visible únicamente en el pedido en curso del repartidor (no en la lista de pedidos disponibles) — además de la dirección de entrega, que ya estaba contemplada. No se agrega el nombre del cliente: no aporta nada que la dirección y el teléfono no cubran, y omitirlo respeta mejor el Principio X (privacidad y datos mínimos).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Repartidor toma un pedido disponible (Priority: P1)
@@ -44,12 +48,12 @@ Un repartidor que ya tomó un pedido quiere ver sus datos completos — producto
 
 **Why this priority**: Depende de que exista la Historia 1 (no hay nada que consultar sin haber tomado un pedido antes), pero es indispensable para que la asignación tenga utilidad real en la calle.
 
-**Independent Test**: Con un repartidor que ya tomó un pedido, puede abrir una vista de "mi pedido en curso" y ver sus productos, cantidades y la dirección de entrega, igual que ya puede verlos el negocio en su propia bandeja.
+**Independent Test**: Con un repartidor que ya tomó un pedido, puede abrir una vista de "mi pedido en curso" y ver sus productos, cantidades, la dirección de entrega y el teléfono de contacto del cliente, igual que ya puede verlos el negocio en su propia bandeja (salvo el teléfono, que es nuevo en esta épica).
 
 **Acceptance Scenarios**:
 
-1. **Given** un repartidor con un pedido en `asignado_repartidor`, **When** abre su pantalla, **Then** ve los productos, cantidades y la dirección de entrega de ese pedido.
-2. **Given** un repartidor sin ningún pedido asignado, **When** abre su pantalla, **Then** no ve ninguna sección de "pedido en curso", solo la lista de pedidos disponibles para tomar.
+1. **Given** un repartidor con un pedido en `asignado_repartidor`, **When** abre su pantalla, **Then** ve los productos, cantidades, la dirección de entrega y el teléfono de contacto del cliente de ese pedido.
+2. **Given** un repartidor sin ningún pedido asignado, **When** abre su pantalla, **Then** no ve ninguna sección de "pedido en curso", solo la lista de pedidos disponibles para tomar, sin ningún dato de contacto del cliente.
 
 ---
 
@@ -74,6 +78,7 @@ Un repartidor que tomó un pedido pero no puede salir a repartirlo (se le pinch�
 - ¿Qué pasa si un repartidor intenta tomar un pedido que ya no está en `en_preparacion` porque otro repartidor lo tomó un instante antes? El sistema lo rechaza con un mensaje claro, sin duplicar la asignación (Acceptance Scenario 4 de la Historia 1).
 - ¿Qué pasa si un repartidor sin pedido en curso intenta soltar "su" pedido? No existe esa acción para él — la pantalla no la ofrece si no tiene ningún pedido asignado.
 - Un pedido que un repartidor soltó y que nadie más toma nunca: queda en `en_preparacion` indefinidamente, igual que un pedido `creado` que el negocio nunca acepta ni rechaza (mismo criterio ya aceptado en E2, sin escalamiento automático en v1).
+- Un repartidor suelta un pedido (Historia 3): el teléfono del cliente deja de serle visible de inmediato, igual que deja de ver la dirección — soltar el pedido retira todo el acceso a sus datos, no solo el estado.
 
 ## Requirements *(mandatory)*
 
@@ -85,7 +90,7 @@ Un repartidor que tomó un pedido pero no puede salir a repartirlo (se le pinch�
 - **FR-004**: El sistema NO DEBE ofrecer a un repartidor con un pedido en `asignado_repartidor` sin entregar ninguna acción para tomar un segundo pedido.
 - **FR-005**: El sistema DEBE garantizar que, si dos repartidores intentan tomar el mismo pedido de forma concurrente, solo uno tenga éxito y el otro reciba un mensaje en español indicando que el pedido ya no está disponible, sin duplicar la asignación ni dejar el pedido en un estado inconsistente.
 - **FR-006**: El sistema DEBE mostrar un mensaje en español cuando no haya ningún pedido disponible para tomar, en lugar de una lista vacía sin explicación.
-- **FR-007**: El sistema DEBE permitir al repartidor consultar los datos completos —productos, cantidades y dirección de entrega— del pedido que tiene actualmente en `asignado_repartidor`.
+- **FR-007**: El sistema DEBE permitir al repartidor consultar los datos completos —productos, cantidades, dirección de entrega y teléfono de contacto del cliente— del pedido que tiene actualmente en `asignado_repartidor`. El teléfono NO DEBE mostrarse en la lista de pedidos disponibles (FR-001) ni a ningún repartidor distinto del que tiene el pedido asignado; el nombre del cliente NO DEBE exponerse en ninguna pantalla de esta épica (Principio X, datos mínimos).
 - **FR-008**: El sistema DEBE permitir a un repartidor con un pedido en `asignado_repartidor` devolverlo con una acción explícita, transicionándolo de vuelta a `en_preparacion` sin repartidor asignado.
 - **FR-009**: Un pedido devuelto por un repartidor (FR-008) DEBE reaparecer en la lista de pedidos disponibles (FR-001) sin ninguna marca que lo distinga de un pedido que nunca fue tomado, y DEBE poder ser tomado por cualquier repartidor, incluido el que lo devolvió.
 - **FR-010**: El sistema NO DEBE permitir al rol `NEGOCIO` ni a ningún otro rol distinto de `REPARTIDOR` tomar, asignar o devolver un pedido en el sentido de esta épica.
@@ -98,6 +103,7 @@ Un repartidor que tomó un pedido pero no puede salir a repartirlo (se le pinch�
 - **Repartidor asignado (dato nuevo en `Pedido`)**: identifica qué usuario con rol `REPARTIDOR` tomó el pedido y cuándo. Presente únicamente mientras el pedido está en `asignado_repartidor`; conservado como parte del historial una vez que el pedido avanza (E7) o se libera (FR-008, en cuyo caso el pedido vuelve a no tener repartidor asignado).
 - **Pedido disponible**: un pedido en `en_preparacion` sin repartidor asignado; visible para cualquier repartidor sin pedido en curso.
 - **Pedido en curso (del repartidor)**: el único pedido en `asignado_repartidor` que un repartidor puede tener a la vez.
+- **Teléfono de contacto del cliente (dato ya existente, expuesto por primera vez a este rol)**: el teléfono que el cliente registró en E1 (`User.phone`); esta épica no lo crea, solo lo expone al repartidor y únicamente sobre su propio pedido en curso, nunca en la lista de disponibles ni al nombre del cliente.
 
 ## Success Criteria *(mandatory)*
 
@@ -109,6 +115,7 @@ Un repartidor que tomó un pedido pero no puede salir a repartirlo (se le pinch�
 - **SC-004**: Un repartidor con un pedido en curso no encuentra, en ningún momento, una acción para tomar un segundo pedido mientras el primero siga en `asignado_repartidor`.
 - **SC-005**: Un pedido devuelto por un repartidor vuelve a estar disponible para cualquier repartidor en menos de 10 segundos desde que se soltó, sin intervención del negocio.
 - **SC-006**: Al consultar la trazabilidad de un pedido asignado a un repartidor (E4), el 100% de las veces aparece la entrada `en_preparacion → asignado_repartidor` con el repartidor correcto, sin que la pantalla de trazabilidad haya requerido ningún cambio.
+- **SC-007**: En una validación con al menos 3 repartidores y pedidos disponibles sin tomar, el teléfono del cliente no aparece en la lista de disponibles en ningún caso, y solo aparece en el pedido en curso del repartidor que lo tomó — nunca al resto.
 
 ## Assumptions
 
@@ -119,3 +126,4 @@ Un repartidor que tomó un pedido pero no puede salir a repartirlo (se le pinch�
 - **Reutilización del mecanismo transaccional de E2/E4**: la transición y su entrada de historial se escriben como una sola operación atómica, con el mismo criterio de concurrencia que ya resolvió E2 para aceptar/rechazar un pedido.
 - **Sin geolocalización, notificaciones push ni mapas**: decisiones de alcance de v1 ya declaradas en `docs/epicas-hu/EPICS.md` y heredadas por todas las épicas anteriores.
 - **Fuera de esta épica**: las transiciones `asignado_repartidor → entregado` y `entregado → cerrado` pertenecen a E7 (Cierre del servicio, HU-05) y no se construyen aquí.
+- **El teléfono de contacto es el único dato de cliente nuevo que se expone**: el cliente ya lo registra en E1 (`User.phone`) para su propio perfil; esta épica no le pide al cliente ningún dato nuevo, solo permite que el repartidor lo vea sobre el pedido que tiene asignado. El nombre del cliente se excluye deliberadamente por no ser necesario para completar la entrega (Principio X).
