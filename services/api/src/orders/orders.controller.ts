@@ -1,7 +1,9 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
+  ComplainOrderSchema,
   ConfirmOrderSchema,
+  type ComplainOrderInput,
   type ConfirmOrderInput,
   type OrderDetailDto,
   type OrderSummaryDto,
@@ -42,5 +44,24 @@ export class OrdersController {
     @Param('id') id: string,
   ): Promise<OrderDetailDto> {
     return this.pedidos.detalleParaCliente(id, peticion.sesion.userId);
+  }
+
+  /** `PUT /api/v1/orders/:id/confirm` (E7, FR-005, FR-006, FR-009, D-077). */
+  @Put(':id/confirm')
+  confirmarCierre(
+    @Req() peticion: PeticionConSesion,
+    @Param('id') id: string,
+  ): Promise<OrderSummaryDto> {
+    return this.pedidos.cerrar(id, peticion.sesion.userId, null);
+  }
+
+  /** `PUT /api/v1/orders/:id/complain` (E7, FR-005 a FR-008, FR-010, D-077). */
+  @Put(':id/complain')
+  reclamar(
+    @Req() peticion: PeticionConSesion,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ComplainOrderSchema)) datos: ComplainOrderInput,
+  ): Promise<OrderSummaryDto> {
+    return this.pedidos.cerrar(id, peticion.sesion.userId, datos.reason);
   }
 }

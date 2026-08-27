@@ -39,7 +39,7 @@ de componente en `apps/web/tests/*.test.tsx`. Sin variable de entorno nueva.
 
 **Propósito**: obtener una línea base verificable sin alterar E1–E6, antes de tocar el esquema.
 
-- [ ] T001 Ejecutar la línea base de `specs/008-cierre-servicio/quickstart.md` —`pnpm test`,
+- [X] T001 Ejecutar la línea base de `specs/008-cierre-servicio/quickstart.md` —`pnpm test`,
   `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el resultado
   y detener la implementación si existe un fallo preexistente
 
@@ -52,23 +52,23 @@ Ninguna historia puede empezar sin esto.
 
 **⚠️ CRÍTICO**: ninguna historia empieza hasta completar esta fase.
 
-- [ ] T002 Añadir `complaintReason` (nullable, `text`) al modelo `Order` en
+- [X] T002 Añadir `complaintReason` (nullable, `text`) al modelo `Order` en
   `services/api/prisma/schema.prisma` (según `data-model.md`)
-- [ ] T003 Generar con `prisma migrate dev --create-only` el archivo
+- [X] T003 Generar con `prisma migrate dev --create-only` el archivo
   `services/api/prisma/migrations/<timestamp>_cierre_servicio/migration.sql` a partir de T002
   (depende de T002)
-- [ ] T004 [P] Añadir `ComplainOrderSchema` (mismo molde que `RejectOrderSchema`) en
+- [X] T004 [P] Añadir `ComplainOrderSchema` (mismo molde que `RejectOrderSchema`) en
   `packages/shared/src/schemas/order.ts` (según `contracts/shared.md`)
-- [ ] T005 [P] Añadir `MSG_MOTIVO_RECLAMO_REQUERIDO` y `MSG_PEDIDO_NO_ENTREGADO` en
+- [X] T005 [P] Añadir `MSG_MOTIVO_RECLAMO_REQUERIDO` y `MSG_PEDIDO_NO_ENTREGADO` en
   `packages/shared/src/messages/es.ts`
-- [ ] T006 [P] Añadir `complaintReason: string | null` a `OrderSummaryDto` en
+- [X] T006 [P] Añadir `complaintReason: string | null` a `OrderSummaryDto` en
   `packages/shared/src/types/api.ts` (D-073)
-- [ ] T007 Exportar `ComplainOrderSchema`, `ComplainOrderInput` y los dos mensajes nuevos desde
+- [X] T007 Exportar `ComplainOrderSchema`, `ComplainOrderInput` y los dos mensajes nuevos desde
   `packages/shared/src/index.ts` (depende de T004, T005)
-- [ ] T008 Añadir `ErrorCode.ORDER_NOT_DELIVERED` al catálogo cerrado de
+- [X] T008 Añadir `ErrorCode.ORDER_NOT_DELIVERED` al catálogo cerrado de
   `services/api/src/common/errors.ts`, con su función constructora `pedidoNoEntregado()`
   devolviendo `409` con `MSG_PEDIDO_NO_ENTREGADO` (D-076, depende de T005)
-- [ ] T009 Actualizar `aDto()` en `services/api/src/orders/orders.service.ts` para incluir
+- [X] T009 Actualizar `aDto()` en `services/api/src/orders/orders.service.ts` para incluir
   `complaintReason: pedido.complaintReason` en el mapeo a `OrderSummaryDto` (depende de T006)
 
 **Punto de control**: `packages/shared` compila, la migración aplica en limpio
@@ -91,7 +91,7 @@ sobre el mismo pedido falla.
 
 > **NOTA: escribir estas pruebas primero y comprobar que fallan antes de implementar.**
 
-- [ ] T010 [P] [US1] Crear las pruebas fallidas de `PUT /delivery/orders/:id/deliver` en
+- [X] T010 [P] [US1] Crear las pruebas fallidas de `PUT /delivery/orders/:id/deliver` en
   `services/api/test/delivery-orders-deliver.integration-spec.ts`: transiciona a `entregado` y
   registra el evento de historial con el repartidor como actor; el repartidor queda sin ningún
   pedido en curso tras la transición; `404 NOT_FOUND` si no existe; `409
@@ -101,20 +101,20 @@ sobre el mismo pedido falla.
 
 ### Implementación de US1
 
-- [ ] T011 [US1] Añadir `entregar(id, repartidorId)` en
+- [X] T011 [US1] Añadir `entregar(id, repartidorId)` en
   `services/api/src/orders/orders.service.ts`: dentro de una transacción, `updateMany({ where:
   { id, status: ASIGNADO_REPARTIDOR, deliveryUserId: repartidorId }, data: { status: ENTREGADO }
   })` (sin limpiar `deliveryUserId`, D-074); si `count === 0`, relee para distinguir
   `noEncontrado()` de `pedidoNoAsignadoATi()` (reutilizado de E5, D-075); llama a
   `registrarEvento` con `previousStatus: ASIGNADO_REPARTIDOR, resultingStatus: ENTREGADO,
   actorRole: Role.REPARTIDOR` (FR-001 a FR-004, depende de T002)
-- [ ] T012 [US1] Añadir `PUT /:id/deliver` en
+- [X] T012 [US1] Añadir `PUT /:id/deliver` en
   `services/api/src/orders/delivery-orders.controller.ts`, delegando a `entregar` con el
   `userId` de la sesión (depende de T011)
-- [ ] T013 [US1] Crear `apps/web/src/app/repartidor/_components/boton-entregar.tsx`: acción
+- [X] T013 [US1] Crear `apps/web/src/app/repartidor/_components/boton-entregar.tsx`: acción
   directa de un clic (sin diálogo, D-080), llama a `PUT /delivery/orders/:id/deliver` y refresca
   (mismo patrón que `boton-tomar.tsx` de E5) (depende de T012)
-- [ ] T014 [US1] Integrar `BotonEntregar` en
+- [X] T014 [US1] Integrar `BotonEntregar` en
   `apps/web/src/app/repartidor/_components/pedido-en-curso.tsx`, junto a `BotonSoltar` (depende
   de T013)
 
@@ -133,7 +133,7 @@ que no puede hacerlo sobre un pedido que no está entregado o que no es suyo.
 
 ### Pruebas de US2
 
-- [ ] T015 [P] [US2] Crear las pruebas fallidas de `PUT /orders/:id/confirm` en
+- [X] T015 [P] [US2] Crear las pruebas fallidas de `PUT /orders/:id/confirm` en
   `services/api/test/orders-close-confirm.integration-spec.ts`: transiciona de `entregado` a
   `cerrado` sin `complaintReason` y registra el evento con el cliente como actor; `404 NOT_FOUND`
   si no existe o no es del cliente autenticado; `409 ORDER_NOT_DELIVERED` si el pedido no está en
@@ -142,19 +142,19 @@ que no puede hacerlo sobre un pedido que no está entregado o que no es suyo.
 
 ### Implementación de US2
 
-- [ ] T016 [US2] Añadir `cerrar(id, clienteId, complaintReason)` en
+- [X] T016 [US2] Añadir `cerrar(id, clienteId, complaintReason)` en
   `services/api/src/orders/orders.service.ts`: dentro de una transacción, `updateMany({ where:
   { id, status: ENTREGADO, userId: clienteId }, data: { status: CERRADO, complaintReason } })`;
   si `count === 0`, relee — si no existe o `userId` no coincide, `noEncontrado()` (mismo criterio
   de FR-005 de E4); si existe y es del cliente pero no está en `entregado`, `pedidoNoEntregado()`
   (D-076); llama a `registrarEvento` con `previousStatus: ENTREGADO, resultingStatus: CERRADO,
   actorRole: Role.CLIENTE` (FR-005, FR-006, FR-009, depende de T008, T009)
-- [ ] T017 [US2] Añadir `PUT /:id/confirm` en `services/api/src/orders/orders.controller.ts`,
+- [X] T017 [US2] Añadir `PUT /:id/confirm` en `services/api/src/orders/orders.controller.ts`,
   delegando a `cerrar(id, peticion.sesion.userId, null)` (depende de T016)
-- [ ] T018 [US2] Crear
+- [X] T018 [US2] Crear
   `apps/web/src/app/cliente/pedidos/_components/boton-confirmar-cierre.tsx`: acción directa de
   un clic (sin diálogo, D-080), llama a `PUT /orders/:id/confirm` y refresca (depende de T017)
-- [ ] T019 [US2] En `apps/web/src/app/cliente/pedidos/page.tsx`, mostrar `BotonConfirmarCierre`
+- [X] T019 [US2] En `apps/web/src/app/cliente/pedidos/page.tsx`, mostrar `BotonConfirmarCierre`
   cuando `pedido.status === 'entregado'` (depende de T018)
 
 **Punto de control**: un cliente puede confirmar un pedido entregado en 1 clic y verlo cerrado.
@@ -172,13 +172,13 @@ reclamo en la trazabilidad del negocio, y comprobar la condición de carrera con
 
 ### Pruebas de US3
 
-- [ ] T020 [P] [US3] Crear las pruebas fallidas de `PUT /orders/:id/complain` en
+- [X] T020 [P] [US3] Crear las pruebas fallidas de `PUT /orders/:id/complain` en
   `services/api/test/orders-close-complain.integration-spec.ts`: transiciona de `entregado` a
   `cerrado` con el `complaintReason` guardado y registra el evento; `400 VALIDATION_ERROR` si el
   motivo está ausente, es demasiado corto o es solo espacios en blanco; `404 NOT_FOUND` si no
   existe o no es del cliente; `409 ORDER_NOT_DELIVERED` si no está en `entregado`; `403
   FORBIDDEN` con sesión de `NEGOCIO` o `REPARTIDOR`
-- [ ] T021 [P] [US3] Crear la prueba fallida de concurrencia real en
+- [X] T021 [P] [US3] Crear la prueba fallida de concurrencia real en
   `services/api/test/orders-close-race.integration-spec.ts`: confirmar y reclamar el mismo
   pedido en `entregado` casi al mismo tiempo — exactamente una de las dos acciones tiene éxito,
   la otra recibe `409 ORDER_NOT_DELIVERED`, sin duplicar el efecto ni dejar dos entradas de
@@ -186,14 +186,14 @@ reclamo en la trazabilidad del negocio, y comprobar la condición de carrera con
 
 ### Implementación de US3
 
-- [ ] T022 [US3] Añadir `PUT /:id/complain` en `services/api/src/orders/orders.controller.ts`,
+- [X] T022 [US3] Añadir `PUT /:id/complain` en `services/api/src/orders/orders.controller.ts`,
   validando el cuerpo con `ComplainOrderSchema` y delegando a `cerrar(id,
   peticion.sesion.userId, datos.reason)` (FR-007, FR-008, depende de T004, T016)
-- [ ] T023 [US3] Crear `apps/web/src/app/cliente/pedidos/_components/dialogo-reclamo.tsx`: el
+- [X] T023 [US3] Crear `apps/web/src/app/cliente/pedidos/_components/dialogo-reclamo.tsx`: el
   motivo se exige dentro del mismo diálogo de confirmación, mismo patrón que
   `dialogo-rechazo.tsx` de E2, llamando a `PUT /orders/:id/complain` con `{ reason }` (depende de
   T022)
-- [ ] T024 [US3] En `apps/web/src/app/cliente/pedidos/page.tsx`, mostrar `DialogoReclamo` junto a
+- [X] T024 [US3] En `apps/web/src/app/cliente/pedidos/page.tsx`, mostrar `DialogoReclamo` junto a
   `BotonConfirmarCierre` cuando `pedido.status === 'entregado'` (FR-010, depende de T019, T023)
 
 **Punto de control**: las tres historias funcionan de forma independiente y completa.
@@ -207,33 +207,33 @@ camino hasta un pedido `cerrado` (hallazgo C1 de `/speckit.analyze` — sin él,
 eran verificables), cerrar la épica con la validación manual y actualizar el estado del
 producto.
 
-- [ ] T025 [P] Extender `apps/web/src/components/historial-pedido.tsx` (E4, D-051): cuando el
+- [X] T025 [P] Extender `apps/web/src/components/historial-pedido.tsx` (E4, D-051): cuando el
   último evento sea `CERRADO` y `pedido.complaintReason` exista, mostrar "Reclamo: {motivo}",
   simétrico a la condición ya existente para `rejectionReason` (FR-011, D-078, depende de T009)
-- [ ] T026 [P] Extender `apps/web/src/app/cliente/pedidos/page.tsx`: mostrar
+- [X] T026 [P] Extender `apps/web/src/app/cliente/pedidos/page.tsx`: mostrar
   `pedido.complaintReason` con el mismo bloque condicional que ya muestra `pedido.rejectionReason`
   (FR-010, hallazgo C2 de `/speckit.analyze`, depende de T009)
-- [ ] T027 [P] Añadir `MSG_SIN_PEDIDOS_CERRADOS` en `packages/shared/src/messages/es.ts` y
+- [X] T027 [P] Añadir `MSG_SIN_PEDIDOS_CERRADOS` en `packages/shared/src/messages/es.ts` y
   exportarla desde `packages/shared/src/index.ts` (D-081, hallazgo C1)
-- [ ] T028 Añadir `cerradosDelNegocio()` en `services/api/src/orders/orders.service.ts`: mismo
+- [X] T028 Añadir `cerradosDelNegocio()` en `services/api/src/orders/orders.service.ts`: mismo
   molde que `rechazadosDelNegocio()` — `findMany({ where: { status: CERRADO }, orderBy: {
   createdAt: 'desc' } })`, sin paginar (D-081, depende de T009)
-- [ ] T029 Añadir `GET /closed` en `services/api/src/orders/business-orders.controller.ts`,
+- [X] T029 Añadir `GET /closed` en `services/api/src/orders/business-orders.controller.ts`,
   delegando a `cerradosDelNegocio` (D-081, depende de T028)
-- [ ] T030 Crear `apps/web/src/app/negocio/pedidos/cerrados/page.tsx`: mismo patrón que
+- [X] T030 Crear `apps/web/src/app/negocio/pedidos/cerrados/page.tsx`: mismo patrón que
   `apps/web/src/app/negocio/pedidos/rechazados/page.tsx` — pide `GET /business/orders/closed`,
   muestra `MSG_SIN_PEDIDOS_CERRADOS` si está vacía, y enlaza cada pedido a
   `/negocio/pedidos/:id` (D-081, depende de T027, T029)
-- [ ] T031 Añadir el enlace "Ver cerrados" en `apps/web/src/app/negocio/pedidos/page.tsx`, junto
+- [X] T031 Añadir el enlace "Ver cerrados" en `apps/web/src/app/negocio/pedidos/page.tsx`, junto
   al que ya existe hacia "Ver rechazados" (D-081, depende de T030)
-- [ ] T032 [P] Crear `services/api/test/business-orders-closed.integration-spec.ts`: `GET
+- [X] T032 [P] Crear `services/api/test/business-orders-closed.integration-spec.ts`: `GET
   /business/orders/closed` devuelve solo pedidos `cerrado`, `items: []` cuando no hay ninguno, y
   `403` para roles distintos de `NEGOCIO` (D-081, depende de T029)
-- [ ] T033 [P] Crear `services/api/test/orders-close-trazabilidad.integration-spec.ts`: tras
+- [X] T033 [P] Crear `services/api/test/orders-close-trazabilidad.integration-spec.ts`: tras
   entregar y cerrar (confirmando o reclamando) un pedido, `GET /orders/:id` y `GET
   /business/orders/:id` muestran ambas entradas nuevas en orden cronológico y, cuando
   corresponde, el motivo del reclamo — sin ningún cambio de contrato de E4 (FR-014, SC-006)
-- [ ] T034 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
+- [X] T034 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
 - [ ] T035 Recorrer V-01 a V-10 de `specs/008-cierre-servicio/quickstart.md` con sesiones reales
   de cliente, negocio y repartidor; registrar el resultado en

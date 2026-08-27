@@ -1,7 +1,15 @@
 import Link from 'next/link';
-import { ETIQUETA_ESTADO_PEDIDO, Role, formatearPrecio, type OrderSummaryDto } from '@foodvoice/shared';
+import {
+  ETIQUETA_ESTADO_PEDIDO,
+  OrderStatus,
+  Role,
+  formatearPrecio,
+  type OrderSummaryDto,
+} from '@foodvoice/shared';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
+import { BotonConfirmarCierre } from './_components/boton-confirmar-cierre';
+import { DialogoReclamo } from './_components/dialogo-reclamo';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Mis pedidos · FoodVoice' };
@@ -55,6 +63,17 @@ export default async function PaginaMisPedidos() {
                 <p data-testid="motivo-rechazo" className="text-sm text-[var(--color-error)]">
                   Motivo: {pedido.rejectionReason}
                 </p>
+              )}
+              {pedido.complaintReason && (
+                <p data-testid="motivo-reclamo" className="text-sm text-[var(--color-error)]">
+                  Reclamo: {pedido.complaintReason}
+                </p>
+              )}
+              {pedido.status === OrderStatus.ENTREGADO && (
+                <div className="flex flex-wrap justify-end gap-2 self-end">
+                  <BotonConfirmarCierre pedidoId={pedido.id} />
+                  <DialogoReclamo pedidoId={pedido.id} />
+                </div>
               )}
               <Link href={`/cliente/pedidos/${pedido.id}`} className="text-sm underline">
                 Ver historial

@@ -18,6 +18,7 @@ import {
   direccionRequerida,
   noEncontrado,
   pedidoNoAsignadoATi,
+  pedidoNoEntregado,
   pedidoNoPendiente,
   pedidoYaNoDisponible,
   precioCambio,
@@ -426,6 +427,93 @@ export class OrdersService {
 
     return aDto(resultado);
   }
+
+  // -------------------------------------------------------------------------
+  // E7 · Cierre del servicio (HU-05, FR-001–FR-014)
+  // -------------------------------------------------------------------------
+
+  /**
+   * `PUT /delivery/orders/:id/deliver` (FR-001–FR-004, FR-012). El repartidor
+   * marca como entregado el pedido que tiene en curso. `deliveryUserId`
+   * **no se limpia** (D-074): a diferencia de `soltar()`, aquí queda como
+   * registro de quién entregó, no como liberación del pedido.
+   */
+  async entregar(id: string, repartidorId: string): Promise<OrderSummaryDto> {
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: OrderStatus.ASIGNADO_REPARTIDOR, deliveryUserId: repartidorId },
+        data: { status: OrderStatus.ENTREGADO },
+      });
+      if (count === 0) {
+        const existe = await tx.order.findUnique({ where: { id } });
+        if (!existe) throw noEncontrado();
+        // Mismo error que `soltar()` (D-075): idéntico significado — el
+        // pedido no está en el estado y con el repartidor que la acción
+        // esperaba — sin necesitar un código de error nuevo.
+        throw pedidoNoAsignadoATi();
+      }
+
+      await registrarEvento(tx, {
+        orderId: id,
+        previousStatus: OrderStatus.ASIGNADO_REPARTIDOR,
+        resultingStatus: OrderStatus.ENTREGADO,
+        actorUserId: repartidorId,
+        actorRole: Role.REPARTIDOR,
+      });
+
+      return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+    });
+
+    return aDto(resultado);
+  }
+
+  /**
+   * `PUT /orders/:id/confirm` y `PUT /orders/:id/complain` (FR-005, FR-006,
+   * FR-008, FR-009, FR-012, D-077). Un solo método para las dos acciones del
+   * cliente: `complaintReason` es `null` al confirmar, el motivo ya validado
+   * al reclamar.
+   */
+  async cerrar(
+    id: string,
+    clienteId: string,
+    complaintReason: string | null,
+  ): Promise<OrderSummaryDto> {
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: OrderStatus.ENTREGADO, userId: clienteId },
+        data: { status: OrderStatus.CERRADO, complaintReason },
+      });
+      if (count === 0) {
+        // Mismo criterio de FR-005 de E4: "no existe" y "no es tuyo" dan la
+        // misma respuesta en una ruta de pertenencia del cliente.
+        const existe = await tx.order.findUnique({ where: { id } });
+        if (!existe || existe.userId !== clienteId) throw noEncontrado();
+        throw pedidoNoEntregado();
+      }
+
+      await registrarEvento(tx, {
+        orderId: id,
+        previousStatus: OrderStatus.ENTREGADO,
+        resultingStatus: OrderStatus.CERRADO,
+        actorUserId: clienteId,
+        actorRole: Role.CLIENTE,
+      });
+
+      return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+    });
+
+    return aDto(resultado);
+  }
+
+  /** `GET /business/orders/closed` (FR-011, D-081, hallazgo C1 de `/speckit.analyze`). */
+  async cerradosDelNegocio(): Promise<{ items: OrderSummaryDto[] }> {
+    const filas = await this.prisma.order.findMany({
+      where: { status: OrderStatus.CERRADO },
+      include: CON_LINEAS,
+      orderBy: { createdAt: 'desc' },
+    });
+    return { items: filas.map(aDto) };
+  }
 }
 
 /**
@@ -465,6 +553,7 @@ function aDto(pedido: OrdenConLineas): OrderSummaryDto {
     status: A_COMPARTIDO[pedido.status],
     addressText: pedido.addressText,
     rejectionReason: pedido.rejectionReason,
+    complaintReason: pedido.complaintReason,
     lines: pedido.lines.map(aLineaDto),
     createdAt: pedido.createdAt.toISOString(),
   };

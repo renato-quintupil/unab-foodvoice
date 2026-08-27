@@ -56,6 +56,7 @@ const PEDIDO: OrderSummaryDto = {
   status: 'creado',
   addressText: 'Los Aromos 123',
   rejectionReason: null,
+  complaintReason: null,
   lines: [{ productId: 'p1', productName: 'Pizza Napolitana', price: 5990, quantity: 1 }],
   createdAt: '2026-08-17T12:00:00.000Z',
 };
