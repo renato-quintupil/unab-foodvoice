@@ -1,19 +1,15 @@
 import { formatearPrecio, type DeliveryOrderDto } from '@foodvoice/shared';
-import { pedirALaApi } from '@/lib/api-servidor';
 import { BotonSoltar } from './boton-soltar';
 
 /**
  * El pedido que el repartidor tiene actualmente en curso, con el teléfono de
  * contacto del cliente (E5, HU-04, Historia 2, FR-007).
  *
- * Sin pedido en curso, no renderiza ninguna sección (Acceptance Scenario 2
- * de la Historia 2): solo aparece la lista de disponibles.
+ * Recibe `order` ya resuelto por la página (una sola consulta a
+ * `GET /delivery/orders/current`, compartida con la decisión de si mostrar
+ * la lista de disponibles, FR-004) en vez de pedirlo de nuevo.
  */
-export async function PedidoEnCurso() {
-  const { order } = await pedirALaApi<{ order: DeliveryOrderDto | null }>('/delivery/orders/current');
-
-  if (!order) return null;
-
+export function PedidoEnCurso({ order }: { order: DeliveryOrderDto }) {
   return (
     <section
       data-testid="pedido-en-curso"

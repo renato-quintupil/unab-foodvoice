@@ -14,9 +14,11 @@ import { BotonSoltar } from '@/app/repartidor/_components/boton-soltar';
 import { BotonTomar } from '@/app/repartidor/_components/boton-tomar';
 import { PedidoEnCurso } from '@/app/repartidor/_components/pedido-en-curso';
 import { PedidosDisponibles } from '@/app/repartidor/_components/pedidos-disponibles';
+import PaginaRepartidor from '@/app/repartidor/page';
 import { pedirALaApi } from '@/lib/api-servidor';
 
 vi.mock('@/lib/api-servidor', () => ({ pedirALaApi: vi.fn() }));
+vi.mock('@/lib/sesion-servidor', () => ({ exigirSesion: vi.fn() }));
 
 const refresh = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -110,22 +112,39 @@ describe('Tomar un pedido (BotonTomar, FR-002, FR-003, SC-001)', () => {
 });
 
 describe('Pedido en curso (Historia 2, FR-007, SC-007)', () => {
-  it('sin pedido en curso, no renderiza ninguna sección', async () => {
-    vi.mocked(pedirALaApi).mockResolvedValue({ order: null });
+  it('muestra productos, dirección y teléfono', () => {
+    render(<PedidoEnCurso order={PEDIDO_EN_CURSO} />);
 
-    const vista = await PedidoEnCurso();
-    expect(vista).toBeNull();
-  });
-
-  it('con pedido en curso, muestra productos, dirección y teléfono', async () => {
-    vi.mocked(pedirALaApi).mockResolvedValue({ order: PEDIDO_EN_CURSO });
-
-    render(await PedidoEnCurso());
-
-    expect(pedirALaApi).toHaveBeenCalledWith('/delivery/orders/current');
     expect(screen.getByText(PEDIDO_EN_CURSO.addressText)).toBeInTheDocument();
     expect(screen.getByText(/\+56912345678/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soltar pedido' })).toBeInTheDocument();
+  });
+});
+
+describe('Página del repartidor: una acción a la vez (FR-004)', () => {
+  // `PedidosDisponibles` es en sí un Server Component async: `render()` de
+  // Testing Library no resuelve un árbol de componentes async anidados (eso
+  // sí lo hace Next.js en producción, ya verificado en el navegador real).
+  // Se comprueba la composición devuelta por la página en vez de renderizar
+  // el árbol completo — es lo que decide si la acción de tomar se ofrece.
+
+  it('sin pedido en curso, decide renderizar la lista de disponibles', async () => {
+    vi.mocked(pedirALaApi).mockResolvedValue({ order: null });
+
+    const vista = await PaginaRepartidor();
+    const contenido = vista.props.children[1];
+
+    expect(contenido.type).toBe(PedidosDisponibles);
+  });
+
+  it('con un pedido en curso, decide no renderizar la lista de disponibles', async () => {
+    vi.mocked(pedirALaApi).mockResolvedValue({ order: PEDIDO_EN_CURSO });
+
+    const vista = await PaginaRepartidor();
+    const contenido = vista.props.children[1];
+
+    expect(contenido.type).toBe(PedidoEnCurso);
+    expect(contenido.props.order).toBe(PEDIDO_EN_CURSO);
   });
 });
 

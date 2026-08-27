@@ -237,7 +237,7 @@ entradas de historial en E4.
 
 - [X] T031 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
-- [ ] T032 Recorrer V-01 a V-14 de `specs/007-reparto-repartidor/quickstart.md` con sesiones
+- [X] T032 Recorrer V-01 a V-14 de `specs/007-reparto-repartidor/quickstart.md` con sesiones
   reales de administrador, cliente, negocio y dos repartidores; registrar el resultado en
   `specs/007-reparto-repartidor/verificacion.md`
 - [ ] T033 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E5
