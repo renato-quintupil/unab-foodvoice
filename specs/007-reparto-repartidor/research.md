@@ -108,18 +108,18 @@ distinto que ni siquiera tiene el campo.
   necesita los demás datos del pedido en curso (productos, dirección) en la misma pantalla; dos
   llamadas para una sola vista no simplifica nada.
 
-## D-071 · `registrarEvento` se generaliza para aceptar el rol del actor
+## D-071 · `registrarEvento` no necesita ningún cambio: ya acepta cualquier rol
 
-**Decisión**: el helper privado `registrarEvento` de `orders.service.ts`, que hoy fija
-`actorRole: Role.NEGOCIO` implícitamente en sus dos llamadas, pasa a recibir `actorRole` como
-parámetro explícito (ya lo recibe hoy, en rigor — el cambio real es que E5 es el primer llamador
-que le pasa `Role.REPARTIDOR`). No se crea un segundo helper ni un `HistoryService`.
+**Decisión**: reutilizar `registrarEvento` de `orders.service.ts` tal cual está, sin modificar su
+firma ni su cuerpo. E5 es simplemente su tercer y cuarto llamador (tomar, soltar), además de
+aceptar/rechazar (E2).
 
-**Razón**: es exactamente la generalización que E4 dejó anotada como decisión de diseño
-pendiente ("el helper transaccional […] podría convenir generalizarse para que las épicas
-futuras lo reusen sin reinventar la atomicidad ya resuelta"). El helper ya es genérico en su
-firma; lo único que cambia es que ahora tiene un segundo y tercer llamador (tomar, soltar) además
-de aceptar/rechazar.
+**Razón**: al revisar el código (`services/api/src/orders/orders.service.ts:305-313`) el helper
+**ya** recibe `actorRole: Role` como parámetro genérico — E2 nunca lo restringió a `NEGOCIO` en
+su firma, solo en sus dos únicas llamadas hasta hoy. No hace falta la generalización que E4 había
+anotado como pendiente: esa anotación resultó ser innecesaria una vez revisado el código real, no
+una tarea de esta épica. La única acción concreta es documentar en el comentario del propio
+helper que ahora tiene llamadores con más de un rol.
 
 **Alternativas consideradas**:
 - *Duplicar la inserción de `OrderStatusEvent` dentro de los nuevos métodos de `OrdersService`*:

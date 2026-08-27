@@ -75,15 +75,16 @@ historias necesitan. Ninguna historia puede empezar sin esto.
   `packages/shared/src/types/api.ts` (D-070)
 - [ ] T008 Exportar los cuatro mensajes nuevos y `DeliveryOrderDto` desde
   `packages/shared/src/index.ts` (depende de T006, T007)
-- [ ] T009 [P] Añadir `ErrorCode.DELIVERY_ORDER_ALREADY_ASSIGNED`,
+- [ ] T009 Añadir `ErrorCode.DELIVERY_ORDER_ALREADY_ASSIGNED`,
   `ErrorCode.DELIVERY_ALREADY_HAS_ORDER` y `ErrorCode.DELIVERY_ORDER_NOT_YOURS` al catálogo
   cerrado de `services/api/src/common/errors.ts`, con sus tres funciones constructoras
   (`pedidoYaNoDisponible()`, `repartidorYaTienePedido()`, `pedidoNoAsignadoATi()`) devolviendo
-  `409` con el mensaje correspondiente de T006
-- [ ] T010 Generalizar `registrarEvento` en `services/api/src/orders/orders.service.ts` para que
-  sus dos llamadas existentes (`confirmar`, `transicionar`) sigan pasando el `actorRole`
-  explícito que ya reciben — sin cambio de comportamiento, solo confirmar que la firma admite
-  `Role.REPARTIDOR` como tercer valor posible (D-071)
+  `409` con el mensaje correspondiente (depende de T006 — usa sus constantes `MSG_*`)
+- [ ] T010 Confirmar (sin cambio de código) que `registrarEvento` en
+  `services/api/src/orders/orders.service.ts` ya acepta `actorRole: Role` como parámetro
+  genérico — E2 nunca lo restringió a `NEGOCIO` — y que admite `Role.REPARTIDOR` sin
+  modificación; dejar una nota en el propio comentario del helper señalando que E5 es su primer
+  llamador con un rol distinto (D-071)
 
 **Punto de control**: `packages/shared` compila, la migración aplica en limpio
 (`pnpm --filter api db:migrate`), y `machine.ts` acepta la transición de retroceso en una prueba
@@ -113,7 +114,8 @@ desaparece para el otro repartidor, y comprobar la condición de carrera.
   `services/api/test/delivery-orders-take.integration-spec.ts`: transiciona a
   `asignado_repartidor` y registra el evento de historial; `404 NOT_FOUND` si no existe;
   `409 DELIVERY_ORDER_ALREADY_ASSIGNED` si ya no está disponible; `409
-  DELIVERY_ALREADY_HAS_ORDER` si el repartidor ya tiene uno en curso
+  DELIVERY_ALREADY_HAS_ORDER` si el repartidor ya tiene uno en curso; `403 FORBIDDEN` con
+  sesión de `NEGOCIO` o `CLIENTE` (FR-010)
 - [ ] T013 [P] [US1] Crear la prueba fallida de concurrencia real en
   `services/api/test/delivery-orders-race.integration-spec.ts`: dos solicitudes `PUT
   .../:id/take` simultáneas de dos repartidores distintos sobre el mismo pedido — exactamente
@@ -203,7 +205,8 @@ entradas de historial en E4.
   `services/api/test/delivery-orders-release.integration-spec.ts`: transiciona de vuelta a
   `en_preparacion` sin repartidor y registra el evento; `404 NOT_FOUND` si no existe; `409
   DELIVERY_ORDER_NOT_YOURS` si no está asignado al repartidor autenticado; el pedido vuelto a
-  soltar reaparece en `GET /delivery/orders/available` (FR-008, FR-009)
+  soltar reaparece en `GET /delivery/orders/available` (FR-008, FR-009); `403 FORBIDDEN` con
+  sesión de `NEGOCIO` o `CLIENTE` (FR-010)
 - [ ] T027 [P] [US3] Extender `services/api/test/orders-history-client.integration-spec.ts` (E4,
   `specs/005-trazabilidad-pedido`) o crear una prueba equivalente en E5: tras tomar y soltar un
   pedido, `GET /orders/:id` muestra ambas entradas nuevas en orden cronológico, sin ningún
@@ -234,7 +237,7 @@ entradas de historial en E4.
 
 - [ ] T031 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
-- [ ] T032 Recorrer V-01 a V-13 de `specs/007-reparto-repartidor/quickstart.md` con sesiones
+- [ ] T032 Recorrer V-01 a V-14 de `specs/007-reparto-repartidor/quickstart.md` con sesiones
   reales de administrador, cliente, negocio y dos repartidores; registrar el resultado en
   `specs/007-reparto-repartidor/verificacion.md`
 - [ ] T033 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E5
@@ -269,8 +272,8 @@ entradas de historial en E4.
 
 - T005, T006, T007 (máquina de estados, mensajes, DTO) tocan archivos distintos de
   `packages/shared` y son paralelizables entre sí, apenas termine T004.
-- T009 (catálogo de errores) es paralelizable con T005–T007: vive en `services/api`, no en
-  `packages/shared`.
+- T009 (catálogo de errores en `services/api`) usa las constantes `MSG_*` de T006 — se ejecuta
+  después de T006, no en paralelo con ella, aunque viva en un paquete distinto.
 - Las pruebas de cada historia (T011+T012+T013, T020+T021, T026+T027) son paralelizables entre
   sí dentro de su fase.
 
@@ -283,6 +286,8 @@ entradas de historial en E4.
 Task: "Actualizar packages/shared/src/order-state/machine.ts con la transición de retroceso"
 Task: "Añadir los cuatro mensajes nuevos en packages/shared/src/messages/etiquetas.ts"
 Task: "Añadir DeliveryOrderDto en packages/shared/src/types/api.ts"
+
+# Recién después de que termine el mensaje anterior (T006):
 Task: "Añadir los tres códigos de error nuevos en services/api/src/common/errors.ts"
 ```
 

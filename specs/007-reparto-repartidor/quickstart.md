@@ -96,6 +96,7 @@ Con la sesión del **negocio**.
 | Paso | Qué hacer | Qué debe ocurrir |
 |---|---|---|
 | **V-13** | Intentar aceptar o rechazar un pedido que ya está en `asignado_repartidor` | El sistema lo impide — el negocio solo actúa sobre pedidos en `creado` (RN-010, E2), sin cambios de esta épica |
+| **V-14** | Con la sesión del **negocio** o del **cliente**, intentar llamar `PUT /delivery/orders/:id/take` o `.../release` (por ejemplo, con las herramientas de desarrollador del navegador) | El sistema responde `403` — ningún rol distinto de `REPARTIDOR` puede tomar ni soltar un pedido (FR-010) |
 
 ## Trazabilidad criterio → pasos
 

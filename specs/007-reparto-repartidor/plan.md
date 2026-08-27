@@ -34,9 +34,10 @@ Las cinco decisiones que gobiernan el diseño:
 4. **El teléfono del cliente se expone en un DTO nuevo, no en `OrderSummaryDto`** (D-070):
    `DeliveryOrderDto` extiende `OrderSummaryDto` por composición, igual que `OrderDetailDto` lo
    hizo en E4, para no tocar los consumidores existentes de `OrderSummaryDto`.
-5. **`registrarEvento` se generaliza para aceptar `actorRole` variable, sin duplicar la
-   transacción** (D-071): E2 lo escribió pensando solo en `NEGOCIO`; E5 es el primer consumidor
-   que necesita `REPARTIDOR`, tal como E4 había anotado que convendría.
+5. **`registrarEvento` no necesita ningún cambio de código** (D-071): ya acepta `actorRole:
+   Role` como parámetro genérico desde E2; E5 es simplemente su tercer y cuarto llamador
+   (tomar, soltar). La generalización que E4 había anotado como pendiente resultó innecesaria al
+   revisar el código real.
 
 ## Contexto Técnico
 
@@ -151,7 +152,7 @@ services/api/prisma/
     └── <timestamp>_reparto/          # NUEVO
 
 services/api/src/orders/
-├── orders.service.ts                 # MODIFICADO · generaliza registrarEvento, agrega tomar/soltar/listas
+├── orders.service.ts                 # MODIFICADO · agrega tomar/soltar/listas (registrarEvento no cambia, D-071)
 └── delivery-orders.controller.ts     # NUEVO · GET .../available, GET .../current, PUT .../take, .../release
 
 apps/web/src/app/repartidor/
