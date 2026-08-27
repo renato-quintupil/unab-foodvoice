@@ -93,8 +93,10 @@ export {
 export {
   ConfirmOrderSchema,
   RejectOrderSchema,
+  ComplainOrderSchema,
   type ConfirmOrderInput,
   type RejectOrderInput,
+  type ComplainOrderInput,
 } from './schemas/order';
 export { SearchRequestSchema, type SearchRequest } from './schemas/search';
 
@@ -154,6 +156,9 @@ export {
   MSG_PEDIDO_YA_NO_DISPONIBLE,
   MSG_REPARTIDOR_YA_TIENE_PEDIDO,
   MSG_PEDIDO_NO_ASIGNADO_A_TI,
+  MSG_MOTIVO_RECLAMO_REQUERIDO,
+  MSG_PEDIDO_NO_ENTREGADO,
+  MSG_SIN_PEDIDOS_CERRADOS,
 } from './messages/es';
 export {
   ETIQUETA_ROL,

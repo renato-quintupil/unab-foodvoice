@@ -390,6 +390,10 @@ model Order {
   /// `rejection_reason`). Se limpia al soltar el pedido (FR-008, D-066).
   deliveryUserId  String?     @map("delivery_user_id") @db.Uuid
   assignedAt      DateTime?   @map("assigned_at") @db.Timestamptz(3)
+  /// E7 · Cierre del servicio. `NULL` salvo cuando el pedido se cerró por un
+  /// reclamo del cliente — mismo criterio de invariante aplicada por el
+  /// servicio, no por `CHECK`, que ya usa `rejection_reason`.
+  complaintReason String?     @map("complaint_reason")
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 

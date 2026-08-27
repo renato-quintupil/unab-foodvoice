@@ -42,6 +42,12 @@ export class BusinessOrdersController {
     return this.pedidos.rechazadosDelNegocio();
   }
 
+  /** `GET /api/v1/business/orders/closed` (E7, FR-011, D-081). */
+  @Get('closed')
+  cerrados(): Promise<{ items: OrderSummaryDto[] }> {
+    return this.pedidos.cerradosDelNegocio();
+  }
+
   /** `GET /api/v1/business/orders/:id` (E4, FR-004, D-053). */
   @Get(':id')
   detalle(@Param('id') id: string): Promise<OrderDetailDto> {

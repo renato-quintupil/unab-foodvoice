@@ -278,6 +278,20 @@ export const MSG_REPARTIDOR_YA_TIENE_PEDIDO =
 /** FR-008. El pedido ya no está asignado al repartidor autenticado. */
 export const MSG_PEDIDO_NO_ASIGNADO_A_TI = 'Este pedido ya no está asignado a ti.';
 
+// ---------------------------------------------------------------------------
+// E7 · Cierre del servicio
+// ---------------------------------------------------------------------------
+
+/** FR-007. Motivo de reclamo ausente o demasiado corto al cerrar un pedido entregado. */
+export const MSG_MOTIVO_RECLAMO_REQUERIDO = 'Cuéntanos qué pasó para poder registrar tu reclamo.';
+
+/** FR-009, D-076. El pedido no está en `entregado` (incluye uno ya `cerrado`). */
+export const MSG_PEDIDO_NO_ENTREGADO =
+  'Este pedido no está entregado. Actualiza la página para ver su estado actual.';
+
+/** FR-011, D-081. El negocio todavía no tiene ningún pedido cerrado. */
+export const MSG_SIN_PEDIDOS_CERRADOS = 'Todavía no tienes pedidos cerrados.';
+
 export const AYUDA_DESCRIPCION_CATEGORIA = {
   explicacion:
     'Esta descripción es lo que permitirá encontrar la categoría cuando el cliente pida algo ' +

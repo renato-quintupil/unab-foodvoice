@@ -26,6 +26,7 @@ import {
   MSG_PEDIDO_YA_NO_DISPONIBLE,
   MSG_REPARTIDOR_YA_TIENE_PEDIDO,
   MSG_PEDIDO_NO_ASIGNADO_A_TI,
+  MSG_PEDIDO_NO_ENTREGADO,
 } from '@foodvoice/shared';
 
 /**
@@ -75,6 +76,10 @@ export const ErrorCode = {
   DELIVERY_ORDER_ALREADY_ASSIGNED: 'DELIVERY_ORDER_ALREADY_ASSIGNED',
   DELIVERY_ALREADY_HAS_ORDER: 'DELIVERY_ALREADY_HAS_ORDER',
   DELIVERY_ORDER_NOT_YOURS: 'DELIVERY_ORDER_NOT_YOURS',
+  // E7 · Cierre del servicio. `409`: el pedido no está en `entregado`
+  // (incluye uno ya `cerrado`) — un conflicto con el estado actual, no un
+  // error de forma.
+  ORDER_NOT_DELIVERED: 'ORDER_NOT_DELIVERED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -289,3 +294,11 @@ export const repartidorYaTienePedido = (): AppError =>
 /** `409 DELIVERY_ORDER_NOT_YOURS` (FR-008). El pedido no está asignado al repartidor autenticado. */
 export const pedidoNoAsignadoATi = (): AppError =>
   new AppError(409, ErrorCode.DELIVERY_ORDER_NOT_YOURS, MSG_PEDIDO_NO_ASIGNADO_A_TI);
+
+// ---------------------------------------------------------------------------
+// E7 · Cierre del servicio (`contracts/api.md` § Códigos de error que E7 añade)
+// ---------------------------------------------------------------------------
+
+/** `409 ORDER_NOT_DELIVERED` (D-076). El pedido no está en `entregado` (incluye uno ya `cerrado`). */
+export const pedidoNoEntregado = (): AppError =>
+  new AppError(409, ErrorCode.ORDER_NOT_DELIVERED, MSG_PEDIDO_NO_ENTREGADO);

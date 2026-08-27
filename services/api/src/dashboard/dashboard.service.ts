@@ -176,6 +176,7 @@ function pedidoADetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
     status: ESTADO_A_COMPARTIDO[pedido.status],
     addressText: pedido.addressText,
     rejectionReason: pedido.rejectionReason,
+    complaintReason: pedido.complaintReason,
     lines: pedido.lines.map(lineaADto),
     createdAt: pedido.createdAt.toISOString(),
     history: pedido.statusEvents.map((evento) => ({

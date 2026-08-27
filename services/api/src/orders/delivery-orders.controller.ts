@@ -47,4 +47,13 @@ export class DeliveryOrdersController {
   ): Promise<OrderSummaryDto> {
     return this.pedidos.soltar(id, peticion.sesion.userId);
   }
+
+  /** `PUT /api/v1/delivery/orders/:id/deliver` (E7, FR-001–FR-004, FR-012). */
+  @Put(':id/deliver')
+  entregar(
+    @Req() peticion: PeticionConSesion,
+    @Param('id') id: string,
+  ): Promise<OrderSummaryDto> {
+    return this.pedidos.entregar(id, peticion.sesion.userId);
+  }
 }

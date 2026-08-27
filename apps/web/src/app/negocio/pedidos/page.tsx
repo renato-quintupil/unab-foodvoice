@@ -39,9 +39,14 @@ export default async function PaginaBandejaNegocio({
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Pedidos</h1>
-        <Link href="/negocio/pedidos/rechazados" className="text-sm underline">
-          Ver rechazados
-        </Link>
+        <div className="flex gap-4">
+          <Link href="/negocio/pedidos/rechazados" className="text-sm underline">
+            Ver rechazados
+          </Link>
+          <Link href="/negocio/pedidos/cerrados" className="text-sm underline">
+            Ver cerrados
+          </Link>
+        </div>
       </header>
 
       {bandeja.items.length === 0 ? (

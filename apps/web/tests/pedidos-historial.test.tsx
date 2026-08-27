@@ -21,6 +21,7 @@ const PEDIDO_RECHAZADO: OrderDetailDto = {
   status: 'rechazado',
   addressText: 'Los Aromos 123',
   rejectionReason: 'Se agotó el ingrediente principal',
+  complaintReason: null,
   lines: [{ productId: 'p1', productName: 'Pizza Napolitana', price: 5990, quantity: 1 }],
   createdAt: '2026-08-23T14:00:00.000Z',
   history: [

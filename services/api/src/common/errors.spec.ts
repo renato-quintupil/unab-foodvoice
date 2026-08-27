@@ -23,6 +23,7 @@ import {
   MSG_PEDIDO_YA_NO_DISPONIBLE,
   MSG_REPARTIDOR_YA_TIENE_PEDIDO,
   MSG_PEDIDO_NO_ASIGNADO_A_TI,
+  MSG_PEDIDO_NO_ENTREGADO,
 } from '@foodvoice/shared';
 import {
   autoproteccion,
@@ -42,6 +43,7 @@ import {
   etiquetaDireccionYaExiste,
   noEncontrado,
   pedidoNoAsignadoATi,
+  pedidoNoEntregado,
   pedidoNoPendiente,
   pedidoYaNoDisponible,
   precioCambio,
@@ -51,7 +53,7 @@ import {
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los veintiocho códigos y ninguno más', () => {
+  it('declara los veintinueve códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -86,6 +88,8 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         'DELIVERY_ORDER_ALREADY_ASSIGNED',
         'DELIVERY_ALREADY_HAS_ORDER',
         'DELIVERY_ORDER_NOT_YOURS',
+        // El uno que suma E7 (contracts/api.md § Códigos de error que E7 añade).
+        'ORDER_NOT_DELIVERED',
       ].sort(),
     );
   });
@@ -154,6 +158,12 @@ describe('Cada error lleva su código, su estado y su mensaje en español', () =
       status: 409,
       code: 'DELIVERY_ORDER_NOT_YOURS',
       mensaje: MSG_PEDIDO_NO_ASIGNADO_A_TI,
+    },
+    {
+      crear: pedidoNoEntregado,
+      status: 409,
+      code: 'ORDER_NOT_DELIVERED',
+      mensaje: MSG_PEDIDO_NO_ENTREGADO,
     },
   ];
 

@@ -214,6 +214,8 @@ export type OrderSummaryDto = {
   addressText: string;
   /** Solo presente cuando `status === 'rechazado'` (FR-033). */
   rejectionReason: string | null;
+  /** Solo presente cuando `status === 'cerrado'` por un reclamo del cliente (E7, FR-008). */
+  complaintReason: string | null;
   lines: OrderLineDto[];
   createdAt: string;
 };

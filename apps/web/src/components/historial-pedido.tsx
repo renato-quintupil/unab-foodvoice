@@ -73,6 +73,13 @@ export function HistorialPedido({ pedido, titulo, volverA }: Props) {
                     Motivo: {pedido.rejectionReason}
                   </p>
                 )}
+              {indice === pedido.history.length - 1 &&
+                ultimoEvento?.resultingStatus === OrderStatus.CERRADO &&
+                pedido.complaintReason && (
+                  <p className="text-sm text-[var(--color-error)]">
+                    Reclamo: {pedido.complaintReason}
+                  </p>
+                )}
             </li>
           ))}
         </ol>

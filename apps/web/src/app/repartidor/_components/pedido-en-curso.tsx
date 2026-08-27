@@ -1,4 +1,5 @@
 import { formatearPrecio, type DeliveryOrderDto } from '@foodvoice/shared';
+import { BotonEntregar } from './boton-entregar';
 import { BotonSoltar } from './boton-soltar';
 
 /**
@@ -28,8 +29,9 @@ export function PedidoEnCurso({ order }: { order: DeliveryOrderDto }) {
           </li>
         ))}
       </ul>
-      <div className="self-end">
+      <div className="flex justify-end gap-2 self-end">
         <BotonSoltar pedidoId={order.id} />
+        <BotonEntregar pedidoId={order.id} />
       </div>
     </section>
   );

@@ -3,6 +3,7 @@ import {
   MSG_DIRECCION_REQUERIDA,
   MSG_DIRECCION_TEXTO_VACIO,
   MSG_MOTIVO_RECHAZO_REQUERIDO,
+  MSG_MOTIVO_RECLAMO_REQUERIDO,
 } from '../messages/es';
 
 /**
@@ -51,5 +52,15 @@ export const RejectOrderSchema = z.object({
   reason: z.string().trim().min(10, MSG_MOTIVO_RECHAZO_REQUERIDO).max(500),
 });
 
+/**
+ * Reclamo al cerrar un pedido entregado (E7, HU-05, FR-007). Mismo molde
+ * exacto que `RejectOrderSchema`: texto libre, un texto solo de espacios se
+ * rechaza igual que uno vacío.
+ */
+export const ComplainOrderSchema = z.object({
+  reason: z.string().trim().min(10, MSG_MOTIVO_RECLAMO_REQUERIDO).max(500),
+});
+
 export type ConfirmOrderInput = z.infer<typeof ConfirmOrderSchema>;
 export type RejectOrderInput = z.infer<typeof RejectOrderSchema>;
+export type ComplainOrderInput = z.infer<typeof ComplainOrderSchema>;
