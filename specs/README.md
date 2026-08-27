@@ -17,7 +17,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | **E2 · Gestión de pedidos** | HU-01, HU-11, HU-12 | [`003-gestion-pedidos/`](./003-gestion-pedidos/) | **Terminada** · 108 / 108 tareas · construida y verificada, incluida la validación funcional a mano |
 | **E4 · Trazabilidad del pedido** | HU-03 | [`005-trazabilidad-pedido/`](./005-trazabilidad-pedido/) | **Terminada** · 27 / 27 tareas · construida y verificada, incluidos los 12 pasos de validación funcional |
 | **E6 · Búsqueda por voz** | HU-06, HU-13 | [`006-busqueda-por-voz/`](./006-busqueda-por-voz/) | **Terminada** · 39 / 39 tareas · construida y verificada, incluidos los 16 pasos de validación funcional |
-| E5 · Reparto | HU-04 | — | Sin especificar |
+| **E5 · Reparto** | HU-04 | [`007-reparto-repartidor/`](./007-reparto-repartidor/) | **Terminada** · 33 / 33 tareas · construida y verificada, incluidos los 14 pasos de validación funcional |
 | E7 · Cierre del servicio | HU-05 | — | Sin especificar |
 | E8 · Controles y administración | HU-07 | — | Sin especificar |
 | **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 35 / 35 tareas · construida y verificada, incluidos los 26 pasos de validación funcional |
@@ -173,10 +173,11 @@ desde `OrderStatusEvent` (append-only, Principio XII). Con V-11 y V-12 verificad
 también cierra la validación funcional que HU-10 (E1) tenía pendiente de las métricas y reportes
 de pedidos.
 
-Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9, y las
-transiciones que agreguen E5 (reparto) y E7 (cierre) — el mecanismo de esta épica ya queda
-preparado para mostrarlas sin cambios (FR-012), pero su verificación funcional espera a que esas
-épicas existan.
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9. La transición
+que E5 agrega (`en_preparacion → asignado_repartidor`, y su retroceso) ya se mostró sin ningún
+cambio de contrato, exactamente como FR-012 lo dejó preparado — ver la verificación de E5. Falta
+únicamente la que agregue E7 (`asignado_repartidor → entregado → cerrado`), que espera a que esa
+épica exista.
 
 ## E6 · Búsqueda por voz
 
@@ -240,6 +241,52 @@ Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E
 central de E3 —que una descripción en prosa bien escrita baste para la búsqueda por voz, sin
 diccionario de sinónimos— queda **confirmada**: SC-001 se cumplió con el corpus de aceptación
 contra el modelo real, sin necesidad de enriquecer las descripciones del catálogo.
+
+## E5 · Reparto
+
+Rama de trabajo: `007-reparto-repartidor`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./007-reparto-repartidor/spec.md) | Requisitos, escenarios y criterios de éxito de HU-04 |
+| [`plan.md`](./007-reparto-repartidor/plan.md) | Decisiones técnicas (D-066 a D-072) y fases de entrega |
+| [`research.md`](./007-reparto-repartidor/research.md) | Las siete decisiones con su fundamento |
+| [`data-model.md`](./007-reparto-repartidor/data-model.md) | Columnas nuevas de `Order`, migración e índice único parcial |
+| [`contracts/`](./007-reparto-repartidor/contracts/) | Los cuatro endpoints de `delivery/orders` y el contrato compartido |
+| [`quickstart.md`](./007-reparto-repartidor/quickstart.md) | Puesta en marcha y los 14 pasos de validación funcional |
+| [`tasks.md`](./007-reparto-repartidor/tasks.md) | 33 tareas ordenadas por historia |
+| [`verificacion.md`](./007-reparto-repartidor/verificacion.md) | Resultado de la validación, con el defecto que encontró |
+
+Fases de entrega: **A** cimientos (migración de `Order`, `machine.ts`, mensajes y DTO, habilitante)
+→ **B** HU-04 Historia 1, tomar un pedido disponible (P1, MVP) → **C** HU-04 Historia 2, consultar
+el pedido en curso → **D** HU-04 Historia 3, soltar un pedido → **E** pantalla del repartidor →
+**F** validación funcional.
+
+**Por qué se da por terminada.** Las tres historias están construidas — autoservicio del
+repartidor sobre pedidos `en_preparacion` sin intervención del negocio, "un repartidor, un pedido
+a la vez" garantizado por un índice único parcial (mismo mecanismo que la dirección
+predeterminada de E2), y el teléfono del cliente expuesto únicamente en el pedido en curso,
+nunca en la lista de disponibles—, las dos capas automáticas pasan en verde —146 pruebas
+unitarias de `services/api`, 238 de `packages/shared` y 220 de `apps/web`, todas con sus
+umbrales de cobertura, y 633 pruebas de integración en 86 baterías contra PostgreSQL real,
+incluidas las seis nuevas de esta épica con concurrencia real— y la **validación funcional se
+ejecutó el 2026-08-27**, los 14 pasos de `quickstart.md`. **Encontró un defecto real** que
+ninguna prueba automática detectaba —la lista de pedidos disponibles seguía ofreciendo el botón
+"Tomar" aunque el repartidor ya tuviera uno en curso; el servidor lo bloqueaba con `409`, pero
+FR-004 exige que la interfaz no ofrezca la acción en absoluto—, corregido y cubierto por una
+prueba nueva. El detalle está en [`verificacion.md`](./007-reparto-repartidor/verificacion.md).
+
+**Esta épica exigió la primera enmienda constitucional que no vino de escribir la spec, sino de
+diseñar contra ella**: la Historia 3 (soltar un pedido) necesitaba la transición
+`asignado_repartidor → en_preparacion`, que el Principio XII (v2.0.0) no permitía — "no se
+permite ninguna otra transición". Se resolvió enmendando la constitución a **v3.0.0** antes de
+continuar el plan, agregando esa transición como la única excepción de retroceso del sistema,
+restringida al repartidor dueño del pedido. El detalle está en el Sync Impact Report de
+`.specify/memory/constitution.md`.
+
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4/E6. Deja
+preparada la transición `en_preparacion → asignado_repartidor` (y su historial) para que E7
+(Cierre del servicio) construya `asignado_repartidor → entregado → cerrado` sin tocar esta épica.
 
 ## E9 · Navegación y experiencia visual
 
