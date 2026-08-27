@@ -285,6 +285,20 @@ export type AddResolutionResponse =
   | { status: 'CLARIFICATION'; question: string; options: string[] }
   | { status: 'NOT_FOUND' };
 
+// ---------------------------------------------------------------------------
+// E5 · Reparto (contracts/shared.md de 007-reparto-repartidor)
+// ---------------------------------------------------------------------------
+
+/**
+ * El pedido en curso de un repartidor, con el teléfono de contacto del
+ * cliente que `OrderSummaryDto` no lleva (D-070). Extiende `OrderSummaryDto`
+ * por composición — solo `GET /delivery/orders/current` lo devuelve; la
+ * lista de disponibles sigue usando `OrderSummaryDto[]`, sin teléfono.
+ */
+export type DeliveryOrderDto = OrderSummaryDto & {
+  customerPhone: string;
+};
+
 /** Formato único de respuesta de error de la API (`contracts/api.md`). */
 export type ApiError = {
   error: {

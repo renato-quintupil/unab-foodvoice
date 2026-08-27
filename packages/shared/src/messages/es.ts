@@ -261,6 +261,23 @@ export const MSG_LIMITE_BUSQUEDAS =
 export const MSG_BUSQUEDA_NO_DISPONIBLE =
   'No pudimos interpretar tu búsqueda en este momento. Mientras tanto, puedes usar los filtros del menú.';
 
+// ---------------------------------------------------------------------------
+// E5 · Reparto
+// ---------------------------------------------------------------------------
+
+/** FR-006. Sin pedidos `en_preparacion` disponibles para tomar. */
+export const MSG_SIN_PEDIDOS_DISPONIBLES = 'No hay pedidos disponibles por ahora.';
+
+/** FR-005, D-068. El pedido ya no está en `en_preparacion` sin repartidor. */
+export const MSG_PEDIDO_YA_NO_DISPONIBLE = 'Este pedido ya no está disponible.';
+
+/** FR-004, D-069. El repartidor ya tiene un pedido en `asignado_repartidor` sin entregar. */
+export const MSG_REPARTIDOR_YA_TIENE_PEDIDO =
+  'Ya tienes un pedido en curso. Complétalo o suéltalo antes de tomar otro.';
+
+/** FR-008. El pedido ya no está asignado al repartidor autenticado. */
+export const MSG_PEDIDO_NO_ASIGNADO_A_TI = 'Este pedido ya no está asignado a ti.';
+
 export const AYUDA_DESCRIPCION_CATEGORIA = {
   explicacion:
     'Esta descripción es lo que permitirá encontrar la categoría cuando el cliente pida algo ' +

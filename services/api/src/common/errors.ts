@@ -23,6 +23,9 @@ import {
   MSG_SIN_PERMISO,
   MSG_LIMITE_BUSQUEDAS,
   MSG_BUSQUEDA_NO_DISPONIBLE,
+  MSG_PEDIDO_YA_NO_DISPONIBLE,
+  MSG_REPARTIDOR_YA_TIENE_PEDIDO,
+  MSG_PEDIDO_NO_ASIGNADO_A_TI,
 } from '@foodvoice/shared';
 
 /**
@@ -67,6 +70,11 @@ export const ErrorCode = {
   // E6 · Búsqueda por voz (`contracts/api.md` § Códigos de error que E6 añade).
   TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
   SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
+  // E5 · Reparto. Los tres son `409`: describen un conflicto con el estado
+  // actual del pedido o del repartidor, nunca un error de forma del cuerpo.
+  DELIVERY_ORDER_ALREADY_ASSIGNED: 'DELIVERY_ORDER_ALREADY_ASSIGNED',
+  DELIVERY_ALREADY_HAS_ORDER: 'DELIVERY_ALREADY_HAS_ORDER',
+  DELIVERY_ORDER_NOT_YOURS: 'DELIVERY_ORDER_NOT_YOURS',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -265,3 +273,19 @@ export const demasiadasBusquedas = (): AppError =>
 /** `503 SEARCH_UNAVAILABLE` (FR-016, D-065). Timeout, error del proveedor, o JSON inválido tras el reintento. */
 export const busquedaNoDisponible = (): AppError =>
   new AppError(503, ErrorCode.SEARCH_UNAVAILABLE, MSG_BUSQUEDA_NO_DISPONIBLE);
+
+// ---------------------------------------------------------------------------
+// E5 · Reparto (`contracts/api.md` § Códigos de error que E5 añade)
+// ---------------------------------------------------------------------------
+
+/** `409 DELIVERY_ORDER_ALREADY_ASSIGNED` (FR-005, D-068). Otro repartidor lo tomó primero, o ya no está en `en_preparacion`. */
+export const pedidoYaNoDisponible = (): AppError =>
+  new AppError(409, ErrorCode.DELIVERY_ORDER_ALREADY_ASSIGNED, MSG_PEDIDO_YA_NO_DISPONIBLE);
+
+/** `409 DELIVERY_ALREADY_HAS_ORDER` (FR-004, D-069). El repartidor ya tiene un pedido en `asignado_repartidor`. */
+export const repartidorYaTienePedido = (): AppError =>
+  new AppError(409, ErrorCode.DELIVERY_ALREADY_HAS_ORDER, MSG_REPARTIDOR_YA_TIENE_PEDIDO);
+
+/** `409 DELIVERY_ORDER_NOT_YOURS` (FR-008). El pedido no está asignado al repartidor autenticado. */
+export const pedidoNoAsignadoATi = (): AppError =>
+  new AppError(409, ErrorCode.DELIVERY_ORDER_NOT_YOURS, MSG_PEDIDO_NO_ASIGNADO_A_TI);

@@ -150,6 +150,10 @@ export {
   MSG_BUSQUEDA_MUY_LARGA,
   MSG_LIMITE_BUSQUEDAS,
   MSG_BUSQUEDA_NO_DISPONIBLE,
+  MSG_SIN_PEDIDOS_DISPONIBLES,
+  MSG_PEDIDO_YA_NO_DISPONIBLE,
+  MSG_REPARTIDOR_YA_TIENE_PEDIDO,
+  MSG_PEDIDO_NO_ASIGNADO_A_TI,
 } from './messages/es';
 export {
   ETIQUETA_ROL,
@@ -190,4 +194,5 @@ export type {
   SemanticSearchResponse,
   AddResolutionResponse,
   ItemResuelto,
+  DeliveryOrderDto,
 } from './types/api';

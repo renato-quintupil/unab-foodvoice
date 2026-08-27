@@ -5,27 +5,30 @@ trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
 menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual**,
-**E4 · Trazabilidad del pedido** y **E6 · Búsqueda por voz** están
-**construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
+**E4 · Trazabilidad del pedido**, **E6 · Búsqueda por voz** y **E5 · Reparto**
+están **construidas y verificadas**. Los tres espacios de trabajo —`apps/web`,
 `services/api` y `packages/shared`— están poblados, y las dos capas
-automáticas pasan en verde: **587 pruebas unitarias** de `services/api` (143)
-y `packages/shared` (233), más **211 pruebas** sobre `apps/web`, todas con sus
-umbrales de cobertura, y **613 de integración en 80 baterías** contra
+automáticas pasan en verde: **604 pruebas unitarias** de `services/api` (146)
+y `packages/shared` (238), más **220 pruebas** sobre `apps/web`, todas con sus
+umbrales de cobertura, y **633 de integración en 86 baterías** contra
 PostgreSQL real — E9 no agrega baterías de integración porque no toca
-`services/api`; E4 agrega tres; E6 agrega cuatro.
+`services/api`; E4 agrega tres; E6 agrega cuatro; E5 agrega seis, incluida la
+concurrencia real de "un repartidor, un pedido a la vez".
 
-Las seis validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las siete validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
 2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
 enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos; E6 el 2026-08-24, sus 16
 pasos (nueve por Claude contra la aplicación real, siete por una persona con
-micrófono real)— y su detalle está en el `verificacion.md` de cada spec.
+micrófono real); E5 el 2026-08-27, sus 14 pasos, con Claude manejando el
+navegador real— y su detalle está en el `verificacion.md` de cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
 ninguna prueba automática detectaba, siempre del mismo tipo —cada pieza
 funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
-**E9 y E4 son las dos primeras que no encontraron ninguno.**
+**E9 y E4 son las dos únicas que no encontraron ninguno**; E6 encontró uno
+fuera de los 16 pasos y E5 encontró uno dentro de ellos.
 
 - En E1: el error de formulario no quedaba asociado a su campo, y cuatro
   pantallas usaban un mensaje recortado en lugar del compartido (T133, T134).
@@ -59,6 +62,11 @@ funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
   aplicación durante la propia validación, se agregó FR-028 (botón manual
   "Agregar" en los resultados de búsqueda) con una enmienda chica a la spec
   antes de tocar el código, mismo patrón que ya usó E9.
+- En E5: **sí encontró un defecto real**, dentro de los propios 14 pasos —la
+  lista de pedidos disponibles seguía ofreciendo el botón "Tomar" a un
+  repartidor que ya tenía un pedido en curso; el servidor lo rechazaba con
+  `409`, pero la interfaz nunca debió ofrecer la acción (FR-004). Corregido
+  antes de dar la épica por cerrada.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -76,11 +84,48 @@ de pantalla reales (FR-039). La verificación funcional de las métricas de
 pedidos, que esperaba a E4, ya está cerrada — ver "Lo que E4 añadió al código"
 abajo. La apuesta central de E3 —que una descripción en prosa bien escrita
 baste para la búsqueda por voz, sin diccionario de sinónimos— **la confirmó
-E6**: SC-001 se cumplió contra el modelo real sin enriquecer el catálogo. La
-siguiente épica del orden sugerido es **E5** (el orden es E1 → E3 → E2 → E4 →
-E6 → E5 → E7 → E8); **E9 es transversal y no participa de ese orden** — se
-completó en paralelo, envolviendo con navegación las pantallas que E1+E3+E2 ya
-habían construido.
+E6**: SC-001 se cumplió contra el modelo real sin enriquecer el catálogo. **E5
+llenó el único vacío real de la máquina de estados**: hasta entonces no
+existía ningún camino para que un pedido saliera de `en_preparacion` — su
+Historia 3 (soltar un pedido) exigió además la primera enmienda
+constitucional que no vino de escribir una spec nueva, sino de diseñar
+contra una ya redactada: la constitución pasó a **v3.0.0** para permitir la
+única transición de retroceso del sistema (`asignado_repartidor →
+en_preparacion`), ver el Sync Impact Report de
+`.specify/memory/constitution.md`. La siguiente épica del orden sugerido es
+**E7** (el orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8); **E9 es
+transversal y no participa de ese orden** — se completó en paralelo,
+envolviendo con navegación las pantallas que E1+E3+E2 ya habían construido.
+
+### Lo que E5 añadió al código
+
+- **Constitución**: enmienda a **v3.0.0** del Principio XII — agrega
+  `asignado_repartidor → en_preparacion` como única transición de retroceso
+  del sistema, restringida al repartidor dueño del pedido sobre su propio
+  pedido. Es la primera enmienda de esta épica motivada por diseñar la
+  Historia 3 contra la máquina de estados real, no por escribir la spec.
+- **`packages/shared`**: `DeliveryOrderDto` (`OrderSummaryDto` extendido por
+  composición con `customerPhone`, D-070) — solo lo devuelve el pedido en
+  curso, nunca la lista de disponibles. Cuatro mensajes nuevos. `machine.ts`
+  actualizado con la transición de retroceso de la enmienda 3.0.0.
+- **`services/api`**: dos columnas nuevas en `Order` —`delivery_user_id` y
+  `assigned_at`, ambas nulas salvo en `asignado_repartidor`, mismo criterio
+  que `rejection_reason`— y `DeliveryOrdersController` (`delivery/orders`,
+  D-067) con sus cuatro endpoints: `available`, `current`, `:id/take`,
+  `:id/release`. **"Un repartidor, un pedido a la vez" es un índice único
+  parcial** (`order_one_active_delivery_per_user_key`, D-069) — mismo
+  mecanismo que ya usó E2 para la dirección predeterminada—, no solo una
+  comprobación de la aplicación. `registrarEvento` (E2) no necesitó ningún
+  cambio: ya aceptaba cualquier `Role` desde que se escribió.
+- **`apps/web`**: la pantalla de `/repartidor` reemplaza el placeholder sin
+  acciones que dejó E1 — pedido en curso (con el teléfono del cliente) y
+  lista de disponibles, mutuamente excluyentes en una sola consulta de
+  servidor (FR-004: un repartidor con un pedido en curso no debe encontrar
+  ninguna acción para tomar otro, ni siquiera un botón deshabilitado —
+  fue justo el defecto que encontró la validación funcional).
+- **Migración nueva**: las dos columnas de `Order` más el índice único
+  parcial. Sin tabla nueva: la asignación vive en la misma fila que ya
+  existía, no en una entidad de reparto aparte.
 
 ### Lo que E4 añadió al código
 

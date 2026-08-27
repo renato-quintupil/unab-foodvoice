@@ -85,6 +85,14 @@ const LOS_DE_BUSQUEDA_POR_VOZ = [
   'MSG_BUSQUEDA_NO_DISPONIBLE',
 ] as const;
 
+/** Los de E5 (`007-reparto-repartidor`, `contracts/shared.md` § Mensajes nuevos). */
+const LOS_DE_REPARTO = [
+  'MSG_SIN_PEDIDOS_DISPONIBLES',
+  'MSG_PEDIDO_YA_NO_DISPONIBLE',
+  'MSG_REPARTIDOR_YA_TIENE_PEDIDO',
+  'MSG_PEDIDO_NO_ASIGNADO_A_TI',
+] as const;
+
 describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
   it('los doce de E1 existen y no están vacíos', () => {
     for (const nombre of LOS_DOCE) {
@@ -104,12 +112,26 @@ describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
 
   it('el archivo declara exactamente los conocidos y ninguno más', () => {
     expect(Object.keys(mensajes).sort()).toEqual(
-      [...LOS_DOCE, ...LOS_DEL_CATALOGO, ...LOS_DE_PEDIDOS, ...LOS_DE_BUSQUEDA_POR_VOZ].sort(),
+      [
+        ...LOS_DOCE,
+        ...LOS_DEL_CATALOGO,
+        ...LOS_DE_PEDIDOS,
+        ...LOS_DE_BUSQUEDA_POR_VOZ,
+        ...LOS_DE_REPARTO,
+      ].sort(),
     );
   });
 
   it('los cuatro de E6 existen y no están vacíos', () => {
     for (const nombre of LOS_DE_BUSQUEDA_POR_VOZ) {
+      const texto = mensajes[nombre];
+      expect(typeof texto, nombre).toBe('string');
+      expect(texto.trim().length, nombre).toBeGreaterThan(0);
+    }
+  });
+
+  it('los cuatro de E5 existen y no están vacíos', () => {
+    for (const nombre of LOS_DE_REPARTO) {
       const texto = mensajes[nombre];
       expect(typeof texto, nombre).toBe('string');
       expect(texto.trim().length, nombre).toBeGreaterThan(0);

@@ -5,6 +5,7 @@ import {
   PAGE_SIZE,
   type BusinessOrdersQuery,
   type ConfirmOrderInput,
+  type DeliveryOrderDto,
   type OrderDetailDto,
   type OrderLineDto,
   type OrderSummaryDto,
@@ -16,8 +17,11 @@ import {
   carritoVacio,
   direccionRequerida,
   noEncontrado,
+  pedidoNoAsignadoATi,
   pedidoNoPendiente,
+  pedidoYaNoDisponible,
   precioCambio,
+  repartidorYaTienePedido,
 } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -32,6 +36,16 @@ const CON_DETALLE = {
   },
 } satisfies Prisma.OrderInclude;
 type OrdenConDetalle = Prisma.OrderGetPayload<{ include: typeof CON_DETALLE }>;
+
+/** Código de PostgreSQL para violación de restricción única (E5, D-069). */
+const VIOLACION_DE_UNICIDAD = 'P2002';
+
+/** E5 · Reparto. El pedido en curso del repartidor, con el teléfono del cliente (D-070). */
+const CON_TELEFONO_CLIENTE = {
+  lines: true,
+  user: { select: { phone: true } },
+} satisfies Prisma.OrderInclude;
+type OrdenConTelefonoCliente = Prisma.OrderGetPayload<{ include: typeof CON_TELEFONO_CLIENTE }>;
 
 /**
  * `OrderStatus` de Prisma usa identificadores en mayúscula (`CREADO`) porque
@@ -295,12 +309,134 @@ export class OrdersService {
 
     return aDto(resultado);
   }
+
+  // -------------------------------------------------------------------------
+  // E5 · Reparto (HU-04, FR-001–FR-013)
+  // -------------------------------------------------------------------------
+
+  /** `GET /delivery/orders/available` (FR-001, FR-006). */
+  async disponiblesParaRepartidor(): Promise<{ items: OrderSummaryDto[] }> {
+    const filas = await this.prisma.order.findMany({
+      where: { status: OrderStatus.EN_PREPARACION, deliveryUserId: null },
+      include: CON_LINEAS,
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return { items: filas.map(aDto) };
+  }
+
+  /**
+   * `GET /delivery/orders/current` (FR-007). Siempre `200`, con `{ order: null }`
+   * cuando el repartidor no tiene ninguno en curso — mismo criterio que `GET
+   * /cart` (D-046): no es un error no tener nada que mostrar.
+   */
+  async enCursoDelRepartidor(repartidorId: string): Promise<{ order: DeliveryOrderDto | null }> {
+    const pedido = await this.prisma.order.findFirst({
+      where: { deliveryUserId: repartidorId, status: OrderStatus.ASIGNADO_REPARTIDOR },
+      include: CON_TELEFONO_CLIENTE,
+    });
+    return { order: pedido ? aDeliveryDto(pedido) : null };
+  }
+
+  /**
+   * `PUT /delivery/orders/:id/take` (FR-002–FR-005, FR-012). Autoservicio: el
+   * repartidor toma cualquier pedido disponible, sin que el negocio
+   * intervenga. Un repartidor con un pedido en curso no puede tomar otro
+   * (FR-004) — comprobado antes de la escritura y respaldado por el índice
+   * único parcial `order_one_active_delivery_per_user_key` (D-069), que es
+   * quien realmente cierra la ventana de carrera entre dos pedidos distintos.
+   */
+  async tomar(id: string, repartidorId: string): Promise<OrderSummaryDto> {
+    const yaTieneUno = await this.prisma.order.findFirst({
+      where: { deliveryUserId: repartidorId, status: OrderStatus.ASIGNADO_REPARTIDOR },
+      select: { id: true },
+    });
+    if (yaTieneUno) throw repartidorYaTienePedido();
+
+    try {
+      const resultado = await this.prisma.$transaction(async (tx) => {
+        const { count } = await tx.order.updateMany({
+          where: { id, status: OrderStatus.EN_PREPARACION, deliveryUserId: null },
+          data: {
+            status: OrderStatus.ASIGNADO_REPARTIDOR,
+            deliveryUserId: repartidorId,
+            assignedAt: new Date(),
+          },
+        });
+        if (count === 0) {
+          // Igual criterio que `transicionar()`: `updateMany` no distingue
+          // "no existe" de "ya no disponible" — ambos dan count 0—, así que se
+          // relee para dar el código correcto (404 vs 409, contracts/api.md).
+          const existe = await tx.order.findUnique({ where: { id } });
+          if (!existe) throw noEncontrado();
+          throw pedidoYaNoDisponible();
+        }
+
+        await registrarEvento(tx, {
+          orderId: id,
+          previousStatus: OrderStatus.EN_PREPARACION,
+          resultingStatus: OrderStatus.ASIGNADO_REPARTIDOR,
+          actorUserId: repartidorId,
+          actorRole: Role.REPARTIDOR,
+        });
+
+        return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+      });
+
+      return aDto(resultado);
+    } catch (error) {
+      // Respaldo del índice único parcial (D-069): si el `SELECT` previo no
+      // alcanzó a ver un segundo pedido tomado por el mismo repartidor casi
+      // al mismo tiempo, la base de datos rechaza esta escritura igual.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === VIOLACION_DE_UNICIDAD) {
+        throw repartidorYaTienePedido();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * `PUT /delivery/orders/:id/release` (FR-008, FR-009, FR-012). Dispara la
+   * transición de retroceso habilitada por la enmienda constitucional 3.0.0.
+   * El pedido vuelve a `en_preparacion` sin repartidor, indistinguible de uno
+   * que nunca fue tomado (FR-009) — puede volver a tomarlo cualquiera,
+   * incluido quien lo soltó.
+   */
+  async soltar(id: string, repartidorId: string): Promise<OrderSummaryDto> {
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: OrderStatus.ASIGNADO_REPARTIDOR, deliveryUserId: repartidorId },
+        data: { status: OrderStatus.EN_PREPARACION, deliveryUserId: null, assignedAt: null },
+      });
+      if (count === 0) {
+        const existe = await tx.order.findUnique({ where: { id } });
+        if (!existe) throw noEncontrado();
+        throw pedidoNoAsignadoATi();
+      }
+
+      await registrarEvento(tx, {
+        orderId: id,
+        previousStatus: OrderStatus.ASIGNADO_REPARTIDOR,
+        resultingStatus: OrderStatus.EN_PREPARACION,
+        actorUserId: repartidorId,
+        actorRole: Role.REPARTIDOR,
+      });
+
+      return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+    });
+
+    return aDto(resultado);
+  }
 }
 
 /**
  * Inserta la entrada de historial dentro de la transacción que la produce
  * (D-047, D-048). Helper privado: no hay `HistoryService` ni DTO público
  * (D-050) — E2 no expone ninguna consulta de este historial.
+ *
+ * `actorRole` ya era genérico desde que se escribió (D-071, E5): E2 solo lo
+ * llamaba con `Role.NEGOCIO`, pero la firma nunca lo restringió. `tomar` y
+ * `soltar` (E5) son su tercer y cuarto llamador, con `Role.REPARTIDOR`, sin
+ * necesitar ningún cambio aquí.
  */
 async function registrarEvento(
   tx: Prisma.TransactionClient,
@@ -344,6 +480,13 @@ function aDetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
       actorRole: evento.actorRole,
       occurredAt: evento.occurredAt.toISOString(),
     })),
+  };
+}
+
+function aDeliveryDto(pedido: OrdenConTelefonoCliente): DeliveryOrderDto {
+  return {
+    ...aDto(pedido),
+    customerPhone: pedido.user.phone,
   };
 }
 

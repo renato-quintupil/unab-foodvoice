@@ -1,4 +1,26 @@
 <!--
+Sync Impact Report · enmienda 2026-08-27
+- Versión: 2.0.0 → 3.0.0
+- Tipo de cambio: MAJOR (redefinición incompatible de la máquina de estados del Principio XII)
+- Principios modificados: XII · Trazabilidad del pedido de punta a punta
+  Se agrega la transición `asignado_repartidor → en_preparacion` al conjunto cerrado de
+  transiciones permitidas, para que un repartidor pueda devolver ("soltar") un pedido que tomó
+  antes de entregarlo. Es la primera transición de retroceso de la máquina: hasta esta enmienda
+  el principio garantizaba que "no hay transiciones de retroceso" fuera de la rama `rechazado`
+  (así lo documentaba también el comentario de `packages/shared/src/order-state/machine.ts`);
+  esa garantía deja de ser universal y pasa a tener una única excepción declarada aquí.
+- Motivo: E5 · Reparto (HU-04) necesita esta transición para su Historia 3 — sin ella, un
+  imprevisto del repartidor (no puede salir a repartir) deja el pedido bloqueado indefinidamente
+  hasta que exista E7, y el negocio no tiene ninguna forma de liberarlo tampoco. La transición se
+  restringe a que la dispare únicamente el repartidor que tiene el pedido asignado, sobre su
+  propio pedido — no es una forma general de "deshacer" la asignación desde otro rol.
+- Secciones añadidas: ninguna.
+- Secciones eliminadas: ninguna.
+- Plantillas dependientes: sin cambios; leen la constitución vigente en tiempo de ejecución.
+  `packages/shared/src/order-state/machine.ts` deberá actualizarse como parte de la
+  implementación de E5 (fuera del alcance de este comando de gobernanza).
+- TODOs diferidos: ninguno.
+
 Sync Impact Report · enmienda 2026-08-17
 - Versión: 1.1.0 → 2.0.0
 - Tipo de cambio: MAJOR (redefinición incompatible de la máquina de estados del Principio XII)
@@ -203,6 +225,7 @@ Todo pedido DEBE seguir una máquina de estados única con exactamente estas tra
 - `creado → en_preparacion`
 - `creado → rechazado`
 - `en_preparacion → asignado_repartidor`
+- `asignado_repartidor → en_preparacion` (enmienda 3.0.0)
 - `asignado_repartidor → entregado`
 - `entregado → cerrado`
 
@@ -211,6 +234,13 @@ negocio solo puede rechazar un pedido desde `creado`; el rechazo DEBE incluir un
 texto no vacío, que queda inmutable y visible para el cliente. Un pedido rechazado no se
 acepta, no se reabre y no pasa por `cerrado`. Un pedido de la rama aceptada se cierra
 únicamente cuando el repartidor marca la entrega como realizada.
+
+La única transición de retroceso permitida es `asignado_repartidor → en_preparacion`, y solo
+puede dispararla el repartidor que tiene el pedido asignado, sobre su propio pedido — no es una
+forma general de deshacer la asignación desde otro rol ni un camino para que el negocio o un
+administrador reviertan una asignación ajena. Un pedido que vuelve a `en_preparacion` por esta
+vía queda sin repartidor asignado y disponible para cualquiera, igual que uno que nunca fue
+tomado.
 
 Cada cambio de estado DEBE registrarse en un historial que solo permite agregar entradas
 nuevas; el historial nunca se edita ni se borra.
@@ -249,4 +279,4 @@ inicio de este archivo, y se refleja en un incremento de versión según semver:
 verifica su alineación con los principios de esta constitución, en particular los marcados
 como NO NEGOCIABLE.
 
-**Versión**: 2.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-17
+**Versión**: 3.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-27
