@@ -27,12 +27,12 @@ enum Role {
 /// sin `@map`, Postgres almacenaría la etiqueta en mayúscula del identificador
 /// de Prisma y cada comparación con el enum de `packages/shared` fallaría.
 enum OrderStatus {
-  CREADO               @map("creado")
-  EN_PREPARACION       @map("en_preparacion")
-  ASIGNADO_REPARTIDOR  @map("asignado_repartidor")
-  ENTREGADO            @map("entregado")
-  CERRADO              @map("cerrado")
-  RECHAZADO            @map("rechazado")
+  CREADO              @map("creado")
+  EN_PREPARACION      @map("en_preparacion")
+  ASIGNADO_REPARTIDOR @map("asignado_repartidor")
+  ENTREGADO           @map("entregado")
+  CERRADO             @map("cerrado")
+  RECHAZADO           @map("rechazado")
 }
 
 enum UserStatus {
@@ -121,6 +121,9 @@ model User {
   addresses              Address[]
   orders                 Order[]
   orderStatusEventsActed OrderStatusEvent[] @relation("orderStatusActor")
+  /// E5 · Reparto. Pedidos que este usuario tiene o tuvo asignados como
+  /// repartidor — a lo sumo uno en `asignado_repartidor` a la vez (D-069).
+  deliveryOrders         Order[]            @relation("deliveryUser")
 
   @@index([searchNormalized], map: "user_search_normalized_idx")
   @@index([role, status], map: "user_role_status_idx")
@@ -136,7 +139,7 @@ model User {
 model Session {
   id String @id @default(uuid()) @db.Uuid
 
-  userId String @map("user_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
   /// Congelado al iniciar sesión (FR-011, D-007): el cambio de rol rige desde
   /// el próximo inicio de sesión, y ninguna sesión viva muta sus privilegios.
   role           Role
@@ -207,19 +210,19 @@ model AdminAuditLog {
 /// Valor administrable de una dimensión (HU-14). No hay borrado físico
 /// (RN-004): `active = false` la retira del uso conservando su contenido.
 model Category {
-  id String @id @default(uuid()) @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
   /// No editable tras la creación (FR-006): cambiarla movería de golpe todos
   /// los productos clasificados con ella a otra pregunta distinta.
-  dimension Dimension
-  name      String
+  dimension      Dimension
+  name           String
   /// Derivada de `normalizarBusqueda(name)` (D-021).
   /// ⚠️ Cambiar esa función exige una migración que repueble esta columna.
-  nameNormalized String @map("name_normalized")
+  nameNormalized String    @map("name_normalized")
   /// El dato que hará funcionar la búsqueda por voz de E6 (FR-003, FR-039).
-  description String
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  description    String
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   productsAsFoodType      Product[] @relation("foodType")
   productsAsHealthProfile Product[] @relation("healthProfile")
@@ -238,18 +241,18 @@ model Category {
 /// Elemento del catálogo (HU-02). Nunca se borra (RN-004): un producto que
 /// estuvo en un pedido debe seguir siendo legible en ese pedido para siempre.
 model Product {
-  id   String @id @default(uuid()) @db.Uuid
-  name String
+  id             String  @id @default(uuid()) @db.Uuid
+  name           String
   /// Única en todo el catálogo, incluidos los dados de baja (RN-005), para que
   /// su reactivación sea siempre posible.
-  nameNormalized String @unique(map: "product_name_normalized_key") @map("name_normalized")
+  nameNormalized String  @unique(map: "product_name_normalized_key") @map("name_normalized")
   description    String
   /// Informativo, nunca una declaración de alérgenos (RN-019, FR-017).
   /// Su ausencia **no** significa que el producto no contenga el ingrediente.
-  ingredients String?
+  ingredients    String?
   /// Entero en pesos chilenos. La restricción de rango se añade con SQL en la
   /// migración; Prisma no la expresa en el esquema (D-026).
-  price Int
+  price          Int
 
   /// Exactamente una categoría por dimensión, **obligatoria** (RN-011, D-024).
   /// Que sean columnas y no una tabla de unión hace irrepresentable el estado
@@ -261,12 +264,21 @@ model Product {
   healthProfileCategory   Category @relation("healthProfile", fields: [healthProfileCategoryId], references: [id], onDelete: Restrict)
 
   /// Está en el menú.
-  active Boolean @default(true)
+  active    Boolean  @default(true)
   /// Se puede preparar ahora. Si es `false`, el producto **sigue visible**,
   /// marcado «Agotado», y no se puede pedir (FR-029).
   available Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// E2 · Gestión de pedidos.
+  cartLines  CartLine[]
+  orderLines OrderLine[]
+
+  /// E6 · Búsqueda por voz. Relación implícita, sin tabla de unión propia
+  /// (D-059): Prisma la administra sola. Ausencia = "no declarado", nunca
+  /// "declarado que no cumple" (data-model.md).
+  dietaryTags DietaryTag[] @relation("productDietaryTags")
 
   /// Toda consulta del menú filtra por ahí.
   @@index([active, available], map: "product_active_available_idx")
@@ -278,16 +290,6 @@ model Product {
   /// El filtro por categoría y el conteo de bloqueadores de FR-007.
   @@index([foodTypeCategoryId], map: "product_food_type_category_id_idx")
   @@index([healthProfileCategoryId], map: "product_health_profile_category_id_idx")
-
-  /// E2 · Gestión de pedidos.
-  cartLines  CartLine[]
-  orderLines OrderLine[]
-
-  /// E6 · Búsqueda por voz. Relación implícita, sin tabla de unión propia
-  /// (D-059): Prisma la administra sola. Ausencia = "no declarado", nunca
-  /// "declarado que no cumple" (data-model.md).
-  dietaryTags DietaryTag[] @relation("productDietaryTags")
-
   @@map("product")
 }
 
@@ -383,10 +385,16 @@ model Order {
   /// una forma que Prisma no modela limpiamente (mismo criterio que D-024 de
   /// E3 con la clasificación de dos categorías).
   rejectionReason String?     @map("rejection_reason")
+  /// E5 · Reparto. `NULL` salvo cuando `status = 'asignado_repartidor'` — la
+  /// invariante la garantiza el servicio, no un `CHECK` (mismo criterio que
+  /// `rejection_reason`). Se limpia al soltar el pedido (FR-008, D-066).
+  deliveryUserId  String?     @map("delivery_user_id") @db.Uuid
+  assignedAt      DateTime?   @map("assigned_at") @db.Timestamptz(3)
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user         User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deliveryUser User?              @relation("deliveryUser", fields: [deliveryUserId], references: [id], onDelete: Restrict)
   lines        OrderLine[]
   statusEvents OrderStatusEvent[]
 
@@ -397,6 +405,10 @@ model Order {
   @@index([status, createdAt, id], map: "order_status_created_at_id_idx")
   /// El propio historial del cliente (`GET /orders`).
   @@index([userId, createdAt], map: "order_user_id_created_at_idx")
+  /// E5 · Reparto. Sirve la lista de disponibles (`status = 'en_preparacion'
+  /// AND delivery_user_id IS NULL`) y la búsqueda del pedido en curso de un
+  /// repartidor (D-066).
+  @@index([status, deliveryUserId], map: "order_status_delivery_user_id_idx")
   @@map("order")
 }
 
@@ -457,7 +469,7 @@ model OrderStatusEvent {
 /// semilla — sin pantalla de administración (Clarifications, spec.md,
 /// 2026-08-23). El negocio solo marca o desmarca la aptitud en cada producto.
 model DietaryTag {
-  id String @id @default(uuid()) @db.Uuid
+  id   String @id @default(uuid()) @db.Uuid
   /// Único valor en v1: "Vegano".
   name String @unique(map: "dietary_tag_name_key")
 
@@ -470,20 +482,20 @@ model DietaryTag {
 /// cliente ni audio (FR-027, Clarifications) — solo lo necesario para medir el
 /// SLO (SC-004) y el gasto (SC-007) sin acumular contenido semántico.
 model SearchLog {
-  id        String        @id @default(uuid()) @db.Uuid
-  sessionId String        @map("session_id") @db.Uuid
-  channel   SearchChannel
-  intent    SearchIntent
-  outcome   SearchOutcome
+  id         String        @id @default(uuid()) @db.Uuid
+  sessionId  String        @map("session_id") @db.Uuid
+  channel    SearchChannel
+  intent     SearchIntent
+  outcome    SearchOutcome
   /// Tiempo total de la solicitud, incluida la reconsulta a PostgreSQL.
-  latencyMs Int           @map("latency_ms")
+  latencyMs  Int           @map("latency_ms")
   /// `null` cuando `outcome = ERROR` antes de recibir respuesta del proveedor.
-  tokensUsed Int?         @map("tokens_used")
+  tokensUsed Int?          @map("tokens_used")
   /// Identificador exacto del modelo usado, para comparar versiones (D-057).
-  model     String
+  model      String
   /// `null` salvo `outcome = ERROR`. Código interno, no el mensaje del proveedor.
-  errorCode String?       @map("error_code")
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  errorCode  String?       @map("error_code")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Restrict)
 

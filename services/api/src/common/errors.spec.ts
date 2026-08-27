@@ -20,6 +20,9 @@ import {
   MSG_SIN_PERMISO,
   MSG_LIMITE_BUSQUEDAS,
   MSG_BUSQUEDA_NO_DISPONIBLE,
+  MSG_PEDIDO_YA_NO_DISPONIBLE,
+  MSG_REPARTIDOR_YA_TIENE_PEDIDO,
+  MSG_PEDIDO_NO_ASIGNADO_A_TI,
 } from '@foodvoice/shared';
 import {
   autoproteccion,
@@ -38,14 +41,17 @@ import {
   ErrorCode,
   etiquetaDireccionYaExiste,
   noEncontrado,
+  pedidoNoAsignadoATi,
   pedidoNoPendiente,
+  pedidoYaNoDisponible,
   precioCambio,
+  repartidorYaTienePedido,
   sesionInvalida,
   sinPermiso,
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los veinticinco códigos y ninguno más', () => {
+  it('declara los veintiocho códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -76,6 +82,10 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         // Los dos que suma E6 (contracts/api.md § Códigos de error que E6 añade).
         'TOO_MANY_REQUESTS',
         'SEARCH_UNAVAILABLE',
+        // Los tres que suma E5 (contracts/api.md § Códigos de error que E5 añade).
+        'DELIVERY_ORDER_ALREADY_ASSIGNED',
+        'DELIVERY_ALREADY_HAS_ORDER',
+        'DELIVERY_ORDER_NOT_YOURS',
       ].sort(),
     );
   });
@@ -126,6 +136,24 @@ describe('Cada error lleva su código, su estado y su mensaje en español', () =
       status: 503,
       code: 'SEARCH_UNAVAILABLE',
       mensaje: MSG_BUSQUEDA_NO_DISPONIBLE,
+    },
+    {
+      crear: pedidoYaNoDisponible,
+      status: 409,
+      code: 'DELIVERY_ORDER_ALREADY_ASSIGNED',
+      mensaje: MSG_PEDIDO_YA_NO_DISPONIBLE,
+    },
+    {
+      crear: repartidorYaTienePedido,
+      status: 409,
+      code: 'DELIVERY_ALREADY_HAS_ORDER',
+      mensaje: MSG_REPARTIDOR_YA_TIENE_PEDIDO,
+    },
+    {
+      crear: pedidoNoAsignadoATi,
+      status: 409,
+      code: 'DELIVERY_ORDER_NOT_YOURS',
+      mensaje: MSG_PEDIDO_NO_ASIGNADO_A_TI,
     },
   ];
 

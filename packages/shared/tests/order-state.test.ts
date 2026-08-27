@@ -1,5 +1,5 @@
 /**
- * Máquina de estados del pedido (Principio XII v2.0.0, FR-030, D-035).
+ * Máquina de estados del pedido (Principio XII v3.0.0, FR-030, D-035).
  */
 import { describe, expect, it } from 'vitest';
 import { OrderStatus } from '../src/enums/order-status';
@@ -26,26 +26,33 @@ describe('Los seis estados del Principio XII v2.0.0', () => {
   });
 });
 
-describe('Transiciones estrictamente lineales (salvo la rama de `creado`)', () => {
+describe('Transiciones estrictamente lineales (salvo `creado` y el retroceso de reparto)', () => {
   it('cada estado avanza al siguiente y solo al siguiente', () => {
     for (let i = 0; i < LINEA.length - 1; i += 1) {
       const actual = LINEA[i]!;
       const siguiente = LINEA[i + 1]!;
-      // `creado` es la única rama del contrato (RN-008): también puede ir a
-      // `rechazado`, cubierto en su propio describe más abajo.
-      if (actual !== OrderStatus.CREADO) {
+      // `creado` es la única rama de avance del contrato (RN-008): también
+      // puede ir a `rechazado`. `asignado_repartidor` es la única con una
+      // transición de retroceso (enmienda 3.0.0). Ambas se cubren en sus
+      // propios describe más abajo.
+      if (actual !== OrderStatus.CREADO && actual !== OrderStatus.ASIGNADO_REPARTIDOR) {
         expect(transicionesValidas(actual)).toEqual([siguiente]);
       }
       expect(esTransicionValida(actual, siguiente)).toBe(true);
     }
   });
 
-  it('no hay transiciones de retroceso', () => {
+  it('no hay transiciones de retroceso, salvo la única excepción de reparto', () => {
     // La linealidad estricta es lo que hace que el historial de trazabilidad
-    // sea legible como una secuencia y no como un grafo.
+    // sea legible como una secuencia casi lineal, con una única excepción
+    // documentada (E5, enmienda constitucional 3.0.0).
     for (let i = 1; i < LINEA.length; i += 1) {
       for (let j = 0; j < i; j += 1) {
-        expect(esTransicionValida(LINEA[i]!, LINEA[j]!)).toBe(false);
+        const actual = LINEA[i]!;
+        const destino = LINEA[j]!;
+        const esLaExcepcionDeReparto =
+          actual === OrderStatus.ASIGNADO_REPARTIDOR && destino === OrderStatus.EN_PREPARACION;
+        expect(esTransicionValida(actual, destino)).toBe(esLaExcepcionDeReparto);
       }
     }
   });
@@ -110,5 +117,31 @@ describe('`rechazado`, la rama agregada por E2 (FR-030, RN-008, RN-010)', () => 
     for (let i = 0; i < LINEA.length - 1; i += 1) {
       expect(esTransicionValida(LINEA[i]!, LINEA[i + 1]!)).toBe(true);
     }
+  });
+});
+
+describe('`asignado_repartidor → en_preparacion`, el retroceso agregado por E5 (enmienda 3.0.0)', () => {
+  it('es la única transición de retroceso de toda la máquina', () => {
+    expect(esTransicionValida(OrderStatus.ASIGNADO_REPARTIDOR, OrderStatus.EN_PREPARACION)).toBe(
+      true,
+    );
+  });
+
+  it('`asignado_repartidor` conserva también su transición de avance hacia `entregado`', () => {
+    expect(transicionesValidas(OrderStatus.ASIGNADO_REPARTIDOR)).toEqual([
+      OrderStatus.EN_PREPARACION,
+      OrderStatus.ENTREGADO,
+    ]);
+  });
+
+  it('no habilita ningún otro retroceso: `en_preparacion` no puede volver a `creado`', () => {
+    expect(esTransicionValida(OrderStatus.EN_PREPARACION, OrderStatus.CREADO)).toBe(false);
+  });
+
+  it('`entregado` sigue sin volver a `en_preparacion` ni a `asignado_repartidor`', () => {
+    expect(esTransicionValida(OrderStatus.ENTREGADO, OrderStatus.EN_PREPARACION)).toBe(false);
+    expect(esTransicionValida(OrderStatus.ENTREGADO, OrderStatus.ASIGNADO_REPARTIDOR)).toBe(
+      false,
+    );
   });
 });

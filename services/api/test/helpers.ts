@@ -285,6 +285,21 @@ export async function sesionNegocio(entorno: Entorno, email = 'negocio@foodvoice
   return conSesion(await iniciarSesion(entorno, email));
 }
 
+/**
+ * Crea un usuario de rol repartidor y devuelve su cookie de sesión, además
+ * del propio usuario (E5: muchas pruebas necesitan el `userId` para sembrar
+ * o verificar `delivery_user_id` directamente en la base).
+ */
+export async function sesionRepartidor(entorno: Entorno, email = 'repartidor@foodvoice.test') {
+  const usuario = await crearUsuario({
+    email,
+    role: Role.REPARTIDOR,
+    fullName: 'Repartidor De Prueba',
+  });
+  const cookie = conSesion(await iniciarSesion(entorno, email));
+  return { usuario, cookie };
+}
+
 /** Crea un usuario del rol indicado y devuelve su cookie de sesión. */
 export async function sesionDeRol(entorno: Entorno, role: Role) {
   const email = `${role.toLowerCase()}@foodvoice.test`;
@@ -361,17 +376,20 @@ export async function crearDireccion(datos: {
  */
 export async function crearPedido(datos: {
   userId: string;
-  status?: 'creado' | 'en_preparacion' | 'rechazado';
+  status?: 'creado' | 'en_preparacion' | 'rechazado' | 'asignado_repartidor';
   addressText?: string;
   rejectionReason?: string | null;
   lines?: { productId: string; productName?: string; price?: number; quantity?: number }[];
   negocioActorId?: string;
   createdAt?: Date;
+  /** E5. Requerido cuando `status: 'asignado_repartidor'` (D-069). */
+  deliveryUserId?: string;
 }) {
   const MAPA_ESTADO = {
     creado: OrderStatus.CREADO,
     en_preparacion: OrderStatus.EN_PREPARACION,
     rechazado: OrderStatus.RECHAZADO,
+    asignado_repartidor: OrderStatus.ASIGNADO_REPARTIDOR,
   } as const;
   const status = MAPA_ESTADO[datos.status ?? 'creado'];
   const lineas = datos.lines ?? [];
@@ -380,7 +398,7 @@ export async function crearPedido(datos: {
     const pedido = await tx.order.create({
       data: {
         userId: datos.userId,
-        status,
+        status: status === OrderStatus.ASIGNADO_REPARTIDOR ? OrderStatus.EN_PREPARACION : status,
         addressText: datos.addressText ?? 'Los Aromos 123, depto 4B',
         rejectionReason:
           status === OrderStatus.RECHAZADO ? (datos.rejectionReason ?? 'Motivo de prueba') : null,
@@ -408,17 +426,42 @@ export async function crearPedido(datos: {
 
     if (status !== OrderStatus.CREADO) {
       const actorId = datos.negocioActorId ?? datos.userId;
+      const estadoDelAceptarORechazar =
+        status === OrderStatus.ASIGNADO_REPARTIDOR ? OrderStatus.EN_PREPARACION : status;
       await tx.orderStatusEvent.create({
         data: {
           orderId: pedido.id,
           previousStatus: OrderStatus.CREADO,
-          resultingStatus: status,
+          resultingStatus: estadoDelAceptarORechazar,
           actorUserId: actorId,
           actorRole: Role.NEGOCIO,
         },
       });
     }
 
-    return pedido;
+    if (status === OrderStatus.ASIGNADO_REPARTIDOR) {
+      if (!datos.deliveryUserId) {
+        throw new Error('crearPedido: deliveryUserId es obligatorio para asignado_repartidor');
+      }
+      await tx.order.update({
+        where: { id: pedido.id },
+        data: {
+          status: OrderStatus.ASIGNADO_REPARTIDOR,
+          deliveryUserId: datos.deliveryUserId,
+          assignedAt: new Date(),
+        },
+      });
+      await tx.orderStatusEvent.create({
+        data: {
+          orderId: pedido.id,
+          previousStatus: OrderStatus.EN_PREPARACION,
+          resultingStatus: OrderStatus.ASIGNADO_REPARTIDOR,
+          actorUserId: datos.deliveryUserId,
+          actorRole: Role.REPARTIDOR,
+        },
+      });
+    }
+
+    return tx.order.findUniqueOrThrow({ where: { id: pedido.id } });
   });
 }

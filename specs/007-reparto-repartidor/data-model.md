@@ -94,7 +94,7 @@ El comentario del archivo ("no hay transiciones de retroceso en el resto de la m
 actualizarse para declarar la única excepción, citando la enmienda 3.0.0 — no basta con cambiar
 el `Record`, el comentario es la documentación que el resto del equipo lee primero.
 
-## Mensajes nuevos · `packages/shared/src/messages/etiquetas.ts`
+## Mensajes nuevos · `packages/shared/src/messages/es.ts`
 
 | Constante | Texto | Productor |
 |---|---|---|
