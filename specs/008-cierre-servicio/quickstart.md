@@ -62,7 +62,7 @@ Con la sesión del **cliente**, sobre el pedido de la sección A.
 | Paso | Qué hacer | Qué debe ocurrir |
 |---|---|---|
 | **V-03** | Desde "Mis pedidos", con el pedido en `entregado`, usar la acción "Todo bien" | En 1 clic el pedido pasa a `cerrado` (SC-002), sin ningún motivo de reclamo |
-| **V-04** | Con la sesión del **negocio** o del **cliente**, abrir la trazabilidad de ese pedido (E4) | Aparecen las entradas `asignado_repartidor → entregado` (repartidor) y `entregado → cerrado` (cliente), sin motivo de reclamo, sin que la pantalla de trazabilidad haya requerido ningún cambio (SC-006) |
+| **V-04** | Con la sesión del **cliente**, abrir la trazabilidad de ese pedido desde su propio detalle (E4) | Aparecen las entradas `asignado_repartidor → entregado` (repartidor) y `entregado → cerrado` (cliente), sin motivo de reclamo, sin que la pantalla de trazabilidad haya requerido ningún cambio (SC-006) |
 
 ### C · Cliente reclama por un problema (Historia 3, SC-003, SC-004)
 
@@ -71,9 +71,9 @@ Con un **segundo pedido**, repitiendo la preparación (confirmar → aceptar
 
 | Paso | Qué hacer | Qué debe ocurrir |
 |---|---|---|
-| **V-05** | Con el pedido en `entregado`, usar la acción "Reclamar", escribiendo el motivo "Llegó frío y sin las papas" | En menos de 1 minuto el pedido pasa a `cerrado` (SC-003) con ese motivo guardado |
+| **V-05** | Con el pedido en `entregado`, usar la acción "Reclamar", escribiendo el motivo "Llegó frío y sin las papas" | En menos de 1 minuto el pedido pasa a `cerrado` (SC-003) con ese motivo guardado, y aparece también en la propia lista "Mis pedidos", igual que ya aparece el motivo de rechazo (FR-010) |
 | **V-06** | Intentar reclamar sin escribir ningún motivo (o solo espacios) | El sistema lo impide con un mensaje en español, sin cerrar el pedido |
-| **V-07** | Con la sesión del **negocio**, abrir la trazabilidad de ese pedido (E4) | Ve el motivo del reclamo junto a la entrada `entregado → cerrado`, sin que la pantalla de detalle del negocio haya requerido ningún cambio (SC-004, SC-006) |
+| **V-07** | Con la sesión del **negocio**, abrir "Ver cerrados" desde `/negocio/pedidos` y entrar al detalle de ese pedido (E4) | La lista "Ver cerrados" (D-081) es el único camino que tiene el negocio hacia un pedido `cerrado` — sin ella este paso no se puede completar. Ve el motivo del reclamo junto a la entrada `entregado → cerrado`, sin que la pantalla de detalle del negocio haya requerido ningún cambio (SC-004, SC-006) |
 
 ### D · Casos límite (Edge Cases)
 

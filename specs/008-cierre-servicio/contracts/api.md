@@ -13,6 +13,7 @@ cuyas convenciones —formato de error, versionado, fechas— rigen aquí sin ca
 | `PUT /delivery/orders/:id/deliver` | **Solo `REPARTIDOR`** | `SessionGuard` + `RolesGuard(REPARTIDOR)` | Solo el pedido que el repartidor tiene asignado en `asignado_repartidor` |
 | `PUT /orders/:id/confirm` | **Solo `CLIENTE`** | `SessionGuard` + `RolesGuard(CLIENTE)` | Solo pedidos propios, y solo en `entregado` |
 | `PUT /orders/:id/complain` | **Solo `CLIENTE`** | `SessionGuard` + `RolesGuard(CLIENTE)` | Solo pedidos propios, y solo en `entregado` |
+| `GET /business/orders/closed` | **Solo `NEGOCIO`** | `SessionGuard` + `RolesGuard(NEGOCIO)` | Ninguna — v1 es mono-local (D-081) |
 
 ## Códigos de error que E7 añade
 
@@ -80,6 +81,25 @@ Respuesta `200`: `OrderSummaryDto` (el pedido, ahora en `cerrado`, con
 Errores: `400 VALIDATION_ERROR` (motivo ausente o demasiado corto/largo) ·
 `404 NOT_FOUND` (no existe o no es propio) · `409 ORDER_NOT_DELIVERED` (no
 está en `entregado`).
+
+---
+
+## `GET /api/v1/business/orders/closed`
+
+Pedidos `cerrado`, para que el negocio pueda llegar a su detalle y ver el
+motivo del reclamo cuando lo hay (FR-011, D-081 — agregado tras el
+hallazgo C1 de `/speckit.analyze`: sin esta lista, ningún enlace del
+negocio alcanzaba un pedido `cerrado`).
+
+Respuesta `200`:
+
+```json
+{ "items": [ { "id": "…", "status": "cerrado", "addressText": "…", "rejectionReason": null, "complaintReason": "Llegó frío y sin las papas", "lines": [ … ], "createdAt": "…" } ] }
+```
+
+`items: []` cuando no hay ninguno — la interfaz muestra
+`MSG_SIN_PEDIDOS_CERRADOS`, mismo criterio que
+`GET /business/orders/rejected` con `MSG_SIN_PEDIDOS_RECHAZADOS`.
 
 ---
 

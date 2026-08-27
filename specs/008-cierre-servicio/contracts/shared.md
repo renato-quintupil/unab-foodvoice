@@ -46,7 +46,11 @@ export const MSG_MOTIVO_RECLAMO_REQUERIDO =
   'Cuéntanos qué pasó para poder registrar tu reclamo.';
 export const MSG_PEDIDO_NO_ENTREGADO =
   'Este pedido no está entregado. Actualiza la página para ver su estado actual.';
+export const MSG_SIN_PEDIDOS_CERRADOS = 'Todavía no tienes pedidos cerrados.';
 ```
+
+`MSG_SIN_PEDIDOS_CERRADOS` se agregó tras el hallazgo C1 de
+`/speckit.analyze`, junto con `GET /business/orders/closed` (D-081).
 
 ## Qué no cambia
 

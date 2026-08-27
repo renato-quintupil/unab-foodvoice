@@ -40,6 +40,10 @@ Las cinco decisiones que gobiernan el diseño:
 5. **El reclamo se muestra reutilizando `HistorialPedido`** (D-078, E4):
    una condición más junto a la que ya muestra `rejectionReason`, sin tocar
    las tres páginas de detalle (cliente/negocio/admin).
+6. **El negocio gana una lista de pedidos `cerrado`, mismo patrón que
+   "rechazados"** (D-081): hallazgo de `/speckit.analyze` (C1) — sin ella,
+   ningún enlace del negocio alcanzaba un pedido `cerrado`, así que
+   FR-011/SC-004 no eran verificables.
 
 ## Contexto Técnico
 
@@ -75,10 +79,12 @@ notificaciones push, calificación numérica ni clasificación de productos a
 partir del feedback; sin bandeja de reclamos dedicada — el reclamo se ve en
 el detalle de pedido que E4 ya construyó.
 
-**Escala/Alcance**: tres endpoints nuevos (`PUT /delivery/orders/:id/deliver`,
-`PUT /orders/:id/confirm`, `PUT /orders/:id/complain`), una columna nueva en
-`Order`, una extensión de `HistorialPedido` (E4), y dos extensiones de
-pantalla (`/repartidor` de E5, `/cliente/pedidos` de E1/E2).
+**Escala/Alcance**: cuatro endpoints nuevos (`PUT /delivery/orders/:id/deliver`,
+`PUT /orders/:id/confirm`, `PUT /orders/:id/complain`, `GET
+/business/orders/closed`), una columna nueva en `Order`, una extensión de
+`HistorialPedido` (E4), tres extensiones de pantalla (`/repartidor` de E5,
+`/cliente/pedidos` de E1/E2, `/negocio/pedidos` de E2) y una pantalla nueva
+(`/negocio/pedidos/cerrados`, D-081).
 
 ## Constitution Check
 
@@ -121,6 +127,11 @@ expresamente:
 - `HistorialPedido` (E4) muestra el reclamo con la misma condición
   estructural que ya usa para el motivo de rechazo, sin que las tres
   páginas de detalle que lo consumen necesiten saber que el campo existe.
+- **Corrección tras `/speckit.analyze`**: la primera versión de este plan
+  no dejaba al negocio ningún camino hacia el detalle de un pedido
+  `cerrado` (C1), y no mostraba `complaintReason` en la lista del cliente
+  igual que ya muestra `rejectionReason` (C2). Ambos se corrigieron antes
+  de generar `tasks.md` — ver D-081 y la Fase E actualizada.
 
 ## Estructura del Proyecto
 
@@ -145,7 +156,7 @@ Solo se listan los archivos y grupos que E7 crea o modifica.
 ```text
 packages/shared/src/
 ├── messages/
-│   └── es.ts                         # MODIFICADO · dos mensajes nuevos (D-076)
+│   └── es.ts                         # MODIFICADO · tres mensajes nuevos (D-076, D-081)
 ├── schemas/
 │   └── order.ts                      # MODIFICADO · ComplainOrderSchema (mismo molde que RejectOrderSchema)
 ├── types/
@@ -161,8 +172,9 @@ services/api/src/
 ├── common/
 │   └── errors.ts                     # MODIFICADO · ORDER_NOT_DELIVERED (D-076)
 └── orders/
-    ├── orders.service.ts             # MODIFICADO · entregar(), cerrar()
+    ├── orders.service.ts             # MODIFICADO · entregar(), cerrar(), cerradosDelNegocio() (D-081)
     ├── orders.controller.ts          # MODIFICADO · PUT :id/confirm, PUT :id/complain
+    ├── business-orders.controller.ts # MODIFICADO · GET /closed (D-081)
     └── delivery-orders.controller.ts # MODIFICADO · PUT :id/deliver
 
 apps/web/src/
@@ -173,13 +185,18 @@ apps/web/src/
     │   ├── pedido-en-curso.tsx       # MODIFICADO · botón "Marcar como entregado"
     │   └── boton-entregar.tsx        # NUEVO
     └── cliente/pedidos/
-        ├── page.tsx                  # MODIFICADO · acciones sobre pedidos "entregado"
+        ├── page.tsx                  # MODIFICADO · acciones sobre pedidos "entregado" + complaintReason (C2)
         └── _components/
             ├── boton-confirmar-cierre.tsx  # NUEVO
             └── dialogo-reclamo.tsx         # NUEVO
+    negocio/pedidos/
+    ├── page.tsx                  # MODIFICADO · enlace "Ver cerrados" (D-081)
+    └── cerrados/
+        └── page.tsx              # NUEVO · lista de pedidos `cerrado`, mismo patrón que rechazados
 
 services/api/test/
-└── orders-cierre-*.integration-spec.ts  # NUEVO · entregar, confirmar, reclamar, concurrencia
+├── orders-close-*.integration-spec.ts    # NUEVO · confirmar, reclamar, concurrencia, trazabilidad
+└── delivery-orders-deliver.integration-spec.ts  # NUEVO · entregar
 ```
 
 **Decisión de estructura**: no se crea ningún módulo ni controlador nuevo —
@@ -214,11 +231,15 @@ FR-005, FR-006, FR-009 (parcial).
 `PUT /orders/:id/complain`, mismo `cerrar()` con el motivo, diálogo de
 reclamo. Cubre FR-007, FR-008, FR-010 a FR-012.
 
-### Fase E · Trazabilidad y validación funcional
+### Fase E · Visibilidad del negocio, trazabilidad y validación funcional
 
-Extender `HistorialPedido` para mostrar el reclamo (FR-014). Ejecutar
-`quickstart.md` completo (SC-001 a SC-006) con un repartidor y un cliente
-reales, incluida la condición de carrera de confirmar/reclamar
+Extender `HistorialPedido` para mostrar el reclamo (FR-014), mostrar
+`complaintReason` en `/cliente/pedidos` igual que `rejectionReason`
+(FR-010, hallazgo C2), y agregar `GET /business/orders/closed` +
+`/negocio/pedidos/cerrados` (FR-011, hallazgo C1, D-081) — sin esto último,
+el negocio no tenía ningún camino hacia el detalle de un pedido cerrado.
+Ejecutar `quickstart.md` completo (SC-001 a SC-006) con un repartidor y un
+cliente reales, incluida la condición de carrera de confirmar/reclamar
 simultáneos.
 
 ## Complexity Tracking
@@ -232,6 +253,8 @@ La puerta constitucional pasa sin violaciones que justificar. No hay tabla de ex
 | Confundir el fallo de "entregar" con el de "tomar/soltar" de E5, reutilizando mal el código de error | Bajo: mensaje técnicamente correcto pero code review confuso | Documentar explícitamente en el código que `pedidoNoAsignadoATi()` sirve a las tres acciones del repartidor sobre su pedido asignado (tomar excluido, que usa su propio error) |
 | Que `cerrar()` permita reclamar sobre un pedido ya `cerrado` por una carrera anterior | Alto: violaría FR-009 y el historial quedaría con una transición inválida | Escritura condicionada (`WHERE status = 'entregado'`) igual que el resto de las transiciones del proyecto; una prueba de integración específica de la carrera confirmar/reclamar |
 | Olvidar propagar `complaintReason` a `OrderDetailDto` vía `OrderSummaryDto`, dejando la trazabilidad de E4 sin mostrarlo | Medio: FR-014/SC-006 no se cumplirían | `OrderDetailDto` extiende `OrderSummaryDto` por composición (D-051, E4) — agregar el campo ahí basta; prueba de integración que confirma que el detalle lo incluye |
+| Que el negocio no tenga ningún camino hacia el detalle de un pedido `cerrado` (su bandeja y "rechazados" no lo alcanzan) | Alto: FR-011/SC-004 no verificables — **ya ocurrió**, hallazgo C1 de `/speckit.analyze`, corregido en este plan con D-081 | `GET /business/orders/closed` + `/negocio/pedidos/cerrados`, mismo patrón que "rechazados" |
+| Que `/cliente/pedidos` muestre `rejectionReason` pero no `complaintReason`, dejando FR-010 a medias | Medio: el cliente vería su reclamo solo en el detalle, no en la lista — **ya ocurrió**, hallazgo C2 de `/speckit.analyze` | Misma condición que ya existe para `rejectionReason` en `page.tsx`, agregada también para `complaintReason` |
 
 ## Trazabilidad requisito → fase
 
@@ -241,6 +264,6 @@ La puerta constitucional pasa sin violaciones que justificar. No hay tabla de ex
 | FR-001 a FR-004 | B |
 | FR-005, FR-006, FR-009 | C |
 | FR-007, FR-008, FR-010, FR-012 | D |
-| FR-011, FR-013, FR-014; SC-001 a SC-006 | E |
+| FR-010, FR-011, FR-013, FR-014; SC-001 a SC-006 | E |
 
 Los seis criterios de éxito se trazan uno a uno en `quickstart.md`.

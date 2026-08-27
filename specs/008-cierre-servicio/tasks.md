@@ -200,24 +200,45 @@ reclamo en la trazabilidad del negocio, y comprobar la condición de carrera con
 
 ---
 
-## Fase Final: Trazabilidad, validación funcional y cierre
+## Fase Final: Visibilidad del negocio, trazabilidad, validación funcional y cierre
 
-**Propósito**: mostrar el reclamo donde ya se muestra el motivo de rechazo, cerrar la épica con
-la validación manual y actualizar el estado del producto.
+**Propósito**: mostrar el reclamo donde ya se muestra el motivo de rechazo, darle al negocio un
+camino hasta un pedido `cerrado` (hallazgo C1 de `/speckit.analyze` — sin él, FR-011/SC-004 no
+eran verificables), cerrar la épica con la validación manual y actualizar el estado del
+producto.
 
 - [ ] T025 [P] Extender `apps/web/src/components/historial-pedido.tsx` (E4, D-051): cuando el
   último evento sea `CERRADO` y `pedido.complaintReason` exista, mostrar "Reclamo: {motivo}",
   simétrico a la condición ya existente para `rejectionReason` (FR-011, D-078, depende de T009)
-- [ ] T026 [P] Crear `services/api/test/orders-close-trazabilidad.integration-spec.ts`: tras
+- [ ] T026 [P] Extender `apps/web/src/app/cliente/pedidos/page.tsx`: mostrar
+  `pedido.complaintReason` con el mismo bloque condicional que ya muestra `pedido.rejectionReason`
+  (FR-010, hallazgo C2 de `/speckit.analyze`, depende de T009)
+- [ ] T027 [P] Añadir `MSG_SIN_PEDIDOS_CERRADOS` en `packages/shared/src/messages/es.ts` y
+  exportarla desde `packages/shared/src/index.ts` (D-081, hallazgo C1)
+- [ ] T028 Añadir `cerradosDelNegocio()` en `services/api/src/orders/orders.service.ts`: mismo
+  molde que `rechazadosDelNegocio()` — `findMany({ where: { status: CERRADO }, orderBy: {
+  createdAt: 'desc' } })`, sin paginar (D-081, depende de T009)
+- [ ] T029 Añadir `GET /closed` en `services/api/src/orders/business-orders.controller.ts`,
+  delegando a `cerradosDelNegocio` (D-081, depende de T028)
+- [ ] T030 Crear `apps/web/src/app/negocio/pedidos/cerrados/page.tsx`: mismo patrón que
+  `apps/web/src/app/negocio/pedidos/rechazados/page.tsx` — pide `GET /business/orders/closed`,
+  muestra `MSG_SIN_PEDIDOS_CERRADOS` si está vacía, y enlaza cada pedido a
+  `/negocio/pedidos/:id` (D-081, depende de T027, T029)
+- [ ] T031 Añadir el enlace "Ver cerrados" en `apps/web/src/app/negocio/pedidos/page.tsx`, junto
+  al que ya existe hacia "Ver rechazados" (D-081, depende de T030)
+- [ ] T032 [P] Crear `services/api/test/business-orders-closed.integration-spec.ts`: `GET
+  /business/orders/closed` devuelve solo pedidos `cerrado`, `items: []` cuando no hay ninguno, y
+  `403` para roles distintos de `NEGOCIO` (D-081, depende de T029)
+- [ ] T033 [P] Crear `services/api/test/orders-close-trazabilidad.integration-spec.ts`: tras
   entregar y cerrar (confirmando o reclamando) un pedido, `GET /orders/:id` y `GET
   /business/orders/:id` muestran ambas entradas nuevas en orden cronológico y, cuando
   corresponde, el motivo del reclamo — sin ningún cambio de contrato de E4 (FR-014, SC-006)
-- [ ] T027 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
+- [ ] T034 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
-- [ ] T028 Recorrer V-01 a V-10 de `specs/008-cierre-servicio/quickstart.md` con sesiones reales
+- [ ] T035 Recorrer V-01 a V-10 de `specs/008-cierre-servicio/quickstart.md` con sesiones reales
   de cliente, negocio y repartidor; registrar el resultado en
   `specs/008-cierre-servicio/verificacion.md`
-- [ ] T029 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E7
+- [ ] T036 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E7
   como terminada, con el mismo nivel de detalle que E1–E6
 
 ---
@@ -235,7 +256,11 @@ la validación manual y actualizar el estado del producto.
     US1.
   - US3 reutiliza `cerrar()` de US2 casi sin cambios (el mismo método, con `complaintReason` no
     nulo) — depende de T016, no solo de la Fase 2.
-- **Validación funcional (Fase Final)**: depende de que las tres historias estén completas.
+- **Fase Final**: depende de que las tres historias estén completas. T028–T031 (lista "cerrados"
+  del negocio) solo necesitan que exista al menos un pedido `cerrado`, así que en la práctica
+  dependen de que US2 o US3 hayan producido uno, no de que las tres estén "terminadas" en el
+  sentido de código — pero se agrupan aquí porque nacieron como hallazgo de `/speckit.analyze`
+  sobre el conjunto completo, no como parte de ninguna historia individual.
 
 ### Dependencias dentro de cada historia
 
@@ -250,8 +275,10 @@ la validación manual y actualizar el estado del producto.
 - T008 (catálogo de errores en `services/api`) depende de T005 (usa `MSG_PEDIDO_NO_ENTREGADO`) —
   no se ejecuta en paralelo con ella, mismo criterio que aplicó E5 (F1 de su `/speckit.analyze`).
 - Las pruebas de cada historia (T015, T020+T021) son paralelizables entre sí dentro de su fase.
-- T025 (interfaz de trazabilidad) y T026 (prueba de integración de trazabilidad) tocan archivos
-  distintos y son paralelizables entre sí.
+- T025, T026 y T027 (interfaz de trazabilidad del cliente, interfaz de la lista del negocio,
+  mensaje nuevo) tocan archivos distintos y son paralelizables entre sí.
+- T032 y T033 (pruebas de integración de la lista "cerrados" y de trazabilidad) son
+  paralelizables entre sí.
 
 ---
 

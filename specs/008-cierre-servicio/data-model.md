@@ -66,6 +66,7 @@ export type ComplainOrderInput = z.infer<typeof ComplainOrderSchema>;
 |---|---|---|
 | `MSG_MOTIVO_RECLAMO_REQUERIDO` | "Cuéntanos qué pasó para poder registrar tu reclamo." | Validación de `ComplainOrderSchema` (400, motivo vacío o muy corto) |
 | `MSG_PEDIDO_NO_ENTREGADO` | "Este pedido no está entregado. Actualiza la página para ver su estado actual." | `PUT /orders/:id/confirm`, `PUT /orders/:id/complain` (409, D-076) |
+| `MSG_SIN_PEDIDOS_CERRADOS` | "Todavía no tienes pedidos cerrados." | `GET /business/orders/closed` (lista vacía, D-081, hallazgo C1 de `/speckit.analyze`) |
 
 ## Diagrama de flujo de escritura
 
@@ -109,6 +110,19 @@ clienteId`: `noEncontrado()` — mismo criterio de FR-005 de E4 (no
 distinguir "no existe" de "no es tuyo" en una ruta de pertenencia del
 cliente). Si existe y es suyo pero no está en `entregado`:
 `pedidoNoEntregado()` (D-076).
+
+### `cerradosDelNegocio()` (D-081, hallazgo C1 de `/speckit.analyze`)
+
+```text
+findMany({ where: { status: 'cerrado' }, orderBy: { createdAt: 'desc' } })
+```
+
+Sin escritura: es la lista que le falta al negocio para llegar al detalle
+de un pedido cerrado (y su reclamo, si lo hay) — mismo molde exacto que
+`rechazadosDelNegocio()` (E2). Sin ella, FR-011/SC-004 no eran
+verificables: la bandeja del negocio (`creado`/`en_preparacion`) y
+"rechazados" (`RECHAZADO`) no dejaban ningún camino hacia un pedido
+`cerrado`.
 
 ## Qué no cambia
 

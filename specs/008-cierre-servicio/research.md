@@ -154,3 +154,33 @@ diálogo de confirmación separado antes o después.
 - *Pedir confirmación también para "Todo bien"*: descartado — no hay
   ningún efecto no obvio ni irreversible que justificarle al cliente antes
   de una acción que, además, SC-002 mide explícitamente en 1 clic.
+
+## D-081 · El negocio ve los pedidos `cerrado` en una lista nueva, mismo patrón que "rechazados"
+
+**Decisión**: `GET /business/orders/closed` (sin paginar, ordenado del más
+reciente al más antiguo) y una pantalla `/negocio/pedidos/cerrados`, mismo
+molde exacto que `GET /business/orders/rejected` y
+`/negocio/pedidos/rechazados` (E2, D-039). Un mensaje nuevo,
+`MSG_SIN_PEDIDOS_CERRADOS`, para la lista vacía.
+
+**Razón**: hallazgo de `/speckit.analyze` (C1) — sin esta lista, FR-011 y
+SC-004 no son verificables: la bandeja del negocio (`GET
+/business/orders`) solo admite `creado`/`en_preparacion`
+(`BusinessOrdersQuerySchema`), y la única lista adicional que existía era
+"rechazados" (`RECHAZADO`). En cuanto un pedido pasa a
+`asignado_repartidor` (E5) desaparecía de toda vista del negocio hasta
+`cerrado`, sin ningún enlace que lo alcanzara — el endpoint de detalle de
+E4 (`GET /business/orders/:id`) ya servía el dato, pero nada navegaba
+hasta ahí. Es exactamente el mismo problema que "rechazados" ya resolvió
+para `RECHAZADO`, así que se resuelve igual.
+
+**Alternativas consideradas**:
+- *Que el negocio filtre `GET /business/orders?status=cerrado`*: descartado
+  — `BusinessOrdersQuerySchema` solo admite `creado`/`en_preparacion`
+  (D-043 de E2, la bandeja combina esos dos por diseño); ampliar ese
+  esquema mezclaría el significado de "bandeja de trabajo pendiente" con
+  "historial de cerrados", dos cosas distintas.
+- *Combinar "rechazados" y "cerrados" en una sola pantalla*: descartado —
+  son dos desenlaces distintos del pedido (uno lo decide el negocio antes
+  de prepararlo, el otro lo decide el cliente después de recibirlo);
+  fusionarlos oscurecería cuál es cuál sin ahorrar código real.
