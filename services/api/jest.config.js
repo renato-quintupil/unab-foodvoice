@@ -50,6 +50,11 @@ module.exports = {
     '!src/cart/**',
     '!src/addresses/**',
     '!src/orders/**',
+    // E8 · Controles y administración, mismo criterio que `orders/**`: la
+    // atomicidad de pausar/reanudar (fila única + entrada de bitácora en la
+    // misma transacción) es una garantía de PostgreSQL, verificada
+    // enteramente por integración (`test/service-status.integration-spec.ts`).
+    '!src/service-status/**',
     '!src/dashboard/**',
     '!src/health/**',
     '!src/prisma/**',

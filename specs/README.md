@@ -19,7 +19,7 @@ incorporan como escenarios y criterios de aceptación dentro de esa spec.
 | **E6 · Búsqueda por voz** | HU-06, HU-13 | [`006-busqueda-por-voz/`](./006-busqueda-por-voz/) | **Terminada** · 39 / 39 tareas · construida y verificada, incluidos los 16 pasos de validación funcional |
 | **E5 · Reparto** | HU-04 | [`007-reparto-repartidor/`](./007-reparto-repartidor/) | **Terminada** · 33 / 33 tareas · construida y verificada, incluidos los 14 pasos de validación funcional |
 | **E7 · Cierre del servicio** | HU-05 | [`008-cierre-servicio/`](./008-cierre-servicio/) | **Terminada** · 36 / 36 tareas · construida y verificada, incluidos los 10 pasos de validación funcional |
-| E8 · Controles y administración | HU-07 | — | Sin especificar |
+| **E8 · Controles y administración** | HU-07 | [`009-controles-flujos-criticos/`](./009-controles-flujos-criticos/) | **Terminada** · 37 / 37 tareas · construida y verificada, incluidos los 14 pasos de validación funcional |
 | **E9 · Navegación y experiencia visual** *(transversal)* | HU-15, HU-16 | [`004-navegacion-por-rol/`](./004-navegacion-por-rol/) | **Terminada** · 35 / 35 tareas · construida y verificada, incluidos los 26 pasos de validación funcional |
 
 El orden de la tabla es el orden sugerido de especificación (E1 → E3 → E2 → E4 →
@@ -330,6 +330,54 @@ Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E
 Cualquier estado nuevo para "reclamo pendiente", clasificación del feedback, notificaciones,
 calificación numérica, reabrir un pedido cerrado o confirmación por proximidad — declarado como
 fuera de alcance desde la propia especificación.
+
+## E8 · Controles y administración
+
+Rama de trabajo: `009-controles-flujos-criticos`.
+
+| Artefacto | Para qué sirve |
+| --- | --- |
+| [`spec.md`](./009-controles-flujos-criticos/spec.md) | Requisitos, escenarios y criterios de éxito de HU-07 |
+| [`plan.md`](./009-controles-flujos-criticos/plan.md) | Decisiones técnicas (D-082 a D-089) y fases de entrega |
+| [`research.md`](./009-controles-flujos-criticos/research.md) | Las ocho decisiones con su fundamento |
+| [`data-model.md`](./009-controles-flujos-criticos/data-model.md) | `OrderStatusEvent.reason`, `ServiceStatus`, `AdminAuditLog` extendido y migración |
+| [`contracts/`](./009-controles-flujos-criticos/contracts/) | Los cinco endpoints nuevos y el contrato compartido |
+| [`quickstart.md`](./009-controles-flujos-criticos/quickstart.md) | Puesta en marcha y los 14 pasos de validación funcional |
+| [`tasks.md`](./009-controles-flujos-criticos/tasks.md) | 37 tareas ordenadas por historia |
+| [`verificacion.md`](./009-controles-flujos-criticos/verificacion.md) | Resultado de la validación, con el hallazgo de spec que corrigió |
+
+Fases de entrega: **A** cimientos (`OrderStatusEvent.reason`, `ServiceStatus`, `AdminAuditLog`
+extendido, migración, habilitante) → **B** HU-07 Historia 1, forzar transición (P1, MVP) → **C**
+HU-07 Historia 2, cerrar administrativamente → **D** HU-07 Historia 3, pausar/reanudar el
+servicio → **E** bitácora, trazabilidad y validación funcional.
+
+**Por qué se da por terminada.** Las tres historias están construidas — forzar la transición
+normal siguiente y cerrar administrativamente reutilizan el mismo historial append-only del
+pedido que ya escriben E2/E5/E7 (con un campo `reason` nuevo, D-082), pausar/reanudar extiende la
+bitácora de E1 (D-084) sobre una tabla de una sola fila (`ServiceStatus`, D-085, coherente con
+mono-local) —, las dos capas automáticas pasan en verde —unitarios con sus umbrales de cobertura
+en los tres paquetes, y **681 pruebas de integración en 95 baterías contra PostgreSQL real**,
+incluidas las tres nuevas de esta épica con concurrencia real—, y la **validación funcional se
+ejecutó el 2026-08-30**, los 14 pasos de `quickstart.md`. **No encontró ningún defecto de
+comportamiento**: el único hallazgo —que FR-008 prometía al repartidor una visibilidad que
+ninguna pantalla suya podía cumplir, porque E4 nunca construyó un detalle de pedido para ese
+rol— se detectó y corrigió en la propia spec **antes** del recorrido, no durante él. El detalle
+está en [`verificacion.md`](./009-controles-flujos-criticos/verificacion.md).
+
+**Esta épica necesitó una enmienda constitucional, detectada durante `/speckit.clarify`, no al
+escribir la spec**: Historia 2 (cerrar administrativamente) exige llevar un pedido directamente a
+`cerrado` desde cualquier estado no terminal, un movimiento que el Principio XII no declaraba —
+"no se permite ninguna otra transición". Se resolvió enmendando la constitución a **v4.0.0** antes
+de `/speckit.plan`, agregando esa transición como séptima arista declarada, disparable únicamente
+por `ADMINISTRADOR` y con motivo obligatorio. El detalle está en el Sync Impact Report de
+`.specify/memory/constitution.md`. A diferencia de la retroceso de E5, no fue el diseño el que
+encontró la necesidad sino la lectura literal del propio Principio XII durante la clarificación.
+
+Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de todas las épicas anteriores.
+Cualquier señal automática de "pedido atascado", niveles de permiso dentro de `ADMINISTRADOR`, o
+corrección administrativa del catálogo — declarado como fuera de alcance desde la propia
+especificación. Con E8 verificada, **las nueve épicas del mapa de producto quedan completas**
+(las ocho del orden E1→E8 más E9, transversal).
 
 ## E9 · Navegación y experiencia visual
 

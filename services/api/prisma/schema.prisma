@@ -47,6 +47,10 @@ enum AdminAction {
   DESACTIVAR
   REACTIVAR
   RESTABLECER_PASSWORD
+  /// E8 · Controles y administración (HU-07, D-084). Sin `targetUserId`: la
+  /// acción es sobre el servicio completo, no sobre un usuario.
+  PAUSAR_SERVICIO
+  REANUDAR_SERVICIO
 }
 
 /// Las dos preguntas fijas de clasificación (E3, FR-001, D-020).
@@ -124,6 +128,9 @@ model User {
   /// E5 · Reparto. Pedidos que este usuario tiene o tuvo asignados como
   /// repartidor — a lo sumo uno en `asignado_repartidor` a la vez (D-069).
   deliveryOrders         Order[]            @relation("deliveryUser")
+  /// E8 · Controles y administración. A lo sumo una fila (`ServiceStatus` es
+  /// singleton); se conserva por si el administrador que pausó se desactiva.
+  servicePausedBy        ServiceStatus[]    @relation("servicePausedBy")
 
   @@index([searchNormalized], map: "user_search_normalized_idx")
   @@index([role, status], map: "user_role_status_idx")
@@ -184,12 +191,18 @@ model LoginAttemptControl {
 model AdminAuditLog {
   id           String      @id @default(uuid()) @db.Uuid
   actorUserId  String      @map("actor_user_id") @db.Uuid
-  targetUserId String      @map("target_user_id") @db.Uuid
+  /// Nulable desde E8 (D-084): `PAUSAR_SERVICIO`/`REANUDAR_SERVICIO` no tienen
+  /// un usuario objetivo — actúan sobre el servicio completo. Las seis
+  /// acciones de E1 lo siguen escribiendo siempre.
+  targetUserId String?     @map("target_user_id") @db.Uuid
   action       AdminAction
+  /// Nueva en E8 (D-084). Solo la usa `PAUSAR_SERVICIO`; `NULL` en
+  /// `REANUDAR_SERVICIO` y en las seis acciones de E1, que nunca la tuvieron.
+  reason       String?     @map("reason")
   occurredAt   DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
-  actor  User @relation("actor", fields: [actorUserId], references: [id], onDelete: Restrict)
-  target User @relation("target", fields: [targetUserId], references: [id], onDelete: Restrict)
+  actor  User  @relation("actor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  target User? @relation("target", fields: [targetUserId], references: [id], onDelete: Restrict)
 
   @@map("admin_audit_log")
 }
@@ -452,6 +465,11 @@ model OrderStatusEvent {
   /// Copia del rol efectivo de la sesión, no del rol actual del usuario: el
   /// historial conserva qué función ejercía el actor aunque su rol cambie.
   actorRole       Role         @map("actor_role")
+  /// Nueva en E8 (D-082). `NULL` salvo cuando `actorRole = ADMINISTRADOR` y la
+  /// entrada viene de forzar una transición o cerrar administrativamente
+  /// (HU-07). Vive aquí y no en `Order` porque un mismo pedido puede recibir
+  /// más de una intervención administrativa a lo largo de su vida.
+  reason          String?      @map("reason")
   occurredAt      DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
@@ -460,6 +478,22 @@ model OrderStatusEvent {
   /// Deja preparado el orden estable de consulta de E4, sin exponerla en E2.
   @@index([orderId, occurredAt, id], map: "order_status_event_order_id_occurred_at_id_idx")
   @@map("order_status_event")
+}
+
+/// Estado operativo del servicio completo (E8, HU-07 Historia 3, D-085).
+/// Fila única (`id = 'singleton'`, sembrada por la migración) — v1 es
+/// mono-local, no hay "el negocio pausado" por usuario. `OrdersService`
+/// y `ServiceStatusService` siempre leen y escriben por ese `id` fijo.
+model ServiceStatus {
+  id             String    @id @default("singleton")
+  paused         Boolean   @default(false)
+  pauseReason    String?   @map("pause_reason")
+  pausedAt       DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedByUserId String?   @map("paused_by_user_id") @db.Uuid
+
+  pausedBy User? @relation("servicePausedBy", fields: [pausedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("service_status")
 }
 
 // ---------------------------------------------------------------------------

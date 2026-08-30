@@ -163,6 +163,8 @@ describe('Un cambio de precio no reescribe nada (FR-024, SC-023)', () => {
         'order_status_event',
         'product',
         'search_log',
+        // E8 · Controles y administración: fila única del estado del servicio (D-085).
+        'service_status',
         'session',
         'user',
       ].sort(),

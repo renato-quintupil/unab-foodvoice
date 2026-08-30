@@ -3,7 +3,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { OrderStatus } from '../src/enums/order-status';
-import { esTransicionValida, transicionesValidas } from '../src/order-state/machine';
+import {
+  esTransicionValida,
+  puedeCerrarseAdministrativamente,
+  transicionesForzablesPorAdmin,
+  transicionesValidas,
+} from '../src/order-state/machine';
 
 const LINEA: OrderStatus[] = [
   OrderStatus.CREADO,
@@ -143,5 +148,45 @@ describe('`asignado_repartidor → en_preparacion`, el retroceso agregado por E5
     expect(esTransicionValida(OrderStatus.ENTREGADO, OrderStatus.ASIGNADO_REPARTIDOR)).toBe(
       false,
     );
+  });
+});
+
+describe('`transicionesForzablesPorAdmin`, Historia 1 de HU-07 (E8, D-083)', () => {
+  it('reutiliza `SIGUIENTE` sin cambios para los estados sin retroceso', () => {
+    expect(transicionesForzablesPorAdmin(OrderStatus.CREADO)).toEqual([
+      OrderStatus.EN_PREPARACION,
+      OrderStatus.RECHAZADO,
+    ]);
+    expect(transicionesForzablesPorAdmin(OrderStatus.EN_PREPARACION)).toEqual([
+      OrderStatus.ASIGNADO_REPARTIDOR,
+    ]);
+    expect(transicionesForzablesPorAdmin(OrderStatus.ENTREGADO)).toEqual([OrderStatus.CERRADO]);
+  });
+
+  it('excluye explícitamente la retroceso reservada al repartidor', () => {
+    expect(transicionesForzablesPorAdmin(OrderStatus.ASIGNADO_REPARTIDOR)).toEqual([
+      OrderStatus.ENTREGADO,
+    ]);
+    expect(transicionesForzablesPorAdmin(OrderStatus.ASIGNADO_REPARTIDOR)).not.toContain(
+      OrderStatus.EN_PREPARACION,
+    );
+  });
+
+  it('devuelve el conjunto vacío para los dos estados terminales', () => {
+    expect(transicionesForzablesPorAdmin(OrderStatus.CERRADO)).toEqual([]);
+    expect(transicionesForzablesPorAdmin(OrderStatus.RECHAZADO)).toEqual([]);
+  });
+});
+
+describe('`puedeCerrarseAdministrativamente`, Historia 2 de HU-07 (E8, enmienda 4.0.0)', () => {
+  it('es `true` para cualquier estado no terminal', () => {
+    for (const estado of LINEA.filter((e) => e !== OrderStatus.CERRADO)) {
+      expect(puedeCerrarseAdministrativamente(estado)).toBe(true);
+    }
+  });
+
+  it('es `false` para los dos estados terminales', () => {
+    expect(puedeCerrarseAdministrativamente(OrderStatus.CERRADO)).toBe(false);
+    expect(puedeCerrarseAdministrativamente(OrderStatus.RECHAZADO)).toBe(false);
   });
 });

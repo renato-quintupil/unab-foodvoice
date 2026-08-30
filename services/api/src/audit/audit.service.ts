@@ -20,8 +20,13 @@ import { PrismaService } from '../prisma/prisma.service';
  *
  * **No registra eventos de autenticación**: los inicios de sesión, los fallos,
  * los bloqueos, los cierres y las expiraciones no dejan entrada. `AdminAction`
- * tiene exactamente seis valores y ninguno los cubre, lo que hace la exclusión
- * estructural y no una omisión del código (supuesto 27).
+ * no tiene ningún valor para ellos, lo que hace la exclusión estructural y no
+ * una omisión del código (supuesto 27).
+ *
+ * **`targetUserId` es nulable desde E8** (D-084): `PAUSAR_SERVICIO` y
+ * `REANUDAR_SERVICIO` actúan sobre el servicio completo, no sobre un usuario.
+ * Las seis acciones de E1 lo siguen escribiendo siempre. `reason`, también
+ * nueva en E8, solo la usa `PAUSAR_SERVICIO`.
  */
 @Injectable()
 export class AuditService {
@@ -35,15 +40,21 @@ export class AuditService {
    * Nunca recibe ni escribe la contraseña, ni en claro ni con hash.
    */
   async registrar(
-    datos: { actorUserId: string; targetUserId: string; action: AdminAction },
+    datos: {
+      actorUserId: string;
+      targetUserId?: string | null;
+      action: AdminAction;
+      reason?: string | null;
+    },
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const cliente = tx ?? this.prisma;
     await cliente.adminAuditLog.create({
       data: {
         actorUserId: datos.actorUserId,
-        targetUserId: datos.targetUserId,
+        targetUserId: datos.targetUserId ?? null,
         action: datos.action,
+        reason: datos.reason ?? null,
       },
     });
   }

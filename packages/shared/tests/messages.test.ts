@@ -100,6 +100,14 @@ const LOS_DE_CIERRE = [
   'MSG_SIN_PEDIDOS_CERRADOS',
 ] as const;
 
+/** Los de E8 (`009-controles-flujos-criticos`, `contracts/shared.md` § Mensajes nuevos). */
+const LOS_DE_CONTROLES = [
+  'MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO',
+  'MSG_TRANSICION_ADMINISTRATIVA_INVALIDA',
+  'MSG_PEDIDO_YA_ES_TERMINAL',
+  'MSG_SERVICIO_PAUSADO',
+] as const;
+
 describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
   it('los doce de E1 existen y no están vacíos', () => {
     for (const nombre of LOS_DOCE) {
@@ -126,6 +134,7 @@ describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
         ...LOS_DE_BUSQUEDA_POR_VOZ,
         ...LOS_DE_REPARTO,
         ...LOS_DE_CIERRE,
+        ...LOS_DE_CONTROLES,
       ].sort(),
     );
   });
@@ -148,6 +157,14 @@ describe('Mensajes fijos en español (FR-008, SC-018, api CHK015)', () => {
 
   it('los tres de E7 existen y no están vacíos', () => {
     for (const nombre of LOS_DE_CIERRE) {
+      const texto = mensajes[nombre];
+      expect(typeof texto, nombre).toBe('string');
+      expect(texto.trim().length, nombre).toBeGreaterThan(0);
+    }
+  });
+
+  it('los cuatro de E8 existen y no están vacíos', () => {
+    for (const nombre of LOS_DE_CONTROLES) {
       const texto = mensajes[nombre];
       expect(typeof texto, nombre).toBe('string');
       expect(texto.trim().length, nombre).toBeGreaterThan(0);

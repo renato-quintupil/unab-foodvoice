@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   ETIQUETA_ESTADO_PEDIDO,
   ETIQUETA_ROL,
@@ -12,10 +13,12 @@ type Props = {
   pedido: OrderDetailDto;
   titulo: string;
   volverA: string;
+  /** Acciones administrativas sobre el pedido (E8, HU-07) — solo el admin las recibe. */
+  acciones?: ReactNode;
 };
 
 /** Presentación única del detalle para cliente, negocio y administración (D-051). */
-export function HistorialPedido({ pedido, titulo, volverA }: Props) {
+export function HistorialPedido({ pedido, titulo, volverA, acciones }: Props) {
   const ultimoEvento = pedido.history.at(-1);
 
   return (
@@ -27,6 +30,8 @@ export function HistorialPedido({ pedido, titulo, volverA }: Props) {
         <h1 className="text-2xl font-semibold">{titulo}</h1>
         <p className="text-sm text-[var(--color-tenue)]">{pedido.addressText}</p>
       </header>
+
+      {acciones}
 
       <section aria-labelledby="resumen-pedido" className="flex flex-col gap-3">
         <h2 id="resumen-pedido" className="text-lg font-semibold">
@@ -66,6 +71,11 @@ export function HistorialPedido({ pedido, titulo, volverA }: Props) {
               <p className="text-sm">
                 {evento.actorName} · {ETIQUETA_ROL[evento.actorRole]}
               </p>
+              {evento.reason && (
+                <p className="text-sm text-[var(--color-error)]">
+                  Motivo (intervención administrativa): {evento.reason}
+                </p>
+              )}
               {indice === pedido.history.length - 1 &&
                 ultimoEvento?.resultingStatus === OrderStatus.RECHAZADO &&
                 pedido.rejectionReason && (

@@ -12,6 +12,7 @@ import { MenuSearchModule } from './menu-search/menu-search.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
+import { ServiceStatusModule } from './service-status/service-status.module';
 import { UsersModule } from './users/users.module';
 
 /**
@@ -40,6 +41,7 @@ import { UsersModule } from './users/users.module';
     CartModule,
     AddressesModule,
     OrdersModule,
+    ServiceStatusModule,
   ],
 })
 export class AppModule {}

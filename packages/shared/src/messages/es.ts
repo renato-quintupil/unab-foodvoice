@@ -292,6 +292,30 @@ export const MSG_PEDIDO_NO_ENTREGADO =
 /** FR-011, D-081. El negocio todavía no tiene ningún pedido cerrado. */
 export const MSG_SIN_PEDIDOS_CERRADOS = 'Todavía no tienes pedidos cerrados.';
 
+// ---------------------------------------------------------------------------
+// E8 · Controles y administración
+// ---------------------------------------------------------------------------
+
+/**
+ * FR-002, FR-004, FR-009, D-086. Motivo ausente o demasiado corto en las tres
+ * acciones administrativas que lo exigen (forzar transición, cerrar
+ * administrativamente, pausar el servicio) — un solo mensaje compartido:
+ * mismo actor, misma superficie, mismo significado exacto.
+ */
+export const MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO = 'Escribe el motivo de esta acción administrativa.';
+
+/** FR-001, FR-006. El estado destino no es una transición forzable desde el estado actual del pedido, o la carrera se perdió. */
+export const MSG_TRANSICION_ADMINISTRATIVA_INVALIDA =
+  'Esta transición no es válida para el estado actual del pedido.';
+
+/** FR-003, FR-006. El pedido ya está en `cerrado` o `rechazado`, o perdió la carrera. */
+export const MSG_PEDIDO_YA_ES_TERMINAL =
+  'Este pedido ya está en un estado final y no admite intervenciones administrativas.';
+
+/** FR-010. El servicio está pausado; el cliente no puede confirmar un pedido nuevo. */
+export const MSG_SERVICIO_PAUSADO =
+  'El servicio está temporalmente pausado. Intenta confirmar tu pedido más tarde.';
+
 export const AYUDA_DESCRIPCION_CATEGORIA = {
   explicacion:
     'Esta descripción es lo que permitirá encontrar la categoría cuando el cliente pida algo ' +

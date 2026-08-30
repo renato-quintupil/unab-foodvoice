@@ -1,4 +1,27 @@
 <!--
+Sync Impact Report · enmienda 2026-08-30
+- Versión: 3.0.0 → 4.0.0
+- Tipo de cambio: MAJOR (redefinición incompatible de la máquina de estados del Principio XII)
+- Principios modificados: XII · Trazabilidad del pedido de punta a punta
+  Se agrega una séptima transición al conjunto cerrado: de cualquier estado no terminal
+  (`creado`, `en_preparacion`, `asignado_repartidor`, `entregado`) directamente a `cerrado`,
+  disparable únicamente por un usuario con rol `ADMINISTRADOR`, con motivo de texto no vacío
+  obligatorio, inmutable y visible al cliente, al negocio y al repartidor del pedido — mismo
+  criterio que ya rige el motivo de rechazo. No es una forma de que el negocio, el cliente o el
+  repartidor cierren un pedido por su cuenta fuera de los caminos ya declarados; tampoco reabre
+  ni modifica el trato de `rechazado` y `cerrado` como estados terminales.
+- Motivo: E8 · Controles y administración (HU-07), Historia 2 (cierre administrativo de un
+  pedido atascado) necesita esta transición. El texto vigente del principio ("no se permite
+  ninguna otra transición") impedía construirla sin enmienda — detectado en `/speckit.clarify`
+  de `specs/009-controles-flujos-criticos/spec.md` antes de llegar al Constitution Check del
+  plan, mismo momento en que se detectaron las necesidades de enmienda de E2 y E5.
+- Secciones añadidas: ninguna.
+- Secciones eliminadas: ninguna.
+- Plantillas dependientes: sin cambios; leen la constitución vigente en tiempo de ejecución.
+  `packages/shared/src/order-state/machine.ts` deberá actualizarse como parte de la
+  implementación de E8 (fuera del alcance de este comando de gobernanza).
+- TODOs diferidos: ninguno.
+
 Sync Impact Report · enmienda 2026-08-27
 - Versión: 2.0.0 → 3.0.0
 - Tipo de cambio: MAJOR (redefinición incompatible de la máquina de estados del Principio XII)
@@ -228,12 +251,15 @@ Todo pedido DEBE seguir una máquina de estados única con exactamente estas tra
 - `asignado_repartidor → en_preparacion` (enmienda 3.0.0)
 - `asignado_repartidor → entregado`
 - `entregado → cerrado`
+- `{creado, en_preparacion, asignado_repartidor, entregado} → cerrado` (cierre administrativo,
+  enmienda 4.0.0)
 
 No se permite ninguna otra transición. `rechazado` y `cerrado` son estados terminales. El
 negocio solo puede rechazar un pedido desde `creado`; el rechazo DEBE incluir un motivo de
 texto no vacío, que queda inmutable y visible para el cliente. Un pedido rechazado no se
-acepta, no se reabre y no pasa por `cerrado`. Un pedido de la rama aceptada se cierra
-únicamente cuando el repartidor marca la entrega como realizada.
+acepta, no se reabre y no pasa por `cerrado`. Un pedido de la rama aceptada se cierra cuando el
+repartidor marca la entrega como realizada y el cliente confirma o reclama, o cuando un
+administrador lo cierra administrativamente por la vía descrita abajo.
 
 La única transición de retroceso permitida es `asignado_repartidor → en_preparacion`, y solo
 puede dispararla el repartidor que tiene el pedido asignado, sobre su propio pedido — no es una
@@ -241,6 +267,14 @@ forma general de deshacer la asignación desde otro rol ni un camino para que el
 administrador reviertan una asignación ajena. Un pedido que vuelve a `en_preparacion` por esta
 vía queda sin repartidor asignado y disponible para cualquiera, igual que uno que nunca fue
 tomado.
+
+La transición de cierre administrativo puede dispararse desde cualquier estado no terminal
+(`creado`, `en_preparacion`, `asignado_repartidor` o `entregado`) directamente a `cerrado`, y
+solo puede dispararla un usuario con rol `ADMINISTRADOR`. Exige un motivo de texto no vacío,
+que queda inmutable y visible para el cliente, el negocio y el repartidor del pedido — mismo
+criterio que el motivo de rechazo. No sustituye ni imita las transiciones normales de los
+demás roles: el negocio, el cliente y el repartidor siguen sin ninguna forma de cerrar un
+pedido fuera de los caminos ya declarados para ellos.
 
 Cada cambio de estado DEBE registrarse en un historial que solo permite agregar entradas
 nuevas; el historial nunca se edita ni se borra.
@@ -279,4 +313,4 @@ inicio de este archivo, y se refleja en un incremento de versión según semver:
 verifica su alineación con los principios de esta constitución, en particular los marcados
 como NO NEGOCIABLE.
 
-**Versión**: 3.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-27
+**Versión**: 4.0.0 | **Ratificada**: 2026-08-13 | **Última enmienda**: 2026-08-30
