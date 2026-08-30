@@ -18,7 +18,7 @@
 - Q: ¿Qué significa "bloqueo/desbloqueo de operaciones"? → A: Pausar y reanudar al negocio (impedir que reciba pedidos nuevos temporalmente). No incluye suspender repartidores individuales ni ninguna otra forma de bloqueo.
 - Q: ¿Cómo se detecta que un pedido está "atascado"? → A: De forma discrecional — sin ningún criterio automático de tiempo ni señal visual nueva; el administrador lo nota mirando el detalle de pedido que ya construyó E4.
 - Q: ¿Las acciones administrativas exigen motivo obligatorio? → A: Sí, siempre, para las dos acciones sobre pedidos y para pausar el servicio (no para reanudarlo).
-- Q: ¿Cómo se registra la bitácora de estas acciones? → A: Se extiende el `AdminAuditLog` existente de E1, no se duplica.
+- Q: ¿Cómo se registra la bitácora de estas acciones? → A: De forma inmutable y con motivo, sin exigir una única tabla física: forzar transición y cerrar administrativamente quedan en el propio historial del pedido (ya de solo-inserción desde E2); pausar y reanudar, que no tienen ningún pedido al que asociarse, extienden el `AdminAuditLog` existente de E1. Decisión de diseño (D-084 de `research.md`), no una relectura de esta respuesta.
 - Q: ¿La intervención se muestra a los roles afectados? → A: Sí, con el mismo criterio de paridad manual que ya usan HU-01 (motivo de rechazo) y HU-05 (motivo de reclamo).
 - Q: ¿HU-07 incluye alguna corrección administrativa sobre el catálogo? → A: No; el catálogo sigue siendo exclusivo del rol `NEGOCIO` (RN-001 de E3), sin excepción en v1.
 
@@ -118,7 +118,7 @@ Un administrador necesita impedir temporalmente que el negocio reciba pedidos nu
 
 - **Intervención administrativa sobre pedido**: acción (forzar transición o cierre administrativo), motivo en texto libre, administrador actor, pedido afectado, y fecha. Inmutable una vez registrada; visible al administrador, al cliente, al negocio y al repartidor del pedido.
 - **Estado operativo del servicio**: un único indicador global (activo/pausado), coherente con que v1 es mono-local — no distingue entre negocios ni usuarios `NEGOCIO` individuales. Al pausar, lleva asociado el motivo escrito por el administrador; al reanudar, no.
-- **Registro de acciones administrativas (bitácora)**: extiende el mecanismo ya existente de E1 (acciones sobre usuarios) para cubrir también estas cuatro acciones nuevas, con el mismo criterio de solo-inserción y sin copiar datos personales.
+- **Registro de acciones administrativas (bitácora)**: dos registros de solo-inserción, no uno — el historial del pedido (ya existente desde E2) para forzar transición y cerrar administrativamente, y el `AdminAuditLog` de E1, extendido, para pausar y reanudar el servicio. Ambos inmutables, sin copiar datos personales.
 
 ## Success Criteria *(mandatory)*
 
@@ -139,8 +139,8 @@ Un administrador necesita impedir temporalmente que el negocio reciba pedidos nu
 - **Un solo nivel de permiso**: cualquier usuario con rol `ADMINISTRADOR` puede ejercer las cuatro acciones de esta épica; no se introduce ninguna graduación dentro del rol.
 - **El servicio es una única entidad global**: coherente con que v1 es mono-local, pausar/reanudar es un interruptor único, no algo por negocio o por usuario `NEGOCIO`.
 - **Catálogo fuera de alcance, sin excepción**: RN-001 de E3 ("solo el negocio administra el catálogo") se mantiene sin ninguna excepción administrativa en v1, pese a que RN-001 de esa misma spec dejaba la puerta abierta a revisar esto en HU-07.
-- **Bitácora extendida, no una consulta nueva**: esta épica agrega valores/objetivos nuevos al mecanismo de auditoría ya existente de E1; no se construye ninguna pantalla de consulta de esa bitácora en v1, mismo criterio ya vigente para las acciones sobre usuarios.
+- **Bitácora dual, no una consulta nueva**: pausar/reanudar agregan valores nuevos al `AdminAuditLog` de E1; forzar transición y cerrar administrativamente no lo tocan, porque el historial del pedido ya es un registro de solo-inserción equivalente (D-084). Ninguna pantalla de consulta nueva en v1 para ninguno de los dos.
 - **Sin escalamiento ni notificación por otro canal**: ninguna intervención administrativa dispara un aviso push, SMS o correo; se ve dentro de la aplicación, mismo criterio de paridad manual (Principio VI) que el resto del producto.
-- **Requiere enmienda constitucional** (resuelto en `/speckit.clarify`, a diferencia de lo previsto en el borrador inicial): el Principio XII vigente (v3.0.0) dice "no se permite ninguna otra transición" fuera de las seis ya declaradas, así que el cierre administrativo de la Historia 2 no puede construirse sin enmendarlo. Antes de `/speckit.plan` corresponde ejecutar `/speckit.constitution` para agregar una séptima transición declarada — de cualquier estado no terminal a `cerrado`, disparable únicamente por `ADMINISTRADOR`, con motivo obligatorio — siguiendo el mismo procedimiento (Sync Impact Report, incremento MAJOR de versión) que ya se usó para las enmiendas de E2 (v2.0.0) y E5 (v3.0.0). Forzar la transición normal (Historia 1) no necesita esta enmienda: reutiliza transiciones que el principio ya declara.
+- **Enmienda constitucional ya aplicada**: el Principio XII quedó en **v4.0.0** antes de este plan (ver § Clarifications), con la séptima transición que Historia 2 necesita. Historia 1 no requirió ninguna enmienda: reutiliza transiciones ya declaradas.
 - **Reutilización del mecanismo transaccional de E2/E5/E7**: forzar una transición se escribe como una sola operación atómica (cambio de estado + entrada de historial + motivo), con el mismo criterio de concurrencia ya resuelto en las épicas anteriores.
 - **Sin geolocalización, notificaciones push ni multi-local**: decisiones de alcance de v1 ya declaradas y heredadas por todas las épicas anteriores.

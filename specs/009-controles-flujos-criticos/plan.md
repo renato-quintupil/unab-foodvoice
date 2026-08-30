@@ -183,7 +183,7 @@ services/api/src/
 ├── orders/
 │   ├── orders.service.ts              # MODIFICADO · forzarTransicion(), cerrarAdministrativamente(), chequeo de pausa en confirmar()
 │   ├── admin-orders.controller.ts     # NUEVO · cuarto controlador del módulo (D-087)
-│   └── orders.module.ts               # MODIFICADO · registra AdminOrdersController, importa AuditModule
+│   └── orders.module.ts               # MODIFICADO · registra AdminOrdersController
 └── service-status/
     ├── service-status.service.ts      # NUEVO
     ├── service-status.controller.ts   # NUEVO · admin/service

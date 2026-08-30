@@ -118,7 +118,12 @@ trazabilidad, y comprobar que no puede forzar la retroceso reservada al repartid
   `409 FORCE_TRANSITION_INVALID` al intentar `asignado_repartidor → en_preparacion` (retroceso
   reservada al repartidor, D-083) y al intentar cualquier transición sobre un pedido ya
   `cerrado`/`rechazado`; `404 NOT_FOUND` si no existe; `400 VALIDATION_ERROR` con motivo ausente
-  o solo espacios; `403 FORBIDDEN` con sesión de `CLIENTE`, `NEGOCIO` o `REPARTIDOR`
+  o solo espacios; `403 FORBIDDEN` con sesión de `CLIENTE`, `NEGOCIO` o `REPARTIDOR`; tras forzar
+  `asignado_repartidor → entregado`, `GET /delivery/orders/current` del repartidor que lo tenía
+  asignado devuelve `{ order: null }` (FR-007); **la condición de carrera de FR-016**: el
+  negocio acepta el pedido (`creado → en_preparacion`) casi al mismo tiempo que el administrador
+  intenta forzar la misma transición — exactamente una de las dos tiene éxito, sin duplicar el
+  efecto ni dejar dos entradas de historial
 
 ### Implementación de US1
 
@@ -169,7 +174,10 @@ intento falla, y que el motivo es obligatorio.
   motivo ausente o solo espacios; `403 FORBIDDEN` con sesión de `CLIENTE`, `NEGOCIO` o
   `REPARTIDOR`; y la condición de carrera real (FR-016): dos llamadas casi simultáneas —cerrar
   administrativamente y, en paralelo, una acción normal del rol correspondiente sobre el mismo
-  pedido— dejan exactamente un ganador y ninguna entrada de historial duplicada ni inconsistente
+  pedido— dejan exactamente un ganador y ninguna entrada de historial duplicada ni inconsistente;
+  tras cerrar administrativamente un pedido en `asignado_repartidor`, `GET
+  /delivery/orders/current` del repartidor que lo tenía asignado devuelve `{ order: null }`
+  (FR-007)
 
 ### Implementación de US2
 

@@ -54,7 +54,9 @@ Con la sesión del **administrador**.
 |---|---|---|
 | **V-01** | Desde `/admin/pedidos/[id]` del pedido en `creado`, usar "Forzar transición" eligiendo `en_preparacion` y escribiendo el motivo "El negocio no respondió en más de una hora" | En menos de 2 minutos (incluido escribir el motivo) el pedido pasa a `en_preparacion` (SC-001); el cliente lo ve como "En preparación" en su siguiente carga (SC-004) |
 | **V-02** | Abrir la trazabilidad de ese pedido (E4) | La entrada `creado → en_preparacion` muestra al administrador como actor y el motivo escrito (SC-004, SC-007) |
+| **V-02a** | Con la sesión del **negocio**, abrir el detalle de ese mismo pedido desde `/negocio/pedidos` | Ve el mismo motivo que vio el cliente en V-01, sin que su pantalla de detalle haya necesitado ningún cambio propio (SC-004) |
 | **V-03** | Con un **segundo pedido** en `asignado_repartidor` (repetir confirmar → aceptar → tomar, E2/E5), intentar forzar la transición hacia `en_preparacion` | El sistema lo impide con `409 FORCE_TRANSITION_INVALID` — esa transición es la retroceso reservada al repartidor dueño del pedido, no al administrador |
+| **V-03a** | Sobre el pedido de V-03, forzar la transición hacia `entregado` (destino sí forzable desde `asignado_repartidor`) con motivo, luego revisar `/repartidor` con la sesión de **ese mismo repartidor** | El motivo queda visible en la trazabilidad del repartidor (SC-004) y ya no tiene ningún pedido en curso — vuelve a ver la lista de disponibles (FR-007) |
 
 ### B · Cerrar administrativamente un pedido atascado (Historia 2, SC-002)
 
@@ -64,6 +66,7 @@ Con la sesión del **administrador**, sobre un **tercer pedido** en
 | Paso | Qué hacer | Qué debe ocurrir |
 |---|---|---|
 | **V-04** | Desde su detalle, usar "Cerrar administrativamente" con el motivo "Local cerrado por emergencia, pedido no se puede completar" | En menos de 2 minutos el pedido pasa a `cerrado` (SC-002), con el motivo visible en la trazabilidad |
+| **V-04a** | Con la sesión del **negocio**, abrir el detalle de ese pedido desde su propia lista de cerrados | Ve el mismo motivo administrativo, en el mismo lugar donde ya ve el motivo de un reclamo del cliente (E7) — sin sección aparte (SC-004) |
 | **V-05** | Intentar cerrar administrativamente el mismo pedido de nuevo | El sistema lo impide con `409 ORDER_ALREADY_TERMINAL` — ya es terminal |
 | **V-06** | Intentar cualquiera de las dos acciones (forzar o cerrar) sin escribir motivo, o con motivo compuesto solo de espacios | El sistema lo impide con un mensaje en español, sin cambiar el estado del pedido |
 
@@ -92,6 +95,7 @@ Con la sesión del **administrador**.
 | Paso | Qué hacer | Qué debe ocurrir |
 |---|---|---|
 | **V-13** | Con la sesión del **administrador**, revisar el menú y `/admin` | No aparece ninguna acción para crear, editar o dar de baja un producto o categoría — sigue siendo exclusivo del rol `NEGOCIO` |
+| **V-14** | Con la sesión del **administrador**, revisar `/admin/operaciones` y `/admin/pedidos/[id]` | No aparece ninguna acción para suspender a un repartidor individual, ni ningún bloqueo distinto de pausar la confirmación de pedidos nuevos (FR-018) |
 
 ## Trazabilidad criterio → pasos
 
@@ -100,7 +104,7 @@ Con la sesión del **administrador**.
 | SC-001 (forzar transición en menos de 2 min) | V-01 |
 | SC-002 (cerrar administrativamente en menos de 2 min) | V-04 |
 | SC-003 (pausar en menos de 1 min, reanudar en 1 clic) | V-07, V-10 |
-| SC-004 (motivo correcto visible a los roles afectados) | V-01, V-02 |
+| SC-004 (motivo correcto visible a los roles afectados) | V-01, V-02, V-02a, V-03a, V-04, V-04a |
 | SC-005 (100% de confirmaciones bloqueadas en pausa; pedidos en curso no afectados) | V-08, V-09 |
 | SC-006 (confirmar tras reanudar, sin pasos adicionales) | V-11 |
 | SC-007 (bitácora con administrador, acción, objetivo y motivo correctos) | V-12 |
