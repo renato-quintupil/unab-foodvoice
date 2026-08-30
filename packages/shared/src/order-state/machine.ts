@@ -39,3 +39,40 @@ export function transicionesValidas(desde: OrderStatus): readonly OrderStatus[] 
 export function esTransicionValida(desde: OrderStatus, hacia: OrderStatus): boolean {
   return transicionesValidas(desde).includes(hacia);
 }
+
+/**
+ * La única transición de retroceso del sistema (enmienda 3.0.0), reservada al
+ * repartidor dueño del pedido — un administrador no puede dispararla (E8,
+ * HU-07, D-083).
+ */
+const RETROCESO_RESERVADA_AL_REPARTIDOR = {
+  desde: OrderStatus.ASIGNADO_REPARTIDOR,
+  hacia: OrderStatus.EN_PREPARACION,
+} as const;
+
+/**
+ * Historia 1 de HU-07 (E8): transiciones que un administrador puede forzar en
+ * nombre del rol que correspondería dispararlas. Reutiliza `SIGUIENTE` sin
+ * modificarlo (D-083) y excluye la única transición de retroceso, que sigue
+ * siendo exclusiva del repartidor.
+ */
+export function transicionesForzablesPorAdmin(desde: OrderStatus): readonly OrderStatus[] {
+  return transicionesValidas(desde).filter(
+    (hacia) =>
+      !(
+        desde === RETROCESO_RESERVADA_AL_REPARTIDOR.desde &&
+        hacia === RETROCESO_RESERVADA_AL_REPARTIDOR.hacia
+      ),
+  );
+}
+
+/**
+ * Historia 2 de HU-07 (E8, enmienda constitucional 4.0.0): un pedido puede
+ * cerrarse administrativamente desde cualquier estado sin transiciones
+ * salientes propias — es decir, cualquier estado no terminal. `cerrado` y
+ * `rechazado` (los únicos con `SIGUIENTE` vacío) quedan excluidos: ya son
+ * terminales, no hace falta cerrarlos de nuevo.
+ */
+export function puedeCerrarseAdministrativamente(desde: OrderStatus): boolean {
+  return transicionesValidas(desde).length > 0;
+}

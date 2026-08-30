@@ -24,6 +24,9 @@ import {
   MSG_REPARTIDOR_YA_TIENE_PEDIDO,
   MSG_PEDIDO_NO_ASIGNADO_A_TI,
   MSG_PEDIDO_NO_ENTREGADO,
+  MSG_TRANSICION_ADMINISTRATIVA_INVALIDA,
+  MSG_PEDIDO_YA_ES_TERMINAL,
+  MSG_SERVICIO_PAUSADO,
 } from '@foodvoice/shared';
 import {
   autoproteccion,
@@ -45,15 +48,18 @@ import {
   pedidoNoAsignadoATi,
   pedidoNoEntregado,
   pedidoNoPendiente,
+  pedidoYaEsTerminal,
   pedidoYaNoDisponible,
   precioCambio,
   repartidorYaTienePedido,
+  servicioPausado,
   sesionInvalida,
   sinPermiso,
+  transicionAdministrativaInvalida,
 } from './errors';
 
 describe('Catálogo cerrado (contracts/api.md)', () => {
-  it('declara los veintinueve códigos y ninguno más', () => {
+  it('declara los treinta y dos códigos y ninguno más', () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         'VALIDATION_ERROR',
@@ -90,6 +96,10 @@ describe('Catálogo cerrado (contracts/api.md)', () => {
         'DELIVERY_ORDER_NOT_YOURS',
         // El uno que suma E7 (contracts/api.md § Códigos de error que E7 añade).
         'ORDER_NOT_DELIVERED',
+        // Los tres que suma E8 (contracts/api.md § Códigos de error que E8 añade).
+        'FORCE_TRANSITION_INVALID',
+        'ORDER_ALREADY_TERMINAL',
+        'SERVICE_PAUSED',
       ].sort(),
     );
   });
@@ -164,6 +174,24 @@ describe('Cada error lleva su código, su estado y su mensaje en español', () =
       status: 409,
       code: 'ORDER_NOT_DELIVERED',
       mensaje: MSG_PEDIDO_NO_ENTREGADO,
+    },
+    {
+      crear: transicionAdministrativaInvalida,
+      status: 409,
+      code: 'FORCE_TRANSITION_INVALID',
+      mensaje: MSG_TRANSICION_ADMINISTRATIVA_INVALIDA,
+    },
+    {
+      crear: pedidoYaEsTerminal,
+      status: 409,
+      code: 'ORDER_ALREADY_TERMINAL',
+      mensaje: MSG_PEDIDO_YA_ES_TERMINAL,
+    },
+    {
+      crear: servicioPausado,
+      status: 409,
+      code: 'SERVICE_PAUSED',
+      mensaje: MSG_SERVICIO_PAUSADO,
     },
   ];
 

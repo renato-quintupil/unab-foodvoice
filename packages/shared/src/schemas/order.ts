@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { OrderStatus } from '../enums/order-status';
 import {
   MSG_DIRECCION_REQUERIDA,
   MSG_DIRECCION_TEXTO_VACIO,
+  MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO,
   MSG_MOTIVO_RECHAZO_REQUERIDO,
   MSG_MOTIVO_RECLAMO_REQUERIDO,
 } from '../messages/es';
@@ -61,6 +63,29 @@ export const ComplainOrderSchema = z.object({
   reason: z.string().trim().min(10, MSG_MOTIVO_RECLAMO_REQUERIDO).max(500),
 });
 
+/**
+ * Forzar la transición normal siguiente de un pedido (E8, HU-07 Historia 1,
+ * FR-001, FR-002). `targetStatus` se valida solo como forma — que sea uno de
+ * los seis estados—; la regla real (si es forzable desde el estado actual del
+ * pedido) la decide `transicionesForzablesPorAdmin()` en tiempo de ejecución,
+ * no este esquema.
+ */
+export const ForceOrderTransitionSchema = z.object({
+  targetStatus: z.nativeEnum(OrderStatus),
+  reason: z.string().trim().min(10, MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO).max(500),
+});
+
+/**
+ * Cierre administrativo de un pedido fuera del camino normal (E8, HU-07
+ * Historia 2, FR-003, FR-004). Mismo molde que `RejectOrderSchema`/
+ * `ComplainOrderSchema`.
+ */
+export const AdminCloseOrderSchema = z.object({
+  reason: z.string().trim().min(10, MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO).max(500),
+});
+
 export type ConfirmOrderInput = z.infer<typeof ConfirmOrderSchema>;
 export type RejectOrderInput = z.infer<typeof RejectOrderSchema>;
 export type ComplainOrderInput = z.infer<typeof ComplainOrderSchema>;
+export type ForceOrderTransitionInput = z.infer<typeof ForceOrderTransitionSchema>;
+export type AdminCloseOrderInput = z.infer<typeof AdminCloseOrderSchema>;

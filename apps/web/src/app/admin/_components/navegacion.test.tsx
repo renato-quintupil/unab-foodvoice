@@ -19,6 +19,7 @@ describe('NavegacionAdmin (HU-15/HU-17)', () => {
 
     expect(screen.getAllByRole('link', { name: 'Panel' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'Usuarios' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Operaciones' })).toHaveLength(2);
   });
 
   it('marca como activo el destino que coincide con la ruta actual', () => {

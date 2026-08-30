@@ -226,12 +226,21 @@ export type OrderStatusEventDto = {
   resultingStatus: OrderStatus;
   actorName: string;
   actorRole: Role;
+  /** Solo presente en una intervención administrativa (E8, HU-07). */
+  reason: string | null;
   occurredAt: string;
 };
 
 /** El resumen del pedido más su historial cronológico completo (D-051). */
 export type OrderDetailDto = OrderSummaryDto & {
   history: OrderStatusEventDto[];
+};
+
+/** Estado operativo del servicio completo (E8, HU-07 Historia 3, D-085). */
+export type ServiceStatusDto = {
+  paused: boolean;
+  reason: string | null;
+  pausedAt: string | null;
 };
 
 // ---------------------------------------------------------------------------

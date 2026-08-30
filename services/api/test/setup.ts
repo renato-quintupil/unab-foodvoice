@@ -54,6 +54,10 @@ const TABLAS = [
   '"user"',
   'product',
   'category',
+  // E8 · Controles y administración. Fila única, sembrada por la migración
+  // (D-085) — `limpiarBase()` la vuelve a sembrar después del `TRUNCATE`,
+  // igual estado por defecto que deja la migración.
+  'service_status',
 ] as const;
 
 /**
@@ -100,4 +104,8 @@ export async function limpiarBase(): Promise<void> {
   await prisma.$executeRawUnsafe(
     `TRUNCATE TABLE ${TABLAS.join(', ')} RESTART IDENTITY CASCADE;`,
   );
+  // `service_status` es una fila única (D-085): el TRUNCATE de arriba la
+  // borra igual que a cualquier otra tabla, así que se vuelve a sembrar aquí
+  // — mismo estado inicial que deja la migración.
+  await prisma.serviceStatus.create({ data: { id: 'singleton' } });
 }

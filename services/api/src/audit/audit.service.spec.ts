@@ -36,6 +36,25 @@ describe('AuditService', () => {
         actorUserId: ACTOR,
         targetUserId: AFECTADO,
         action: AdminAction.DESACTIVAR,
+        reason: null,
+      },
+    });
+  });
+
+  it('registra targetUserId nulo y un motivo cuando la acción es sobre el servicio, no un usuario (E8, D-084)', async () => {
+    await servicio.registrar({
+      actorUserId: ACTOR,
+      targetUserId: null,
+      action: AdminAction.PAUSAR_SERVICIO,
+      reason: 'Corte de luz en el local',
+    });
+
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorUserId: ACTOR,
+        targetUserId: null,
+        action: AdminAction.PAUSAR_SERVICIO,
+        reason: 'Corte de luz en el local',
       },
     });
   });
@@ -81,8 +100,10 @@ describe('AuditService', () => {
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
-  it('acepta las seis acciones de FR-034 y ninguna más', () => {
-    expect(Object.values(AdminAction)).toHaveLength(6);
+  it('acepta las seis acciones de FR-034 más las dos de E8 (D-084), y ninguna más', () => {
+    expect(Object.values(AdminAction)).toHaveLength(8);
+    expect(Object.values(AdminAction)).toContain('PAUSAR_SERVICIO');
+    expect(Object.values(AdminAction)).toContain('REANUDAR_SERVICIO');
     expect(Object.values(AdminAction)).not.toContain('INICIAR_SESION');
     expect(Object.values(AdminAction)).not.toContain('CERRAR_SESION');
   });

@@ -175,6 +175,7 @@ describe('Trazabilidad muestra el reclamo (E4, FR-014, SC-006)', () => {
           resultingStatus: 'creado',
           actorName: 'Cliente De Prueba',
           actorRole: 'CLIENTE',
+          reason: null,
           occurredAt: '2026-08-27T12:00:00.000Z',
         },
         {
@@ -182,6 +183,7 @@ describe('Trazabilidad muestra el reclamo (E4, FR-014, SC-006)', () => {
           resultingStatus: 'cerrado',
           actorName: 'Cliente De Prueba',
           actorRole: 'CLIENTE',
+          reason: null,
           occurredAt: '2026-08-27T12:10:00.000Z',
         },
       ],

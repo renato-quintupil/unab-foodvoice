@@ -301,8 +301,7 @@ export async function sesionRepartidor(entorno: Entorno, email = 'repartidor@foo
 }
 
 /** Crea un usuario del rol indicado y devuelve su cookie de sesión. */
-export async function sesionDeRol(entorno: Entorno, role: Role) {
-  const email = `${role.toLowerCase()}@foodvoice.test`;
+export async function sesionDeRol(entorno: Entorno, role: Role, email = `${role.toLowerCase()}@foodvoice.test`) {
   await crearUsuario({ email, role });
   return conSesion(await iniciarSesion(entorno, email));
 }

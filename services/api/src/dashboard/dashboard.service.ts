@@ -186,6 +186,7 @@ function pedidoADetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
       resultingStatus: ESTADO_A_COMPARTIDO[evento.resultingStatus],
       actorName: evento.actor.fullName,
       actorRole: evento.actorRole,
+      reason: evento.reason,
       occurredAt: evento.occurredAt.toISOString(),
     })),
   };

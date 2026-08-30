@@ -3,6 +3,8 @@ import { Order, OrderLine, OrderStatus, Prisma, Role } from '@prisma/client';
 import {
   OrderStatus as OrderStatusCompartido,
   PAGE_SIZE,
+  puedeCerrarseAdministrativamente,
+  transicionesForzablesPorAdmin,
   type BusinessOrdersQuery,
   type ConfirmOrderInput,
   type DeliveryOrderDto,
@@ -20,9 +22,12 @@ import {
   pedidoNoAsignadoATi,
   pedidoNoEntregado,
   pedidoNoPendiente,
+  pedidoYaEsTerminal,
   pedidoYaNoDisponible,
   precioCambio,
   repartidorYaTienePedido,
+  servicioPausado,
+  transicionAdministrativaInvalida,
 } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -94,6 +99,11 @@ export class OrdersService {
    */
   async confirmar(userId: string, datos: ConfirmOrderInput): Promise<OrderSummaryDto> {
     const creado = await this.prisma.$transaction(async (tx) => {
+      // 0. El servicio no debe estar pausado (E8, FR-010, FR-011, D-088):
+      // primer chequeo, antes de tocar el carrito.
+      const servicio = await tx.serviceStatus.findUnique({ where: { id: 'singleton' } });
+      if (servicio?.paused) throw servicioPausado();
+
       // 1–2. Bloquea el carrito y exige al menos una línea (D-037, FR-009).
       const carrito = await tx.cart.findUnique({ where: { userId } });
       if (!carrito) throw carritoVacio();
@@ -514,6 +524,105 @@ export class OrdersService {
     });
     return { items: filas.map(aDto) };
   }
+
+  // -------------------------------------------------------------------------
+  // E8 · Controles y administración (HU-07, FR-001–FR-008)
+  // -------------------------------------------------------------------------
+
+  /**
+   * `PUT /admin/orders/:id/force-transition` (Historia 1, FR-001, FR-002,
+   * FR-005 a FR-008). Fuerza la transición normal siguiente en nombre del rol
+   * que correspondería dispararla — excluye la retroceso de E5, reservada al
+   * repartidor dueño del pedido (`transicionesForzablesPorAdmin`, D-083).
+   */
+  async forzarTransicion(
+    id: string,
+    adminId: string,
+    hacia: OrderStatusCompartido,
+    reason: string,
+  ): Promise<OrderSummaryDto> {
+    const pedidoActual = await this.prisma.order.findUnique({ where: { id } });
+    if (!pedidoActual) throw noEncontrado();
+
+    if (!transicionesForzablesPorAdmin(A_COMPARTIDO[pedidoActual.status]).includes(hacia)) {
+      throw transicionAdministrativaInvalida();
+    }
+
+    // `A_PRISMA` cubre los seis valores de `OrderStatusCompartido`: nunca es
+    // `undefined` para un `hacia` que ya validó `transicionesForzablesPorAdmin`.
+    const haciaPrisma = A_PRISMA[hacia]!;
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: pedidoActual.status },
+        data: { status: haciaPrisma },
+      });
+      if (count === 0) {
+        // Igual criterio que el resto del servicio: `updateMany` no distingue
+        // "no existe" de "cambió de estado entre la lectura y la escritura"
+        // (carrera perdida, FR-016) — ambos dan count 0.
+        const existe = await tx.order.findUnique({ where: { id } });
+        if (!existe) throw noEncontrado();
+        throw transicionAdministrativaInvalida();
+      }
+
+      await registrarEvento(tx, {
+        orderId: id,
+        previousStatus: pedidoActual.status,
+        resultingStatus: haciaPrisma,
+        actorUserId: adminId,
+        actorRole: Role.ADMINISTRADOR,
+        reason,
+      });
+
+      return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+    });
+
+    return aDto(resultado);
+  }
+
+  /**
+   * `PUT /admin/orders/:id/close` (Historia 2, FR-003, FR-004, FR-006 a
+   * FR-008). Cierra administrativamente un pedido en cualquier estado no
+   * terminal, fuera del camino normal — la séptima transición de la enmienda
+   * constitucional 4.0.0 (`puedeCerrarseAdministrativamente`, D-083).
+   */
+  async cerrarAdministrativamente(
+    id: string,
+    adminId: string,
+    reason: string,
+  ): Promise<OrderSummaryDto> {
+    const pedidoActual = await this.prisma.order.findUnique({ where: { id } });
+    if (!pedidoActual) throw noEncontrado();
+
+    if (!puedeCerrarseAdministrativamente(A_COMPARTIDO[pedidoActual.status])) {
+      throw pedidoYaEsTerminal();
+    }
+
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: pedidoActual.status },
+        data: { status: OrderStatus.CERRADO },
+      });
+      if (count === 0) {
+        const existe = await tx.order.findUnique({ where: { id } });
+        if (!existe) throw noEncontrado();
+        throw pedidoYaEsTerminal();
+      }
+
+      await registrarEvento(tx, {
+        orderId: id,
+        previousStatus: pedidoActual.status,
+        resultingStatus: OrderStatus.CERRADO,
+        actorUserId: adminId,
+        actorRole: Role.ADMINISTRADOR,
+        reason,
+      });
+
+      return tx.order.findUniqueOrThrow({ where: { id }, include: CON_LINEAS });
+    });
+
+    return aDto(resultado);
+  }
 }
 
 /**
@@ -534,6 +643,8 @@ async function registrarEvento(
     resultingStatus: OrderStatus;
     actorUserId: string;
     actorRole: Role;
+    /** Solo presente en una intervención administrativa (E8, HU-07, D-082). */
+    reason?: string | null;
   },
 ): Promise<void> {
   await tx.orderStatusEvent.create({
@@ -543,6 +654,7 @@ async function registrarEvento(
       resultingStatus: datos.resultingStatus,
       actorUserId: datos.actorUserId,
       actorRole: datos.actorRole,
+      reason: datos.reason ?? null,
     },
   });
 }
@@ -567,6 +679,7 @@ function aDetalleDto(pedido: OrdenConDetalle): OrderDetailDto {
       resultingStatus: A_COMPARTIDO[evento.resultingStatus],
       actorName: evento.actor.fullName,
       actorRole: evento.actorRole,
+      reason: evento.reason,
       occurredAt: evento.occurredAt.toISOString(),
     })),
   };

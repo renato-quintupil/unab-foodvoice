@@ -17,6 +17,7 @@ import { CerrarSesion } from '@/components/cerrar-sesion';
 const DESTINOS = [
   { href: '/admin', etiqueta: 'Panel', icono: 'panel' },
   { href: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'usuarios' },
+  { href: '/admin/operaciones', etiqueta: 'Operaciones', icono: 'operaciones' },
 ] as const;
 
 export function NavegacionAdmin() {
@@ -43,7 +44,7 @@ export function NavegacionAdmin() {
 
       <nav
         aria-label="Navegación mobile de administrador"
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 border-t border-[var(--color-borde)] bg-[var(--color-fondo)] px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-[var(--color-borde)] bg-[var(--color-fondo)] px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {DESTINOS.map((destino) => (
           <EnlaceDestino key={destino.href} destino={destino} pathname={pathname} mobile />
@@ -123,6 +124,12 @@ function IconoNavegacion({ tipo }: { tipo: Destino['icono'] }) {
           <path d="M3.5 20c0-3.5 2.7-6 5.5-6s5.5 2.5 5.5 6" />
           <circle cx="17.5" cy="9" r="2.4" />
           <path d="M15 14.5c2.4.3 4 2.2 4.5 5.5" />
+        </>
+      )}
+      {tipo === 'operaciones' && (
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 8v4l2.5 2.5" />
         </>
       )}
     </svg>

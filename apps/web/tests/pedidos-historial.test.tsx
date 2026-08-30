@@ -30,6 +30,7 @@ const PEDIDO_RECHAZADO: OrderDetailDto = {
       resultingStatus: 'creado',
       actorName: 'María Pérez',
       actorRole: 'CLIENTE',
+      reason: null,
       occurredAt: '2026-08-23T14:00:00.000Z',
     },
     {
@@ -37,6 +38,7 @@ const PEDIDO_RECHAZADO: OrderDetailDto = {
       resultingStatus: 'rechazado',
       actorName: 'Panadería Don José',
       actorRole: 'NEGOCIO',
+      reason: null,
       occurredAt: '2026-08-23T14:05:00.000Z',
     },
   ],

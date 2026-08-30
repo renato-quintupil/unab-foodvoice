@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { OrderStatus } from '../src/enums/order-status';
 import {
   MSG_DIRECCION_REQUERIDA,
   MSG_DIRECCION_TEXTO_VACIO,
+  MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO,
   MSG_MOTIVO_RECHAZO_REQUERIDO,
 } from '../src/messages/es';
-import { ConfirmOrderSchema, RejectOrderSchema } from '../src/schemas/order';
+import {
+  AdminCloseOrderSchema,
+  ConfirmOrderSchema,
+  ForceOrderTransitionSchema,
+  RejectOrderSchema,
+} from '../src/schemas/order';
 
 const PRODUCT_ID = '11111111-1111-1111-1111-111111111111';
 const ADDRESS_ID = '22222222-2222-2222-2222-222222222222';
@@ -91,5 +98,47 @@ describe('RejectOrderSchema (FR-033, RN-007)', () => {
 
   it('rechaza un motivo de más de 500 caracteres', () => {
     expect(RejectOrderSchema.safeParse({ reason: 'a'.repeat(501) }).success).toBe(false);
+  });
+});
+
+describe('ForceOrderTransitionSchema (E8, HU-07 Historia 1, FR-001, FR-002)', () => {
+  it('acepta un targetStatus válido con motivo de al menos 10 caracteres', () => {
+    expect(
+      ForceOrderTransitionSchema.safeParse({
+        targetStatus: OrderStatus.EN_PREPARACION,
+        reason: 'El negocio no respondió en más de una hora',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rechaza un targetStatus que no es un OrderStatus válido', () => {
+    expect(
+      ForceOrderTransitionSchema.safeParse({
+        targetStatus: 'inventado',
+        reason: 'El negocio no respondió en más de una hora',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rechaza un motivo vacío con el mensaje del campo', () => {
+    const resultado = ForceOrderTransitionSchema.safeParse({
+      targetStatus: OrderStatus.EN_PREPARACION,
+      reason: '',
+    });
+    expect(resultado.success).toBe(false);
+    expect(mensajes(resultado)).toContain(MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO);
+  });
+});
+
+describe('AdminCloseOrderSchema (E8, HU-07 Historia 2, FR-003, FR-004)', () => {
+  it('acepta un motivo de al menos 10 caracteres', () => {
+    expect(
+      AdminCloseOrderSchema.safeParse({ reason: 'Local cerrado por emergencia' }).success,
+    ).toBe(true);
+  });
+
+  it('rechaza un motivo compuesto solo de espacios, igual que uno vacío', () => {
+    const resultado = AdminCloseOrderSchema.safeParse({ reason: '          ' });
+    expect(mensajes(resultado)).toContain(MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO);
   });
 });

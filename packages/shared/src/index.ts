@@ -94,10 +94,15 @@ export {
   ConfirmOrderSchema,
   RejectOrderSchema,
   ComplainOrderSchema,
+  ForceOrderTransitionSchema,
+  AdminCloseOrderSchema,
   type ConfirmOrderInput,
   type RejectOrderInput,
   type ComplainOrderInput,
+  type ForceOrderTransitionInput,
+  type AdminCloseOrderInput,
 } from './schemas/order';
+export { PauseServiceSchema, type PauseServiceInput } from './schemas/service-status';
 export { SearchRequestSchema, type SearchRequest } from './schemas/search';
 
 export { formatearPrecio, PRECIO_MINIMO, PRECIO_MAXIMO } from './format/precio';
@@ -159,6 +164,10 @@ export {
   MSG_MOTIVO_RECLAMO_REQUERIDO,
   MSG_PEDIDO_NO_ENTREGADO,
   MSG_SIN_PEDIDOS_CERRADOS,
+  MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO,
+  MSG_TRANSICION_ADMINISTRATIVA_INVALIDA,
+  MSG_PEDIDO_YA_ES_TERMINAL,
+  MSG_SERVICIO_PAUSADO,
 } from './messages/es';
 export {
   ETIQUETA_ROL,
@@ -176,7 +185,12 @@ export {
 
 export { normalizarBusqueda, escaparLike } from './search/normalizar';
 
-export { transicionesValidas, esTransicionValida } from './order-state/machine';
+export {
+  transicionesValidas,
+  esTransicionValida,
+  transicionesForzablesPorAdmin,
+  puedeCerrarseAdministrativamente,
+} from './order-state/machine';
 
 export type {
   UserDto,
@@ -200,4 +214,5 @@ export type {
   AddResolutionResponse,
   ItemResuelto,
   DeliveryOrderDto,
+  ServiceStatusDto,
 } from './types/api';

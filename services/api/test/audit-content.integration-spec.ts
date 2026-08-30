@@ -124,7 +124,9 @@ describe('Ninguna columna contiene datos personales (Principio X)', () => {
     const columnas = Object.keys(entradas[0] ?? {}).sort();
 
     expect(columnas).toEqual(
-      ['id', 'actorUserId', 'targetUserId', 'action', 'occurredAt'].sort(),
+      // `reason` es nueva en E8 (D-084): NULL en las seis acciones de E1, que
+      // nunca la usan — sigue sin copiar ningún dato personal.
+      ['id', 'actorUserId', 'targetUserId', 'action', 'occurredAt', 'reason'].sort(),
     );
 
     const contenido = JSON.stringify(entradas);

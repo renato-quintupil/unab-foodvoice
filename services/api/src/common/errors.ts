@@ -27,6 +27,9 @@ import {
   MSG_REPARTIDOR_YA_TIENE_PEDIDO,
   MSG_PEDIDO_NO_ASIGNADO_A_TI,
   MSG_PEDIDO_NO_ENTREGADO,
+  MSG_TRANSICION_ADMINISTRATIVA_INVALIDA,
+  MSG_PEDIDO_YA_ES_TERMINAL,
+  MSG_SERVICIO_PAUSADO,
 } from '@foodvoice/shared';
 
 /**
@@ -80,6 +83,12 @@ export const ErrorCode = {
   // (incluye uno ya `cerrado`) — un conflicto con el estado actual, no un
   // error de forma.
   ORDER_NOT_DELIVERED: 'ORDER_NOT_DELIVERED',
+  // E8 · Controles y administración. Los tres son `409`: describen un
+  // conflicto con el estado actual del pedido o del servicio, nunca un error
+  // de forma del cuerpo.
+  FORCE_TRANSITION_INVALID: 'FORCE_TRANSITION_INVALID',
+  ORDER_ALREADY_TERMINAL: 'ORDER_ALREADY_TERMINAL',
+  SERVICE_PAUSED: 'SERVICE_PAUSED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -302,3 +311,23 @@ export const pedidoNoAsignadoATi = (): AppError =>
 /** `409 ORDER_NOT_DELIVERED` (D-076). El pedido no está en `entregado` (incluye uno ya `cerrado`). */
 export const pedidoNoEntregado = (): AppError =>
   new AppError(409, ErrorCode.ORDER_NOT_DELIVERED, MSG_PEDIDO_NO_ENTREGADO);
+
+// ---------------------------------------------------------------------------
+// E8 · Controles y administración (`contracts/api.md` § Códigos de error que E8 añade)
+// ---------------------------------------------------------------------------
+
+/**
+ * `409 FORCE_TRANSITION_INVALID` (FR-001, FR-006). El estado destino no es una
+ * transición forzable desde el estado actual del pedido (incluye pedidos ya
+ * terminales), o la carrera se perdió.
+ */
+export const transicionAdministrativaInvalida = (): AppError =>
+  new AppError(409, ErrorCode.FORCE_TRANSITION_INVALID, MSG_TRANSICION_ADMINISTRATIVA_INVALIDA);
+
+/** `409 ORDER_ALREADY_TERMINAL` (FR-003, FR-006). El pedido ya está en `cerrado` o `rechazado`, o perdió la carrera. */
+export const pedidoYaEsTerminal = (): AppError =>
+  new AppError(409, ErrorCode.ORDER_ALREADY_TERMINAL, MSG_PEDIDO_YA_ES_TERMINAL);
+
+/** `409 SERVICE_PAUSED` (FR-010, D-088). El servicio está pausado; no se admite confirmar pedidos nuevos. */
+export const servicioPausado = (): AppError =>
+  new AppError(409, ErrorCode.SERVICE_PAUSED, MSG_SERVICIO_PAUSADO);
