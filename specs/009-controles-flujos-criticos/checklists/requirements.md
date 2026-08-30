@@ -36,8 +36,8 @@
   resolvieron con el usuario antes de escribir esta spec (ver § Clarifications
   y `docs/epicas-hu/hu/HU-07-controles-de-flujos-criticos.md`); no quedó
   ningún marcador `[NEEDS CLARIFICATION]` pendiente.
-- Un punto queda señalado para el Constitution Check de `/speckit.plan`, no
-  para `/speckit.clarify`: si el cierre administrativo fuera del camino
-  normal (Historia 2) exige tratamiento especial respecto del Principio XII
-  o si se declara como mecanismo administrativo aparte — ver el último ítem
-  de § Assumptions.
+- `/speckit.clarify` (2026-08-30) resolvió que el cierre administrativo
+  fuera del camino normal (Historia 2) exige una enmienda al Principio XII
+  antes de `/speckit.plan` — ver § Clarifications (sesión "durante
+  `/speckit.clarify`") y el ítem correspondiente de § Assumptions. Ejecutar
+  `/speckit.constitution` antes de `/speckit.plan`.
