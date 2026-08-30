@@ -56,7 +56,7 @@ Con la sesión del **administrador**.
 | **V-02** | Abrir la trazabilidad de ese pedido (E4) | La entrada `creado → en_preparacion` muestra al administrador como actor y el motivo escrito (SC-004, SC-007) |
 | **V-02a** | Con la sesión del **negocio**, abrir el detalle de ese mismo pedido desde `/negocio/pedidos` | Ve el mismo motivo que vio el cliente en V-01, sin que su pantalla de detalle haya necesitado ningún cambio propio (SC-004) |
 | **V-03** | Con un **segundo pedido** en `asignado_repartidor` (repetir confirmar → aceptar → tomar, E2/E5), intentar forzar la transición hacia `en_preparacion` | El sistema lo impide con `409 FORCE_TRANSITION_INVALID` — esa transición es la retroceso reservada al repartidor dueño del pedido, no al administrador |
-| **V-03a** | Sobre el pedido de V-03, forzar la transición hacia `entregado` (destino sí forzable desde `asignado_repartidor`) con motivo, luego revisar `/repartidor` con la sesión de **ese mismo repartidor** | El motivo queda visible en la trazabilidad del repartidor (SC-004) y ya no tiene ningún pedido en curso — vuelve a ver la lista de disponibles (FR-007) |
+| **V-03a** | Sobre el pedido de V-03, forzar la transición hacia `entregado` (destino sí forzable desde `asignado_repartidor`) con motivo, luego revisar `/repartidor` con la sesión de **ese mismo repartidor** | Ya no tiene ningún pedido en curso — vuelve a ver la lista de disponibles (FR-007). El repartidor no tiene pantalla de detalle en v1, así que no se espera ver el motivo ahí (FR-008) |
 
 ### B · Cerrar administrativamente un pedido atascado (Historia 2, SC-002)
 
@@ -104,7 +104,7 @@ Con la sesión del **administrador**.
 | SC-001 (forzar transición en menos de 2 min) | V-01 |
 | SC-002 (cerrar administrativamente en menos de 2 min) | V-04 |
 | SC-003 (pausar en menos de 1 min, reanudar en 1 clic) | V-07, V-10 |
-| SC-004 (motivo correcto visible a los roles afectados) | V-01, V-02, V-02a, V-03a, V-04, V-04a |
+| SC-004 (motivo correcto visible al cliente y al negocio) | V-01, V-02, V-02a, V-04, V-04a |
 | SC-005 (100% de confirmaciones bloqueadas en pausa; pedidos en curso no afectados) | V-08, V-09 |
 | SC-006 (confirmar tras reanudar, sin pasos adicionales) | V-11 |
 | SC-007 (bitácora con administrador, acción, objetivo y motivo correctos) | V-12 |

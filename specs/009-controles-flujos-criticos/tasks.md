@@ -41,7 +41,7 @@ nueva.
 
 **Propósito**: obtener una línea base verificable sin alterar E1–E7, antes de tocar el esquema.
 
-- [ ] T001 Ejecutar la línea base de `specs/009-controles-flujos-criticos/quickstart.md` —`pnpm
+- [X] T001 Ejecutar la línea base de `specs/009-controles-flujos-criticos/quickstart.md` —`pnpm
   test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm build`—, registrar el
   resultado y detener la implementación si existe un fallo preexistente
 
@@ -54,39 +54,39 @@ los DTOs compartidos que las tres historias necesitan. Ninguna historia puede em
 
 **⚠️ CRÍTICO**: ninguna historia empieza hasta completar esta fase.
 
-- [ ] T002 Añadir `reason` (nullable, `text`) al modelo `OrderStatusEvent` en
+- [X] T002 Añadir `reason` (nullable, `text`) al modelo `OrderStatusEvent` en
   `services/api/prisma/schema.prisma` (D-082, según `data-model.md`)
-- [ ] T003 Añadir el modelo `ServiceStatus` (`id` fijo `'singleton'`, `paused`, `pauseReason`,
+- [X] T003 Añadir el modelo `ServiceStatus` (`id` fijo `'singleton'`, `paused`, `pauseReason`,
   `pausedAt`, `pausedByUserId`) en `services/api/prisma/schema.prisma` (D-085)
-- [ ] T004 En `services/api/prisma/schema.prisma`: hacer `targetUserId` nulable en
+- [X] T004 En `services/api/prisma/schema.prisma`: hacer `targetUserId` nulable en
   `AdminAuditLog`, añadir su columna `reason` (nullable), y añadir `PAUSAR_SERVICIO` y
   `REANUDAR_SERVICIO` al enum `AdminAction` (D-084, depende de T002, T003 solo por orden de
   edición del mismo archivo)
-- [ ] T005 Generar con `prisma migrate dev --create-only` el archivo
+- [X] T005 Generar con `prisma migrate dev --create-only` el archivo
   `services/api/prisma/migrations/<timestamp>_controles_flujos_criticos/migration.sql` a partir
   de T002–T004, agregando manualmente el `INSERT` que siembra la fila única de
   `service_status` (`id = 'singleton'`, `paused = false`) (depende de T002, T003, T004)
-- [ ] T006 [P] Añadir `MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO`,
+- [X] T006 [P] Añadir `MSG_MOTIVO_ADMINISTRATIVO_REQUERIDO`,
   `MSG_TRANSICION_ADMINISTRATIVA_INVALIDA`, `MSG_PEDIDO_YA_ES_TERMINAL` y
   `MSG_SERVICIO_PAUSADO` en `packages/shared/src/messages/es.ts` (D-086)
-- [ ] T007 [P] Añadir `transicionesForzablesPorAdmin(desde)` y
+- [X] T007 [P] Añadir `transicionesForzablesPorAdmin(desde)` y
   `puedeCerrarseAdministrativamente(desde)` en `packages/shared/src/order-state/machine.ts`,
   sin modificar `SIGUIENTE` (D-083)
-- [ ] T008 [P] Añadir `ForceOrderTransitionSchema` y `AdminCloseOrderSchema` en
+- [X] T008 [P] Añadir `ForceOrderTransitionSchema` y `AdminCloseOrderSchema` en
   `packages/shared/src/schemas/order.ts` (depende de T006 por el mensaje que usan)
-- [ ] T009 [P] Crear `packages/shared/src/schemas/service-status.ts` con `PauseServiceSchema`
+- [X] T009 [P] Crear `packages/shared/src/schemas/service-status.ts` con `PauseServiceSchema`
   (depende de T006)
-- [ ] T010 [P] Añadir `reason: string | null` a `OrderStatusEventDto` y crear `ServiceStatusDto`
+- [X] T010 [P] Añadir `reason: string | null` a `OrderStatusEventDto` y crear `ServiceStatusDto`
   en `packages/shared/src/types/api.ts`
-- [ ] T011 Exportar `transicionesForzablesPorAdmin`, `puedeCerrarseAdministrativamente`,
+- [X] T011 Exportar `transicionesForzablesPorAdmin`, `puedeCerrarseAdministrativamente`,
   `ForceOrderTransitionSchema`, `AdminCloseOrderSchema`, `PauseServiceSchema`,
   `ServiceStatusDto` y los cuatro mensajes nuevos desde `packages/shared/src/index.ts` (depende
   de T006, T007, T008, T009, T010)
-- [ ] T012 Añadir `ErrorCode.FORCE_TRANSITION_INVALID`, `ErrorCode.ORDER_ALREADY_TERMINAL` y
+- [X] T012 Añadir `ErrorCode.FORCE_TRANSITION_INVALID`, `ErrorCode.ORDER_ALREADY_TERMINAL` y
   `ErrorCode.SERVICE_PAUSED` al catálogo cerrado de `services/api/src/common/errors.ts`, con sus
   funciones constructoras `transicionAdministrativaInvalida()`, `pedidoYaEsTerminal()` y
   `servicioPausado()` devolviendo `409` (depende de T006, T011)
-- [ ] T013 Actualizar el helper `registrarEvento()` en `services/api/src/orders/orders.service.ts`
+- [X] T013 Actualizar el helper `registrarEvento()` en `services/api/src/orders/orders.service.ts`
   para aceptar un `reason?: string | null` opcional y escribirlo en `OrderStatusEvent.create`;
   actualizar `aDetalleDto()` para incluir `reason: evento.reason` en el mapeo a
   `OrderStatusEventDto` (depende de T002, T010, T011)
@@ -111,7 +111,7 @@ trazabilidad, y comprobar que no puede forzar la retroceso reservada al repartid
 
 > **NOTA: escribir estas pruebas primero y comprobar que fallan antes de implementar.**
 
-- [ ] T014 [P] [US1] Crear las pruebas fallidas de `PUT /admin/orders/:id/force-transition` en
+- [X] T014 [P] [US1] Crear las pruebas fallidas de `PUT /admin/orders/:id/force-transition` en
   `services/api/test/admin-orders-force-transition.integration-spec.ts`: transiciona un pedido
   en `creado` a `en_preparacion` y registra el evento con el administrador como actor y el
   motivo (FR-001, FR-002); transiciona `asignado_repartidor` a `entregado` correctamente;
@@ -127,7 +127,7 @@ trazabilidad, y comprobar que no puede forzar la retroceso reservada al repartid
 
 ### Implementación de US1
 
-- [ ] T015 [US1] Añadir `forzarTransicion(id, adminId, hacia, reason)` en
+- [X] T015 [US1] Añadir `forzarTransicion(id, adminId, hacia, reason)` en
   `services/api/src/orders/orders.service.ts`: lee el pedido, valida
   `transicionesForzablesPorAdmin(pedido.status).includes(hacia)` o lanza
   `transicionAdministrativaInvalida()`; dentro de una transacción, `updateMany({ where: { id,
@@ -135,19 +135,19 @@ trazabilidad, y comprobar que no puede forzar la retroceso reservada al repartid
   `noEncontrado()` de `transicionAdministrativaInvalida()` (carrera perdida); llama a
   `registrarEvento` con `previousStatus: pedido.status, resultingStatus: hacia, actorRole:
   Role.ADMINISTRADOR, reason` (FR-001, FR-002, FR-005 a FR-007, depende de T007, T012, T013)
-- [ ] T016 [US1] Crear `services/api/src/orders/admin-orders.controller.ts` con
+- [X] T016 [US1] Crear `services/api/src/orders/admin-orders.controller.ts` con
   `@Controller('admin/orders')`, `@Roles(Role.ADMINISTRADOR)`, y `PUT :id/force-transition`
   validando el cuerpo con `ForceOrderTransitionSchema` y delegando a `forzarTransicion` (depende
   de T008, T015)
-- [ ] T017 [US1] Registrar `AdminOrdersController` en
+- [X] T017 [US1] Registrar `AdminOrdersController` en
   `services/api/src/orders/orders.module.ts` como cuarto controlador del módulo (D-087, depende
   de T016)
-- [ ] T018 [US1] Crear
+- [X] T018 [US1] Crear
   `apps/web/src/app/admin/pedidos/[id]/_components/forzar-transicion.tsx`: selector de estado
   destino (los que la interfaz ofrezca como razonables para el estado actual) + diálogo con
   campo de motivo obligatorio, mismo patrón que `dialogo-rechazo.tsx` de E2, llamando a `PUT
   /admin/orders/:id/force-transition` (depende de T017)
-- [ ] T019 [US1] Integrar `ForzarTransicion` en `apps/web/src/app/admin/pedidos/[id]/page.tsx`,
+- [X] T019 [US1] Integrar `ForzarTransicion` en `apps/web/src/app/admin/pedidos/[id]/page.tsx`,
   visible solo cuando el pedido no está en un estado terminal (depende de T018)
 
 **Punto de control**: un administrador puede forzar el avance de un pedido atascado y ver el
@@ -166,7 +166,7 @@ intento falla, y que el motivo es obligatorio.
 
 ### Pruebas de US2
 
-- [ ] T020 [P] [US2] Crear las pruebas fallidas de `PUT /admin/orders/:id/close` en
+- [X] T020 [P] [US2] Crear las pruebas fallidas de `PUT /admin/orders/:id/close` en
   `services/api/test/admin-orders-close.integration-spec.ts`: cierra administrativamente un
   pedido en `creado`, `en_preparacion`, `asignado_repartidor` y `entregado`, cada uno a
   `cerrado`, con el motivo registrado en el historial (FR-003, FR-004); `409
@@ -181,7 +181,7 @@ intento falla, y que el motivo es obligatorio.
 
 ### Implementación de US2
 
-- [ ] T021 [US2] Añadir `cerrarAdministrativamente(id, adminId, reason)` en
+- [X] T021 [US2] Añadir `cerrarAdministrativamente(id, adminId, reason)` en
   `services/api/src/orders/orders.service.ts`: lee el pedido, valida
   `puedeCerrarseAdministrativamente(pedido.status)` o lanza `pedidoYaEsTerminal()`; dentro de una
   transacción, `updateMany({ where: { id, status: pedido.status }, data: { status: CERRADO } })`;
@@ -189,14 +189,14 @@ intento falla, y que el motivo es obligatorio.
   perdida); llama a `registrarEvento` con `previousStatus: pedido.status, resultingStatus:
   CERRADO, actorRole: Role.ADMINISTRADOR, reason` (FR-003, FR-004, FR-006 a FR-007, depende de
   T007, T012, T013)
-- [ ] T022 [US2] Añadir `PUT :id/close` en
+- [X] T022 [US2] Añadir `PUT :id/close` en
   `services/api/src/orders/admin-orders.controller.ts`, validando el cuerpo con
   `AdminCloseOrderSchema` y delegando a `cerrarAdministrativamente` (depende de T008, T021)
-- [ ] T023 [US2] Crear
+- [X] T023 [US2] Crear
   `apps/web/src/app/admin/pedidos/[id]/_components/cerrar-administrativamente.tsx`: diálogo con
   campo de motivo obligatorio, mismo patrón que `forzar-transicion.tsx`, llamando a `PUT
   /admin/orders/:id/close` (depende de T022)
-- [ ] T024 [US2] Integrar `CerrarAdministrativamente` en
+- [X] T024 [US2] Integrar `CerrarAdministrativamente` en
   `apps/web/src/app/admin/pedidos/[id]/page.tsx`, junto a `ForzarTransicion`, visible solo
   cuando el pedido no está en un estado terminal (depende de T019, T023)
 
@@ -215,7 +215,7 @@ cliente no puede confirmar, comprobar que los pedidos ya en curso siguen operabl
 
 ### Pruebas de US3
 
-- [ ] T025 [P] [US3] Crear las pruebas fallidas de `services/api/test/service-status.integration-spec.ts`:
+- [X] T025 [P] [US3] Crear las pruebas fallidas de `services/api/test/service-status.integration-spec.ts`:
   `GET /admin/service/status` devuelve `paused: false` por defecto tras la migración; `PUT
   /admin/service/pause` con motivo deja `paused: true` con ese motivo y registra
   `PAUSAR_SERVICIO` en `AdminAuditLog`; `POST /orders` responde `409 SERVICE_PAUSED` mientras
@@ -227,24 +227,24 @@ cliente no puede confirmar, comprobar que los pedidos ya en curso siguen operabl
 
 ### Implementación de US3
 
-- [ ] T026 [US3] Crear `services/api/src/service-status/service-status.service.ts` con
+- [X] T026 [US3] Crear `services/api/src/service-status/service-status.service.ts` con
   `estado()`, `pausar(adminId, reason)` y `reanudar(adminId)`, cada escritura dentro de una
   transacción que también llama a `AuditService.registrar` con `targetUserId: null` y la acción
   correspondiente (D-084, D-085, depende de T004, T005, T011)
-- [ ] T027 [US3] Crear `services/api/src/service-status/service-status.controller.ts`
+- [X] T027 [US3] Crear `services/api/src/service-status/service-status.controller.ts`
   (`admin/service`, `@Roles(Role.ADMINISTRADOR)`) con `GET status`, `PUT pause` (valida con
   `PauseServiceSchema`) y `PUT resume` (depende de T009, T026)
-- [ ] T028 [US3] Crear `services/api/src/service-status/service-status.module.ts`, importando
+- [X] T028 [US3] Crear `services/api/src/service-status/service-status.module.ts`, importando
   `AuditModule`, y registrarlo en `services/api/src/app.module.ts` (depende de T027)
-- [ ] T029 [US3] En `OrdersService.confirmar()` (`services/api/src/orders/orders.service.ts`),
+- [X] T029 [US3] En `OrdersService.confirmar()` (`services/api/src/orders/orders.service.ts`),
   añadir como primer paso de la transacción existente la lectura de `ServiceStatus` (`id:
   'singleton'`) y lanzar `servicioPausado()` si `paused = true`, antes de tocar el carrito
   (FR-010, FR-011, D-088, depende de T003, T012)
-- [ ] T030 [US3] Crear `apps/web/src/app/admin/operaciones/page.tsx`: muestra el estado actual
+- [X] T030 [US3] Crear `apps/web/src/app/admin/operaciones/page.tsx`: muestra el estado actual
   (`GET /admin/service/status`) y el botón de pausar (abre
   `_components/dialogo-pausa.tsx`, con motivo obligatorio) o reanudar (acción directa de un
   clic, sin diálogo) según corresponda (depende de T028)
-- [ ] T031 [US3] Añadir el tercer destino "Operaciones" (con su ícono) a
+- [X] T031 [US3] Añadir el tercer destino "Operaciones" (con su ícono) a
   `apps/web/src/app/admin/_components/navegacion.tsx`, junto a "Panel" y "Usuarios" (D-089,
   depende de T030)
 
@@ -258,20 +258,23 @@ cliente no puede confirmar, comprobar que los pedidos ya en curso siguen operabl
 verificar la exclusión de acciones fuera de alcance, cerrar la épica con la validación manual y
 actualizar el estado del producto.
 
-- [ ] T032 [P] Extender `apps/web/src/components/historial-pedido.tsx` (E4, D-051): cuando
+- [X] T032 [P] Extender `apps/web/src/components/historial-pedido.tsx` (E4, D-051): cuando
   `evento.reason` exista, mostrar "Motivo (intervención administrativa): {motivo}" junto a ese
   evento —sin condicionarlo a que sea el último evento, a diferencia de `rejectionReason`/
   `complaintReason` (FR-008, depende de T013)
-- [ ] T033 [P] Crear pruebas unitarias de `transicionesForzablesPorAdmin` y
+- [X] T033 [P] Crear pruebas unitarias de `transicionesForzablesPorAdmin` y
   `puedeCerrarseAdministrativamente` en
   `packages/shared/src/order-state/machine.spec.ts`: cubrir los seis estados, la exclusión
   explícita de la retroceso, y que ambas funciones devuelven vacío/`false` para `cerrado` y
   `rechazado` (depende de T007)
-- [ ] T034 [P] Crear `services/api/test/admin-orders-catalog-exclusion.integration-spec.ts`:
-  ningún endpoint de `categories`/`products` admite al rol `ADMINISTRADOR` (FR-017, SC-008)
-- [ ] T035 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
+- [X] T034 [P] ~~Crear `services/api/test/admin-orders-catalog-exclusion.integration-spec.ts`~~ —
+  innecesario: `products-roles.integration-spec.ts` y `categories-roles.integration-spec.ts`
+  (E3) ya parametrizan `ROLES_SIN_ACCESO` sobre `Role.ADMINISTRADOR` y verifican 403 en los
+  diez endpoints combinados; duplicar esa cobertura violaría el Principio I (FR-017, SC-008
+  ya cubiertos)
+- [X] T035 Ejecutar `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck` y `pnpm
   build`; deben pasar en verde antes de la validación manual
-- [ ] T036 Recorrer V-01 a V-13 de `specs/009-controles-flujos-criticos/quickstart.md` con una
+- [X] T036 Recorrer V-01 a V-13 de `specs/009-controles-flujos-criticos/quickstart.md` con una
   sesión real de administrador y una de cliente; registrar el resultado en
   `specs/009-controles-flujos-criticos/verificacion.md`
 - [ ] T037 Actualizar `specs/README.md` y `CLAUDE.md` (§ Estado del código) para reflejar E8 como

@@ -5,33 +5,39 @@ trazabilidad del pedido de punta a punta.
 
 **Estado del código**: **E1 · Acceso y usuarios**, **E3 · Administración de
 menú**, **E2 · Gestión de pedidos**, **E9 · Navegación y experiencia visual**,
-**E4 · Trazabilidad del pedido**, **E6 · Búsqueda por voz**, **E5 · Reparto** y
-**E7 · Cierre del servicio** están **construidas y verificadas**. Los tres
-espacios de trabajo —`apps/web`, `services/api` y `packages/shared`— están
-poblados, y las dos capas automáticas pasan en verde: **615 pruebas
-unitarias** de `services/api` (147) y `packages/shared` (239), más **229
-pruebas** sobre `apps/web`, todas con sus umbrales de cobertura, y **657 de
-integración en 92 baterías** contra PostgreSQL real — E9 no agrega baterías
-de integración porque no toca `services/api`; E4 agrega tres; E6 agrega
-cuatro; E5 agrega seis, incluida la concurrencia real de "un repartidor, un
-pedido a la vez"; E7 agrega seis más, incluida la concurrencia real de
-confirmar/reclamar simultáneos.
+**E4 · Trazabilidad del pedido**, **E6 · Búsqueda por voz**, **E5 · Reparto**,
+**E7 · Cierre del servicio** y **E8 · Controles y administración** están
+**construidas y verificadas** — **las nueve épicas del mapa de producto**.
+Los tres espacios de trabajo —`apps/web`, `services/api` y
+`packages/shared`— están poblados, y las dos capas automáticas pasan en
+verde: **634 pruebas unitarias** de `services/api` (151) y
+`packages/shared` (254), más **229 pruebas** sobre `apps/web`, todas con sus
+umbrales de cobertura, y **681 de integración en 95 baterías** contra
+PostgreSQL real — E9 no agrega baterías de integración porque no toca
+`services/api`; E4 agrega tres; E6 agrega cuatro; E5 agrega seis, incluida la
+concurrencia real de "un repartidor, un pedido a la vez"; E7 agrega seis más,
+incluida la concurrencia real de confirmar/reclamar simultáneos; E8 agrega
+tres más, incluida la concurrencia real de dos intervenciones administrativas
+simultáneas sobre el mismo pedido.
 
-Las ocho validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
+Las nueve validaciones funcionales se ejecutaron a mano —E1 el 2026-08-15, con
 las esperas reales de 15 y 30 minutos; E3 el 2026-08-16, sus 56 pasos; E2 el
 2026-08-18, sus 40 pasos; E9 el 2026-08-19, sus 26 pasos (dos rondas de
 enmiendas incluidas); E4 el 2026-08-23, sus 12 pasos; E6 el 2026-08-24, sus 16
 pasos (nueve por Claude contra la aplicación real, siete por una persona con
 micrófono real); E5 el 2026-08-27, sus 14 pasos, con Claude manejando el
 navegador real; E7 el 2026-08-27, sus 10 pasos, también con Claude manejando
-el navegador real— y su detalle está en el `verificacion.md` de cada spec.
+el navegador real; E8 el 2026-08-30, sus 14 pasos, también con Claude
+manejando el navegador real— y su detalle está en el `verificacion.md` de
+cada spec.
 
 **Las tres primeras no fueron un trámite, y esa es la lección que conviene
 llevarse a las épicas siguientes**: cada una encontró defectos reales que
 ninguna prueba automática detectaba, siempre del mismo tipo —cada pieza
 funcionaba aislada y aun así el usuario no veía lo que la spec le promete—.
-**E9, E4 y E7 son las únicas que no encontraron ninguno**; E6 encontró uno
-fuera de los 16 pasos y E5 encontró uno dentro de ellos.
+**E9, E4, E7 y E8 son las únicas que no encontraron ningún defecto de
+comportamiento**; E6 encontró uno fuera de los 16 pasos y E5 encontró uno
+dentro de ellos.
 
 - En E1: el error de formulario no quedaba asociado a su campo, y cuatro
   pantallas usaban un mensaje recortado en lugar del compartido (T133, T134).
@@ -74,6 +80,13 @@ fuera de los 16 pasos y E5 encontró uno dentro de ellos.
   Su único hallazgo real —la ausencia de un camino del negocio hacia un
   pedido `cerrado`— se encontró y corrigió durante `/speckit.analyze`, antes
   de programar, no durante la validación funcional.
+- En E8: tampoco encontró ningún defecto de comportamiento en los 14 pasos de
+  `quickstart.md`. Su único hallazgo real —FR-008 prometía al repartidor ver
+  el motivo de una intervención administrativa, pero ese rol nunca tuvo una
+  pantalla de detalle o historial de pedido (E4 solo construyó esa pantalla
+  para cliente, negocio y administrador)— se encontró y corrigió en la propia
+  spec **antes** del recorrido, al preparar la guía de validación, no durante
+  ella.
 
 A eso se suma una tercera lección, de la prueba de humo que se hizo sobre
 contenedores antes de integrar E3: **el despliegue es una capa aparte, y las
@@ -103,10 +116,62 @@ en_preparacion`), ver el Sync Impact Report de
 que quedaban sin camino** (`asignado_repartidor → entregado`,
 `entregado → cerrado`) — a diferencia de E5, no necesitó ninguna enmienda
 constitucional nueva: ambas ya estaban declaradas en el Principio XII desde
-su redacción original. La siguiente épica del orden sugerido es **E8** (el
-orden es E1 → E3 → E2 → E4 → E6 → E5 → E7 → E8); **E9 es transversal y no
+su redacción original. **E8 completó el orden sugerido** (E1 → E3 → E2 → E4 →
+E6 → E5 → E7 → E8) dándole al administrador un camino alternativo sobre esa
+misma máquina de estados —forzar la transición normal siguiente, o cerrar
+administrativamente saltándose pasos— y una acción nueva ajena al pedido,
+pausar el servicio completo. A diferencia de E5 (transición nueva por diseño)
+y como E7 (sin enmienda), **la enmienda de E8 se detectó durante
+`/speckit.clarify`, leyendo el propio Principio XII**: "no se permite ninguna
+otra transición" bloqueaba el cierre administrativo tal como se había
+decidido con el usuario, así que la constitución pasó a **v4.0.0** para
+declarar esa séptima transición antes de planificar. **E9 es transversal y no
 participa de ese orden** — se completó en paralelo, envolviendo con
-navegación las pantallas que E1+E3+E2 ya habían construido.
+navegación las pantallas que E1+E3+E2 ya habían construido. **Con E8
+verificada, las nueve épicas del mapa de producto —las ocho del orden
+E1→E8 más E9— quedan completas.**
+
+### Lo que E8 añadió al código
+
+- **Constitución**: enmienda a **v4.0.0** del Principio XII — agrega una séptima transición
+  declarada, de cualquier pedido no terminal directamente a `cerrado`, disparable únicamente por
+  `ADMINISTRADOR` y con motivo obligatorio. Detectada durante `/speckit.clarify`, no al diseñar:
+  el texto vigente ("no se permite ninguna otra transición") bloqueaba de raíz el cierre
+  administrativo de la Historia 2.
+- **`packages/shared`**: dos funciones nuevas en `order-state/machine.ts` —
+  `transicionesForzablesPorAdmin` (Historia 1, reutiliza `SIGUIENTE` sin tocarlo, excluye la
+  retroceso de E5 reservada al repartidor) y `puedeCerrarseAdministrativamente` (Historia 2) —,
+  deliberadamente **sin** agregar la séptima transición a `SIGUIENTE`: hacerlo habría colapsado
+  "forzar transición" y "cerrar administrativamente" en la misma tabla. `ForceOrderTransitionSchema`,
+  `AdminCloseOrderSchema`, `PauseServiceSchema`; `ServiceStatusDto`; `reason: string | null` nuevo
+  en `OrderStatusEventDto` (a nivel de evento, no de pedido, porque un pedido puede recibir más de
+  una intervención administrativa a lo largo de su vida — a diferencia de `rejectionReason`/
+  `complaintReason`). Cuatro mensajes nuevos, uno compartido por las tres acciones que exigen motivo.
+- **`services/api`**: `forzarTransicion()` y `cerrarAdministrativamente()` en `OrdersService`,
+  reutilizando el mismo mecanismo transaccional que tomar/soltar/entregar/cerrar de E5/E7; un
+  cuarto controlador en `OrdersModule` (`AdminOrdersController`, mismo patrón que
+  `DeliveryOrdersController` de E5). Módulo nuevo `service-status` (servicio, controlador,
+  `ServiceStatusModule`) para pausar/reanudar, con `ServiceStatus` como tabla de una sola fila
+  (`id` fijo, coherente con mono-local). **Bitácora dual, no una tabla polimórfica**: forzar/cerrar
+  se registran en el propio historial del pedido (ya inmutable desde E2); pausar/reanudar
+  extienden `AdminAuditLog` de E1 (`targetUserId` ahora nulable, dos valores de `AdminAction`
+  nuevos). `OrdersService.confirmar()` gana un chequeo de pausa como primer paso de su transacción
+  existente.
+- **`apps/web`**: "Forzar transición" y "Cerrar administrativamente" en `/admin/pedidos/[id]`
+  (E4), visibles solo cuando el pedido no es terminal; el selector de destino de "Forzar
+  transición" llama a `transicionesForzablesPorAdmin` en el propio cliente, así que nunca ofrece
+  un destino que el servidor vaya a rechazar. Pantalla nueva `/admin/operaciones` con el estado
+  del servicio y sus dos acciones; tercer destino "Operaciones" en `NavegacionAdmin` (E9).
+  `historial-pedido.tsx` (E4) muestra `evento.reason` junto a cualquier evento que lo tenga, sin
+  condicionarlo al último evento como sí hacen `rejectionReason`/`complaintReason`.
+- **Migración nueva**: `reason` (nulable) en `order_status_event`; tabla `service_status` (una
+  fila, sembrada por la migración); `admin_audit_log` gana `reason` (nulable) y `target_user_id`
+  pasa a ser nulable; dos valores nuevos en el enum `AdminAction`. Sin tabla nueva para pedidos.
+- **Hallazgo de spec, no de código**: al preparar la validación funcional se detectó que FR-008
+  prometía al repartidor ver el motivo de una intervención administrativa, pero ese rol nunca tuvo
+  pantalla de detalle o historial (E4 no la construyó para él). Se corrigió la spec —la garantía
+  observable del repartidor es únicamente FR-007, quedar libre para tomar otro pedido— y el texto
+  de la interfaz que prometía lo mismo, antes de cerrar la épica.
 
 ### Lo que E7 añadió al código
 

@@ -56,7 +56,7 @@ Un administrador revisa un pedido que quedó atascado y para el que forzar la si
 
 **Acceptance Scenarios**:
 
-1. **Given** un pedido atascado en `en_preparacion`, **When** el administrador lo cierra administrativamente con el motivo "Local cerrado por emergencia, pedido no se puede completar", **Then** el pedido queda en un estado terminal, con ese motivo visible para el cliente, el negocio y (si correspondía) el repartidor.
+1. **Given** un pedido atascado en `en_preparacion`, **When** el administrador lo cierra administrativamente con el motivo "Local cerrado por emergencia, pedido no se puede completar", **Then** el pedido queda en un estado terminal, con ese motivo visible para el cliente y el negocio.
 2. **Given** un pedido atascado en `asignado_repartidor`, **When** el administrador lo cierra administrativamente con motivo, **Then** el pedido queda terminal y el repartidor que lo tenía asignado deja de tenerlo como pedido en curso.
 3. **Given** un pedido en cualquier estado, **When** el administrador intenta cerrarlo administrativamente sin escribir ningún motivo, **Then** el sistema lo impide con un mensaje en español.
 4. **Given** un pedido ya en un estado terminal (`rechazado` o `cerrado`), **When** el administrador intenta cerrarlo administrativamente de nuevo, **Then** el sistema lo impide.
@@ -102,7 +102,7 @@ Un administrador necesita impedir temporalmente que el negocio reciba pedidos nu
 - **FR-005**: El sistema NO DEBE permitir a ningún rol distinto de `ADMINISTRADOR` forzar transiciones ni cerrar pedidos administrativamente.
 - **FR-006**: El sistema NO DEBE permitir forzar una transición ni un cierre administrativo sobre un pedido que ya está en un estado terminal (`rechazado` o `cerrado`).
 - **FR-007**: Cuando una intervención administrativa (forzar transición o cierre administrativo) deja a un repartidor sin el pedido que tenía en curso, el sistema DEBE dejarlo libre para tomar otro pedido disponible, con el mismo criterio de "un repartidor, un pedido a la vez" de HU-04.
-- **FR-008**: El sistema DEBE mostrar la intervención administrativa y su motivo al cliente, al negocio y al repartidor del pedido afectado, en el mismo lugar donde ya ven el estado y el historial de su pedido — mismo criterio de paridad manual que el motivo de rechazo (HU-01) y el de reclamo (HU-05).
+- **FR-008**: El sistema DEBE mostrar la intervención administrativa y su motivo al cliente y al negocio del pedido afectado, en el mismo lugar donde ya ven el estado y el historial de su pedido — mismo criterio de paridad manual que el motivo de rechazo (HU-01) y el de reclamo (HU-05). El repartidor no tiene, en v1, ninguna pantalla de detalle o historial de un pedido (E4 no la construyó para ese rol): su única garantía observable es FR-007 — queda libre para tomar otro pedido cuando la intervención le quita el que tenía en curso.
 - **FR-009**: El sistema DEBE permitir a un usuario con rol `ADMINISTRADOR` pausar el servicio completo, con un motivo en texto libre no vacío obligatorio, impidiendo desde ese momento la confirmación de pedidos nuevos.
 - **FR-010**: Mientras el servicio está pausado, el sistema DEBE impedir a cualquier cliente confirmar un pedido, mostrando un mensaje en español que explique que el servicio está temporalmente pausado, sin impedir que el cliente siga armando o editando su carrito.
 - **FR-011**: Pausar el servicio NO DEBE afectar ningún pedido que ya estaba confirmado antes de la pausa: el negocio, el repartidor y el cliente correspondientes DEBEN poder seguir operando sobre esos pedidos con normalidad.
@@ -116,7 +116,7 @@ Un administrador necesita impedir temporalmente que el negocio reciba pedidos nu
 
 ### Key Entities
 
-- **Intervención administrativa sobre pedido**: acción (forzar transición o cierre administrativo), motivo en texto libre, administrador actor, pedido afectado, y fecha. Inmutable una vez registrada; visible al administrador, al cliente, al negocio y al repartidor del pedido.
+- **Intervención administrativa sobre pedido**: acción (forzar transición o cierre administrativo), motivo en texto libre, administrador actor, pedido afectado, y fecha. Inmutable una vez registrada; visible al administrador, al cliente y al negocio del pedido — el repartidor no tiene pantalla de detalle en v1 (FR-008).
 - **Estado operativo del servicio**: un único indicador global (activo/pausado), coherente con que v1 es mono-local — no distingue entre negocios ni usuarios `NEGOCIO` individuales. Al pausar, lleva asociado el motivo escrito por el administrador; al reanudar, no.
 - **Registro de acciones administrativas (bitácora)**: dos registros de solo-inserción, no uno — el historial del pedido (ya existente desde E2) para forzar transición y cerrar administrativamente, y el `AdminAuditLog` de E1, extendido, para pausar y reanudar el servicio. Ambos inmutables, sin copiar datos personales.
 
@@ -127,7 +127,7 @@ Un administrador necesita impedir temporalmente que el negocio reciba pedidos nu
 - **SC-001**: Un administrador puede forzar la transición de un pedido atascado, incluido escribir el motivo, en menos de 2 minutos.
 - **SC-002**: Un administrador puede cerrar administrativamente un pedido atascado, incluido escribir el motivo, en menos de 2 minutos.
 - **SC-003**: Un administrador puede pausar el servicio, incluido escribir el motivo, en menos de 1 minuto, y reanudarlo en 1 clic.
-- **SC-004**: En una validación con al menos 3 pedidos intervenidos administrativamente (mezcla de transición forzada y cierre administrativo), el 100% muestra el motivo correcto al cliente y al negocio, y al repartidor cuando corresponde.
+- **SC-004**: En una validación con al menos 3 pedidos intervenidos administrativamente (mezcla de transición forzada y cierre administrativo), el 100% muestra el motivo correcto al cliente y al negocio.
 - **SC-005**: En una validación con el servicio pausado, el 100% de los intentos de confirmar un pedido nuevo son bloqueados con un mensaje en español, y el 100% de los pedidos que ya estaban en curso antes de la pausa siguen operables sin cambios.
 - **SC-006**: Después de reanudar el servicio, un cliente puede confirmar un pedido nuevo en su siguiente intento, sin ninguna acción adicional de sincronización.
 - **SC-007**: En una validación con al menos 3 intervenciones administrativas distintas (incluida al menos una pausa), el 100% queda registrado en la bitácora con el administrador, la acción, el objetivo y el motivo correctos.
