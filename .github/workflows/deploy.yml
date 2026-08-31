@@ -108,7 +108,7 @@ jobs:
             exit 0
           fi
           for intento in 1 2 3 4 5 6 7 8 9 10; do
-            codigo=$(curl -s -o /dev/null -w '%{http_code}' "$url" || echo 000)
+            codigo=$(curl -sL -o /dev/null -w '%{http_code}' "$url" || echo 000)
             echo "Intento $intento · HTTP $codigo"
             if [ "$codigo" = "200" ]; then
               echo "Producción responde correctamente."
