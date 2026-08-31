@@ -5,10 +5,12 @@
 .agents/*
 !.agents/skills/
 
+docs/epicas-hu/doc-unab/
 docs/epicas-hu/specificaciones/
 docs/epicas-hu/presentacion/
 docs/epicas-hu/entregables/
 docs/epicas-hu/analisis_foodvoice/
+
 
 # Variables de entorno y secretos
 .env
