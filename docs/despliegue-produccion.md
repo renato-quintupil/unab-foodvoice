@@ -68,6 +68,9 @@ del servicio.
 | `ADMIN_SEED_EMAIL` | Correo del administrador inicial |
 | `ADMIN_SEED_PASSWORD` | Su contraseña, de 8 a 72 caracteres |
 | `ADMIN_SEED_ON_BOOT` | `true` |
+| `LLM_API_KEY` | Clave de la API de Anthropic (E6, D-064). **Obligatoria**: el arranque de `api` falla sin ella, igual que sin `DATABASE_URL` — no solo la búsqueda por voz queda deshabilitada |
+| `LLM_MODEL` | `claude-haiku-4-5-20251001` (opcional; mismo valor por defecto que en local) |
+| `LLM_TIMEOUT_MS` | `4000` (opcional) |
 
 **`web`**
 
@@ -102,6 +105,26 @@ La semilla se ejecuta desde `dist-seed/prisma/seed.js`, compilada aparte por
 `tsx`, una dependencia de desarrollo: que siga presente en la imagen final es un
 efecto colateral de cómo `pnpm prune --prod` trata los espacios de trabajo de un
 monorepo, no una garantía. El arranque de producción no se apoya en eso.
+
+## Configurar el entorno `production` en GitHub
+
+`.github/workflows/deploy.yml` lee estos valores del **entorno de GitHub**
+`production` del repositorio (`Settings → Environments → production`). Mientras
+no existan, el paso "Comprobar si hay destino de despliegue" los detecta
+ausentes y **omite el despliegue sin marcar el flujo en rojo** — un tag se
+puede crear igual, pero no publica nada hasta que estén cargados.
+
+| Nombre | Tipo | Valor |
+| --- | --- | --- |
+| `RAILWAY_TOKEN` | Secret | Token de proyecto de Railway (`railway login` → `Project settings → Tokens`) |
+| `RAILWAY_PROJECT_ID` | Variable | ID del proyecto en Railway |
+| `RAILWAY_SERVICIO_API` | Variable | Nombre del servicio `api` dentro del proyecto |
+| `RAILWAY_SERVICIO_WEB` | Variable | Nombre del servicio `web` dentro del proyecto |
+| `URL_PRODUCCION` | Variable | URL pública de `web` (también queda como el enlace del entorno en la UI de GitHub) |
+
+Configurar en el entorno una **regla de aprobación** (`Required reviewers`) es
+opcional pero recomendable: con ella, un tag deja el despliegue detenido hasta
+que una persona lo autorice, en vez de publicar automáticamente.
 
 ## Despliegue
 
@@ -157,6 +180,7 @@ incluyen por si hace falta repetirlas.
 | 4 | Intentar alcanzar la API directamente | No resuelve: no tiene dominio público |
 | 5 | Pegar la URL del panel con una sesión de otro rol | Rechazado con mensaje de permiso denegado (SC-003) |
 | 6 | Reiniciar el servicio `api` | Vuelve a arrancar sin duplicar al administrador (semilla idempotente) |
+| 7 | Como cliente, buscar un producto por voz o texto en `/menu` | Devuelve resultados en menos de 5 s (SC-004) — confirma que `LLM_API_KEY` es válida contra el proveedor real, no solo que estaba presente al arrancar |
 
 ## Recuperación de acceso administrativo
 
