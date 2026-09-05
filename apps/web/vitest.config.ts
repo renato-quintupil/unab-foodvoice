@@ -32,7 +32,7 @@ export default defineConfig({
         'src/lib/api-servidor.ts',
         'src/lib/sesion-servidor.ts',
       ],
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'json-summary'],
       // El incumplimiento hace fallar `pnpm test` (T117). La cobertura es un
       // piso, no un objetivo: cumplirla no sustituye a la validación funcional.
       thresholds: { lines: 70 },

@@ -73,6 +73,7 @@ module.exports = {
     '!src/menu-search/search-throttler.guard.ts',
   ],
   coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {
     './src/auth/': { lines: 90, branches: 90 },
     './src/users/': { lines: 90, branches: 90 },

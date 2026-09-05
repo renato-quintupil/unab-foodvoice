@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/index.ts'],
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'json-summary'],
       // quickstart § Comprobaciones automáticas: 100 % en `packages/shared`.
       // Es lógica pura y pequeña; no hay excusa para menos. Su incumplimiento
       // hace fallar `pnpm test` (T117).

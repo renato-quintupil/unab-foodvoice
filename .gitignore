@@ -48,6 +48,7 @@ Thumbs.db
 .idea/
 # Cobertura y caches de herramientas
 coverage/
+.test-summary.json
 .turbo/
 *.tsbuildinfo
 next-env.d.ts
