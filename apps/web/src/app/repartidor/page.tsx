@@ -1,6 +1,7 @@
 import { Role, type DeliveryOrderDto } from '@foodvoice/shared';
 import { pedirALaApi } from '@/lib/api-servidor';
 import { exigirSesion } from '@/lib/sesion-servidor';
+import { CerrarSesion } from '@/components/cerrar-sesion';
 import { PedidoEnCurso } from './_components/pedido-en-curso';
 import { PedidosDisponibles } from './_components/pedidos-disponibles';
 
@@ -24,7 +25,10 @@ export default async function PaginaRepartidor() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10">
-      <h1 className="text-2xl font-semibold">Reparto</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Reparto</h1>
+        <CerrarSesion />
+      </div>
       {order ? <PedidoEnCurso order={order} /> : <PedidosDisponibles />}
     </main>
   );

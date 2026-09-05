@@ -289,6 +289,23 @@ preparada la transición `en_preparacion → asignado_repartidor` (y su historia
 (Cierre del servicio) construyera `asignado_repartidor → entregado → cerrado` sin tocar esta
 épica — y así ocurrió.
 
+**Brecha detectada tras la verificación, fuera de v1 por decisión declarada** (2026-09-05,
+probando el flujo manualmente): la lista de "disponibles" de `/repartidor` muestra *todo* pedido
+en `en_preparacion` desde el instante en que el negocio lo acepta, sin ninguna señal de que la
+cocina terminó de prepararlo. No hay estado ni bandera de "listo para retiro" en el modelo — el
+repartidor no tiene forma de saber, antes de tomarlo, si el pedido ya está armado o recién
+empezó a cocinarse. Corregirlo implica una decisión de diseño sobre el Principio XII (un estado
+nuevo en la máquina exige enmienda constitucional, como hizo esta misma épica en v3.0.0; una
+bandera aparte tipo `readyForPickup` no la exigiría) que se difiere a v1.1.
+
+**Defecto real encontrado y corregido el mismo día** (2026-09-05): `/repartidor` no ofrecía
+ninguna forma de cerrar sesión ni de salir de la pantalla, en ningún estado. E5 reemplazó por
+completo el placeholder de E1 (`InicioDeRol`, que sí tenía "Cerrar sesión") por la pantalla de
+reparto, sin llevarse ese botón; la exclusión de FR-015 de E9 ("admin y repartidor quedan sin
+cambios") asumía que ese botón todavía existía. Corregido agregando `CerrarSesion` al encabezado
+de `apps/web/src/app/repartidor/page.tsx`, cubierto por una prueba nueva en
+`apps/web/tests/repartidor.test.tsx`.
+
 ## E7 · Cierre del servicio
 
 Rama de trabajo: `008-cierre-servicio`.

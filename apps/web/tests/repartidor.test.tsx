@@ -15,6 +15,7 @@ import { BotonTomar } from '@/app/repartidor/_components/boton-tomar';
 import { PedidoEnCurso } from '@/app/repartidor/_components/pedido-en-curso';
 import { PedidosDisponibles } from '@/app/repartidor/_components/pedidos-disponibles';
 import PaginaRepartidor from '@/app/repartidor/page';
+import { CerrarSesion } from '@/components/cerrar-sesion';
 import { pedirALaApi } from '@/lib/api-servidor';
 
 vi.mock('@/lib/api-servidor', () => ({ pedirALaApi: vi.fn() }));
@@ -136,6 +137,15 @@ describe('Página del repartidor: una acción a la vez (FR-004)', () => {
     const contenido = vista.props.children[1];
 
     expect(contenido.type).toBe(PedidosDisponibles);
+  });
+
+  it('siempre ofrece Cerrar sesión, sin importar el estado del pedido', async () => {
+    vi.mocked(pedirALaApi).mockResolvedValue({ order: null });
+
+    const vista = await PaginaRepartidor();
+    const encabezado = vista.props.children[0];
+
+    expect(encabezado.props.children[1].type).toBe(CerrarSesion);
   });
 
   it('con un pedido en curso, decide no renderizar la lista de disponibles', async () => {
