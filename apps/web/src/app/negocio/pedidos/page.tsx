@@ -40,6 +40,9 @@ export default async function PaginaBandejaNegocio({
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Pedidos</h1>
         <div className="flex gap-4">
+          <Link href="/negocio/pedidos/en-curso" className="text-sm underline">
+            Ver en curso
+          </Link>
           <Link href="/negocio/pedidos/rechazados" className="text-sm underline">
             Ver rechazados
           </Link>

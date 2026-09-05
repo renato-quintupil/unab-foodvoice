@@ -525,6 +525,23 @@ export class OrdersService {
     return { items: filas.map(aDto) };
   }
 
+  /**
+   * `GET /business/orders/in-progress`. Corrección post-verificación: sin
+   * este endpoint, `bandejaDelNegocio` (`creado`/`en_preparacion`) y
+   * `rechazadosDelNegocio`/`cerradosDelNegocio` dejaban un hueco — un pedido
+   * en `asignado_repartidor` o `entregado` (ya en reparto, todavía sin que
+   * el cliente lo confirme o reclame) no aparecía en ninguna pantalla del
+   * negocio. Mismo tipo de hallazgo que D-081, un estado más adelante.
+   */
+  async enCursoDelNegocio(): Promise<{ items: OrderSummaryDto[] }> {
+    const filas = await this.prisma.order.findMany({
+      where: { status: { in: [OrderStatus.ASIGNADO_REPARTIDOR, OrderStatus.ENTREGADO] } },
+      include: CON_LINEAS,
+      orderBy: { createdAt: 'desc' },
+    });
+    return { items: filas.map(aDto) };
+  }
+
   // -------------------------------------------------------------------------
   // E8 · Controles y administración (HU-07, FR-001–FR-008)
   // -------------------------------------------------------------------------

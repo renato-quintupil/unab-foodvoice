@@ -48,6 +48,16 @@ export class BusinessOrdersController {
     return this.pedidos.cerradosDelNegocio();
   }
 
+  /**
+   * `GET /api/v1/business/orders/in-progress`. Corrección post-verificación:
+   * pedidos `asignado_repartidor`/`entregado`, invisibles hasta ahora para el
+   * negocio (ver `enCursoDelNegocio`).
+   */
+  @Get('in-progress')
+  enCurso(): Promise<{ items: OrderSummaryDto[] }> {
+    return this.pedidos.enCursoDelNegocio();
+  }
+
   /** `GET /api/v1/business/orders/:id` (E4, FR-004, D-053). */
   @Get(':id')
   detalle(@Param('id') id: string): Promise<OrderDetailDto> {

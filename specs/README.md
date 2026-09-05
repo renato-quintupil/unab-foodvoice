@@ -343,6 +343,17 @@ un camino del negocio hacia un pedido `cerrado`— se encontró y corrigió dura
 **Ninguna enmienda constitucional nueva**: a diferencia de E5, las dos transiciones de E7 ya
 estaban declaradas en el Principio XII desde su redacción original.
 
+**Defecto real encontrado y corregido tras la verificación** (2026-09-05, probando el flujo
+manualmente): mismo tipo de hallazgo que D-081, un estado más adelante en la máquina. El negocio
+no tenía ningún camino hacia un pedido en `asignado_repartidor` o `entregado` — su bandeja solo
+admite `creado`/`en_preparacion` (ni siquiera por filtro, `BusinessOrdersQuerySchema` solo acepta
+esos dos valores), y "rechazados"/"cerrados" solo cubren sus propios estados. Un pedido que salía
+a reparto quedaba invisible para el negocio hasta que el cliente lo cerraba — o para siempre, si
+nunca actuaba. Corregido con `GET /business/orders/in-progress` (`enCursoDelNegocio` en
+`OrdersService`) y `/negocio/pedidos/en-curso`, mismo patrón exacto que `cerradosDelNegocio`/
+`/negocio/pedidos/cerrados`, cubierto por una batería de integración nueva y una prueba de
+`apps/web`.
+
 Sigue fuera de v1: la auditoría formal de accesibilidad, heredada de E1/E3/E2/E9/E4/E6/E5.
 Cualquier estado nuevo para "reclamo pendiente", clasificación del feedback, notificaciones,
 calificación numérica, reabrir un pedido cerrado o confirmación por proximidad — declarado como

@@ -292,6 +292,15 @@ export const MSG_PEDIDO_NO_ENTREGADO =
 /** FR-011, D-081. El negocio todavía no tiene ningún pedido cerrado. */
 export const MSG_SIN_PEDIDOS_CERRADOS = 'Todavía no tienes pedidos cerrados.';
 
+/**
+ * El negocio no tiene ningún pedido en reparto o entregado sin cerrar.
+ * Corrección post-verificación: sin esta pantalla el negocio perdía de vista
+ * un pedido desde que salía a reparto hasta que el cliente lo cerraba (o
+ * nunca, si no actuaba) — mismo tipo de hueco que D-081 encontró para
+ * `cerrado`, un estado más adelante en la máquina.
+ */
+export const MSG_SIN_PEDIDOS_EN_CURSO = 'No tienes pedidos en reparto por ahora.';
+
 // ---------------------------------------------------------------------------
 // E8 · Controles y administración
 // ---------------------------------------------------------------------------

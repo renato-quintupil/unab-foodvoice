@@ -98,6 +98,9 @@ const LOS_DE_CIERRE = [
   'MSG_MOTIVO_RECLAMO_REQUERIDO',
   'MSG_PEDIDO_NO_ENTREGADO',
   'MSG_SIN_PEDIDOS_CERRADOS',
+  // Corrección post-verificación (2026-09-05): mismo tipo de hallazgo que
+  // D-081, un estado más adelante en la máquina — ver `enCursoDelNegocio`.
+  'MSG_SIN_PEDIDOS_EN_CURSO',
 ] as const;
 
 /** Los de E8 (`009-controles-flujos-criticos`, `contracts/shared.md` § Mensajes nuevos). */
