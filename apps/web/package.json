@@ -1,6 +1,6 @@
 {
   "name": "@foodvoice/web",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Interfaz de FoodVoice — Next.js 15 (App Router). Actúa además como BFF: el navegador solo habla con Next.js (D-006)",
   "engines": {
